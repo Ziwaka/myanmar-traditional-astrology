@@ -50,7 +50,7 @@ export interface PurchasedAmulet {
 }
 
 export interface ConsultationRecord {
-  id: string;                  // ဗေဒင်မေးသူ ID (e.g. BD-2026-001)
+  id: string;                  // ဗေဒင်မေးသူ ID (e.g. BD-001) - Auto generated with edit option
   customerName: string;        // အမည်
   phone: string;               // ဖုန်းနံပါတ်
   gender?: 'male' | 'female' | 'other';
@@ -66,13 +66,20 @@ export interface ConsultationRecord {
   serviceCategory: ServiceCategory; // ဗေဒင်ဝန်ဆောင်မှု အမျိုးအစား
   serviceFee: number;          // ဗေဒင်ဟောခ (ကျပ်)
   
-  navawinType: NavawinCountType; // နဝင်းယတြာ အကြိမ်
-  navawinFee: number;          // နဝင်းယတြာ ကုန်ကျငွေ
+  // Custom Yatra System (ယတြာ လုပ်ဆောင်မည် / Dropdown / စိတ်ကြိုက်ယတြာ)
+  yatraEnabled?: boolean;      // ယတြာ လုပ်ဆောင်မည် ဟုတ်/မဟုတ်
+  yatraType?: string;          // ရွေးချယ်ထားသော ယတြာ Key (e.g. navawin_3, custom_yatra)
+  yatraName?: string;          // ယတြာ အမည် (ရွေးချယ်ထားသော အမည် သို့မဟုတ် စိတ်ကြိုက်အမည်)
+  yatraFee?: number;           // ယတြာ စရိတ်/အလှူငွေ (ကျပ်)
+
+  // Navawin legacy fields (kept for backward-compatibility)
+  navawinType: NavawinCountType; 
+  navawinFee: number;          
   
-  amulets: PurchasedAmulet[];  // အဆောင် ဝယ်ယူမှုများ
+  amulets: PurchasedAmulet[];  // အဆောင် ဝယ်ယူမှုများ (စိတ်ကြိုက်အမည် + စိတ်ကြိုက်ဈေးနှုန်း)
   amuletsTotal: number;        // အဆောင် စုစုပေါင်းငွေ
   
-  totalAmount: number;         // စုစုပေါင်း ကျသင့်ငွေ (serviceFee + navawinFee + amuletsTotal)
+  totalAmount: number;         // စုစုပေါင်း ကျသင့်ငွေ (serviceFee + (yatraFee || navawinFee) + amuletsTotal)
   paidAmount: number;          // ရှင်းပြီးငွေ
   paymentStatus: PaymentStatus;// ငွေပေးချေမှု အခြေအနေ
   paymentMethod: 'cash' | 'kpay' | 'wave' | 'cbbank' | 'ayapay'; // ငွေပေးချေသည့် နည်းလမ်း
@@ -81,10 +88,10 @@ export interface ConsultationRecord {
   taskDone: boolean;           // Task Done အမှန်ခြစ်
   
   predictions: string;         // ပေးလိုက်သော ဟောချက်များ
-  yatraInstructions: string;   // ယတြာနှင့် နဝင်းစီး ညွှန်ကြားချက်များ
+  yatraInstructions: string;   // ယတြာနှင့် ညွှန်ကြားချက်များ
   notes: string;               // အထွေထွေ မှတ်ချက်
   
-  recordedBy?: string;         // သွင်းသည့် စက်/တာဝန်ခံ (e.g. ကောင်တာ ၁, ဖုန်း ၂)
+  recordedBy?: string;         // သွင်းသည့် စက်/တာဝန်ခံ (e.g. ကောင်တာ ၁, ဆရာ့အခန်း)
   updatedBy?: string;          // နောက်ဆုံး ပြင်ဆင်သည့် စက်/တာဝန်ခံ
   deviceId?: string;           // စက် ခွဲခြားသတ်မှတ်မှုကုဒ်
   version?: number;            // Concurrency tracking version counter

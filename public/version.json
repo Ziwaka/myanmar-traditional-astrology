@@ -1,20 +1,62 @@
 {
-  "version": "1.3.1",
-  "releaseDate": "2026-09-29",
-  "title": "Multi-User Concurrency, Zero Overwrite & Collision Guard",
+  "version": "1.3.5",
+  "releaseDate": "2026-09-30",
+  "title": "Clean Header, Pure Custom Yatra & Multi-Role User Account Management",
   "isCloudAuthoritative": true,
   "changelog": [
-    "Duplicate ID တိုက်မိမှု အလိုအလျောက် ကာကွယ်ခြင်း (Collision-Proof Auto Guard): စက် ၂ လုံးက တစ်ပြိုင်နက် နံပါတ်တူ သွင်းမိပါက အလိုအလျောက် ID အသစ်သို့ ခွဲထုတ်သိမ်းဆည်းပေးခြင်း။",
-    "Smart Field-Level Deep Merge (Zero Overwrite): ဆရာက ဟောချက်ဖြည့်နေချိန် ကောင်တာက ငွေရှင်းလျှင် တစ်ဦးပြင်ထားသည်ကို နောက်တစ်ဦးက အစားထိုး မဖျက်ချနိုင်အောင် ပေါင်းစည်းပေးခြင်း။",
-    "Multi-Device Workstation Identity (စက်အမည် သတ်မှတ်နိုင်ခြင်း): ကောင်တာ (၁)၊ ဆရာ့အခန်း စသဖြင့် စက်အလိုက် အမည်ပေး၍ မည်သူသွင်း/မည်သူပြင် Audit Trail မှတ်တမ်းတင်ခြင်း။",
-    "Unlimited Multi-Device Scale: လူ (၂) ဦးသာမက စက်ပေါင်းစုံ (၃၊ ၅၊ ၁၀ ဦး) ပြိုင်တူ တိုက်ရိုက် အသုံးပြုနိုင်ခြင်း။"
+    "ထိပ်ပိုင်း အိုင်ကွန်များ ရှင်းလင်းကျစ်လျစ်စေခြင်း (Clean Header & Mobile UX): Mobile မျက်နှာပြင်တွင် ရှုပ်ထွေးနေသော Icon များကို ရှင်းလင်းလိုက်ပြီး Menu၊ ဗေဒင်ခေါင်းစဉ်၊ + အသစ် ခလုတ် နှင့် User Profile Pill သာ ထားရှိကာ အခြား အရန်ကိရိယာများကို Sidebar အတွင်းသို့ စနစ်တကျ ပြောင်းရွှေ့ပေးခြင်း။",
+    "စိတ်ကြိုက် ယတြာ တိုက်ရိုက်ထည့်သွင်းမှု စနစ် (Purely Custom Yatra System): မလိုအပ်သော အမည်သတ်မှတ်ပြီး ယတြာ Dropdown များ အားလုံးအား ဖယ်ရှားရှင်းထုတ်လိုက်ပြီး ဆရာကိုယ်တိုင် စိတ်ကြိုက် ယတြာအမည်၊ ယတြာစရိတ်/အလှူငွေ နှင့် ညွှန်ကြားချက်များကို တိုက်ရိုက် ထည့်သွင်းနိုင်သော ခလုတ်နှင့် နေရာ ပြင်ဆင်ပေးခြင်း။",
+    "အသုံးပြုသူ အကောင့်များနှင့် လုပ်ပိုင်ခွင့်များ စီမံခန့်ခွဲမှု (User Account Management & Permissions Matrix): Super Admin, Admin, Senior Staff, Staff ဟူ၍ ရာထူး (၄) မျိုး သတ်မှတ်ပေးပြီး Super Admin မှ ရာထူးအလိုက် လုပ်ပိုင်ခွင့်များ (Permissions Matrix) အား စိတ်ကြိုက် သတ်မှတ်ခွင့် ထည့်သွင်းခြင်း။"
   ],
   "history": [
+    {
+      "version": "1.3.5",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀",
+      "title": "Clean Header, Pure Custom Yatra & Multi-Role User Account Management",
+      "badge": "Latest Release",
+      "changelog": [
+        "ထိပ်ပိုင်း အိုင်ကွန်များ ရှင်းလင်းကျစ်လျစ်စေခြင်း (Clean Header & Mobile UX)",
+        "စိတ်ကြိုက် ယတြာ တိုက်ရိုက်ထည့်သွင်းမှု စနစ် (Purely Custom Yatra System)",
+        "အသုံးပြုသူ အကောင့်များနှင့် လုပ်ပိုင်ခွင့်များ စီမံခန့်ခွဲမှု (User Management & Permissions Matrix)"
+      ]
+    },
+    {
+      "version": "1.3.4",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀",
+      "title": "Unified Workflow Status & Automatic Version Release Changelog Pop-up",
+      "changelog": [
+        "အခြေအနေနှင့် ပြီးစီးမှု ပေါင်းစည်းရှင်းလင်းခြင်း (Unified Status Workflow)",
+        "ဗားရှင်းအသစ်တိုင်း Pop-up အလိုအလျောက် ပြသခြင်း (Auto Changelog Pop-up)",
+        "ဗေဒင်မေးသူ ID အလိုအလျောက် ထွက်ရှိမှု (Auto-Generated ID with Customizer)",
+        "Live Online / Offline Status Indicator (ကွန်ရက် အခြေအနေ အချိန်နှင့်တပြေးညီ ပြသခြင်း)"
+      ]
+    },
+    {
+      "version": "1.3.3",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀",
+      "title": "Auto-ID, Live Online/Offline Status, Custom Yatra & Custom Amulet Pricing",
+      "changelog": [
+        "ဗေဒင်မေးသူ ID အလိုအလျောက် ထွက်ရှိမှု (Auto-Generated ID with Customizer)",
+        "Live Online / Offline Status Indicator (ကွန်ရက် ချိတ်ဆက်မှု အချိန်နှင့်တပြေးညီ အချက်ပြစနစ်)",
+        "Enhanced Custom Yatra System (ယတြာ စိတ်ကြိုက် ရွေးချယ်မှုနှင့် ထည့်သွင်းမှု စနစ်)",
+        "Custom Amulets & Custom Price POS (စိတ်ကြိုက် အဆောင်ပစ္စည်းနှင့် ဈေးနှုန်း သတ်မှတ်နိုင်ခြင်း)"
+      ]
+    },
+    {
+      "version": "1.3.2",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀",
+      "title": "Mobile Viewport Anti-Horizontal-Scroll, Continuous Version Watcher & PWA Experience",
+      "changelog": [
+        "ဘေးသို့ Horizontal Scroll ထွက်နေသည့် ပြဿနာ အပြီးတိုင် ဖြေရှင်းခြင်း (Zero Mobile Overrun)",
+        "PWA Mobile App Integration (ဖုန်းတွင် အလွယ်တကူ သွင်းယူနိုင်ခြင်း & iOS Safari Guide)",
+        "Continuous Cloud Version Polling (စက္ကန့် ၃၀ လျှင် တစ်ကြိမ် အလိုအလျောက် စစ်ဆေးခြင်း)",
+        "Real-time Version Update Pop-up Modal (ဗားရှင်းအသစ် Pop-up ဖြင့် အသိပေးခြင်း)"
+      ]
+    },
     {
       "version": "1.3.1",
       "releaseDate": "၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၂၉",
       "title": "Multi-User Concurrency, Zero Overwrite & Collision Guard",
-      "badge": "Latest Release",
       "changelog": [
         "Duplicate ID တိုက်မိမှု အလိုအလျောက် ကာကွယ်ခြင်း (Collision-Proof Auto Guard)",
         "Smart Field-Level Deep Merge (Zero Overwrite)",

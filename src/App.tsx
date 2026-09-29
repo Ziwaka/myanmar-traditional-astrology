@@ -17,16 +17,19 @@ import {
   clearAllData 
 } from './utils/storage';
 import { 
-  SuperAdminAccount, 
-  getCurrentAccount, 
+  UserAccount, 
+  getCurrentUser, 
   isUserLoggedIn, 
-  performLogout 
+  performLogout,
+  getEffectivePermissions
 } from './utils/auth';
 import { 
   CloudVersionInfo, 
   fetchCloudVersion, 
   getStoredLocalVersion, 
   saveStoredLocalVersion, 
+  getLastSeenChangelogVersion,
+  setLastSeenChangelogVersion,
   compareVersions, 
   LOCAL_APP_VERSION 
 } from './utils/versionCheck';
@@ -39,8 +42,10 @@ import { MonthlyReportView } from './components/MonthlyReportView';
 import { LoyalCustomersView } from './components/LoyalCustomersView';
 import { ExpensesView } from './components/ExpensesView';
 import { AmuletsCatalogView } from './components/AmuletsCatalogView';
+import { UserManagementView } from './components/UserManagementView';
 import { PrintReceiptModal } from './components/PrintReceiptModal';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
+import { VersionUpdateModal } from './components/VersionUpdateModal';
 import { DatabaseQuotaModal } from './components/DatabaseQuotaModal';
 import { CloudSyncModal } from './components/CloudSyncModal';
 import { LoginScreen } from './components/LoginScreen';
@@ -62,9 +67,10 @@ import {
 import { getDeviceId, getDeviceName } from './utils/deviceProfile';
 
 export default function App() {
-  // Authentication State (Super Admin Amt)
+  // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(isUserLoggedIn());
-  const currentAccount: SuperAdminAccount = getCurrentAccount();
+  const [currentUser, setCurrentUser] = useState<UserAccount>(getCurrentUser());
+  const currentPermissions = useMemo(() => getEffectivePermissions(currentUser.role), [currentUser]);
 
   // Primary datasets - clean with zero demo data
   const [consultations, setConsultations] = useState<ConsultationRecord[]>([]);
@@ -102,6 +108,7 @@ export default function App() {
   const [editingRecord, setEditingRecord] = useState<ConsultationRecord | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<ConsultationRecord | null>(null);
   const [printingRecord, setPrintingRecord] = useState<ConsultationRecord | null>(null);
+  const [isUpdatePromptModalOpen, setIsUpdatePromptModalOpen] = useState(false);
 
   // Check Cloud Version vs Local Version
   const checkCloudVersion = useCallback(async (autoOpenModalOnDiff = false) => {
@@ -115,7 +122,7 @@ export default function App() {
         if (diff > 0) {
           setIsNewVersionAvailable(true);
           if (autoOpenModalOnDiff) {
-            setIsVersionModalOpen(true);
+            setIsUpdatePromptModalOpen(true);
           }
         } else {
           setIsNewVersionAvailable(false);
@@ -128,7 +135,7 @@ export default function App() {
     }
   }, []);
 
-  // Initialize data and setup online event listener
+  // Initialize data, setup online event listener, and continuous version watcher
   useEffect(() => {
     // Load offline cached data initially
     const localC = loadConsultations();
@@ -138,7 +145,14 @@ export default function App() {
     setExpenses(localE);
     setAmuletsCatalog(localA);
 
-    // Initial check on mount
+    // Check if user has seen changelog for this current version release
+    const lastSeenVer = getLastSeenChangelogVersion();
+    if (compareVersions(LOCAL_APP_VERSION, lastSeenVer) > 0) {
+      setIsVersionModalOpen(true);
+      setLastSeenChangelogVersion(LOCAL_APP_VERSION);
+    }
+
+    // Initial check on mount (automatically opens popup if newer version is ready)
     checkCloudVersion(true);
     refreshDatabaseQuota();
 
@@ -174,28 +188,63 @@ export default function App() {
       }
     });
 
-    // Whenever internet comes online, re-check Cloud version
+    // Continuous Version Polling every 30 seconds
+    const versionInterval = setInterval(() => {
+      checkCloudVersion(true);
+    }, 30000);
+
+    // Whenever browser tab gains focus or visibility, re-check Cloud version
+    const handleFocus = () => {
+      checkCloudVersion(true);
+      refreshDatabaseQuota();
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkCloudVersion(true);
+      }
+    };
     const handleOnline = () => {
       checkCloudVersion(true);
       refreshDatabaseQuota();
     };
 
     window.addEventListener('online', handleOnline);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
+      clearInterval(versionInterval);
       unsubConsultations();
       unsubExpenses();
       unsubAmulets();
       window.removeEventListener('online', handleOnline);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [checkCloudVersion, refreshDatabaseQuota]);
 
-  // Apply Cloud Authoritative Version Update
+  // Apply Cloud Authoritative Version Update (reloads app with fresh assets & service worker update)
   const handleApplyCloudUpdate = () => {
     if (cloudInfo) {
       saveStoredLocalVersion(cloudInfo.version);
       setLocalVersion(cloudInfo.version);
       setIsNewVersionAvailable(false);
-      alert(`Cloud ဗားရှင်း v${cloudInfo.version} ကို အတည်ပြု သတ်မှတ်ပြီးပါပြီ။`);
+      setIsUpdatePromptModalOpen(false);
+      setIsVersionModalOpen(false);
+
+      // Trigger Service Worker update
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          for (const reg of regs) {
+            reg.update();
+          }
+        });
+      }
+
+      // Smoothly reload page with cache-busting query parameter
+      setTimeout(() => {
+        window.location.href = window.location.pathname + '?_v=' + Date.now();
+      }, 250);
     }
   };
 
@@ -438,15 +487,20 @@ export default function App() {
     return todayConsultations.reduce((sum, c) => sum + (c.paidAmount || c.totalAmount || 0), 0);
   }, [todayConsultations]);
 
-  // If not logged in as Super Admin Amt, render Login Screen
+  // If not logged in, render Login Screen
   if (!isAuthenticated) {
     return (
-      <LoginScreen onLoginSuccess={() => setIsAuthenticated(true)} />
+      <LoginScreen 
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        }} 
+      />
     );
   }
 
   return (
-    <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950">
+    <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950 overflow-x-hidden w-full max-w-[100vw]">
       
       {/* On-Demand Slide-in Sidebar (Only shows when called!) */}
       <Sidebar
@@ -454,8 +508,14 @@ export default function App() {
         onClose={() => setIsSidebarOpen(false)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        currentAccount={currentAccount}
-        onOpenVersionModal={() => setIsVersionModalOpen(true)}
+        currentAccount={currentUser}
+        onOpenVersionModal={() => {
+          if (isNewVersionAvailable) {
+            setIsUpdatePromptModalOpen(true);
+          } else {
+            setIsVersionModalOpen(true);
+          }
+        }}
         onOpenCloudSyncModal={() => setIsCloudSyncModalOpen(true)}
         onOpenDatabaseQuotaModal={() => setIsDatabaseQuotaModalOpen(true)}
         onOpenNewConsultation={() => {
@@ -472,14 +532,20 @@ export default function App() {
       />
 
       {/* Main Full-Width Content Container (No permanent sidebar displacement) */}
-      <div className="flex-1 flex flex-col w-full transition-all">
+      <div className="flex-1 flex flex-col w-full max-w-full overflow-x-hidden transition-all">
         
         {/* Top Navigation Bar with Menu Button */}
         <Navbar
           onToggleSidebar={() => setIsSidebarOpen(true)}
           activeTab={activeTab}
-          currentAccount={currentAccount}
-          onOpenVersionModal={() => setIsVersionModalOpen(true)}
+          currentAccount={currentUser}
+          onOpenVersionModal={() => {
+            if (isNewVersionAvailable) {
+              setIsUpdatePromptModalOpen(true);
+            } else {
+              setIsVersionModalOpen(true);
+            }
+          }}
           onOpenCloudSyncModal={() => setIsCloudSyncModalOpen(true)}
           onOpenDatabaseQuotaModal={() => setIsDatabaseQuotaModalOpen(true)}
           onOpenNewConsultation={() => {
@@ -498,7 +564,7 @@ export default function App() {
         />
 
         {/* Main Tab Views */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-x-hidden">
           {activeTab === 'consultations' && (
             <ConsultationList
               records={consultations}
@@ -548,11 +614,20 @@ export default function App() {
               onToggleStock={handleToggleStock}
             />
           )}
+
+          {activeTab === 'users' && (
+            <UserManagementView
+              currentUser={currentUser}
+              onUserChanged={() => {
+                setCurrentUser(getCurrentUser());
+              }}
+            />
+          )}
         </main>
 
         {/* Footer */}
         <footer className="no-print border-t border-stone-800 bg-stone-950/80 py-4 text-center text-xs text-stone-500">
-          <p>မြန်မာ့ရိုးရာဗေဒင်ပညာ မှတ်တမ်းနှင့် ဝန်ဆောင်မှု POS စနစ် • Cloudflare Pages Production Ready • Super Admin: {currentAccount.username}</p>
+          <p>မြန်မာ့ရိုးရာဗေဒင်ပညာ မှတ်တမ်းနှင့် ဝန်ဆောင်မှု POS စနစ် • User: {currentUser.name} ({currentUser.role})</p>
         </footer>
       </div>
 
@@ -610,6 +685,15 @@ export default function App() {
           onCheckNow={() => checkCloudVersion(false)}
         />
       )}
+
+      {/* Modal 4.1: Real-time Version Update Alert Pop Up */}
+      <VersionUpdateModal
+        isOpen={isUpdatePromptModalOpen}
+        onClose={() => setIsUpdatePromptModalOpen(false)}
+        cloudInfo={cloudInfo}
+        localVersion={localVersion}
+        onApplyUpdate={handleApplyCloudUpdate}
+      />
 
       {/* Modal 5: Database Quota & Storage Analytics */}
       {isDatabaseQuotaModalOpen && (

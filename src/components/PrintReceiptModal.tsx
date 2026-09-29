@@ -98,13 +98,13 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                 <td className="py-2 text-right font-mono font-medium">{formatMMK(record.serviceFee)}</td>
               </tr>
 
-              {/* Navawin Ritual Fee */}
-              {record.navawinFee > 0 && (
+              {/* Yatra / Navawin Fee */}
+              {((record.yatraFee && record.yatraFee > 0) || (record.navawinFee && record.navawinFee > 0)) && (
                 <tr>
                   <td className="py-2 text-stone-500">၂</td>
-                  <td className="py-2 font-medium text-stone-900">{navawinInfo?.label || 'နဝင်းယတြာ အစီအရင်'}</td>
+                  <td className="py-2 font-medium text-stone-900">{record.yatraName || navawinInfo?.label || 'ယတြာ အစီအရင်'}</td>
                   <td className="py-2 text-center">၁ မှု</td>
-                  <td className="py-2 text-right font-mono font-medium">{formatMMK(record.navawinFee)}</td>
+                  <td className="py-2 text-right font-mono font-medium">{formatMMK(record.yatraFee || record.navawinFee)}</td>
                 </tr>
               )}
 

@@ -149,22 +149,24 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
             </div>
           </div>
 
-          {/* Yatra & Navawin Instructions */}
-          <div className="bg-stone-850 p-4 rounded-xl border border-amber-500/30 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-amber-300 flex items-center gap-2">
-                <Sparkles className="w-4 h-4" /> ညွှန်ကြားခဲ့သော ယတြာနှင့် နဝင်းစီးနည်း
-              </span>
-              {record.navawinType !== 'none' && (
-                <span className="px-2.5 py-0.5 rounded text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold">
-                  {navawinInfo?.label}
+          {/* Yatra Instructions */}
+          {(record.yatraEnabled || record.navawinType !== 'none' || record.yatraInstructions) && (
+            <div className="bg-stone-850 p-4 rounded-xl border border-amber-500/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-amber-300 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" /> ညွှန်ကြားခဲ့သော ယတြာနှင့် အစီအရင်
                 </span>
-              )}
+                {(record.yatraName || record.navawinType !== 'none') && (
+                  <span className="px-2.5 py-0.5 rounded text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold">
+                    {record.yatraName || navawinInfo?.label || 'ယတြာ'}
+                  </span>
+                )}
+              </div>
+              <div className="bg-stone-900 p-3.5 rounded-xl border border-stone-800 leading-relaxed text-stone-200 whitespace-pre-wrap">
+                {record.yatraInstructions || 'ယတြာ ညွှန်ကြားချက် မထည့်သွင်းရသေးပါ။'}
+              </div>
             </div>
-            <div className="bg-stone-900 p-3.5 rounded-xl border border-stone-800 leading-relaxed text-stone-200 whitespace-pre-wrap">
-              {record.yatraInstructions || 'ယတြာ ညွှန်ကြားချက် မထည့်သွင်းရသေးပါ။'}
-            </div>
-          </div>
+          )}
 
           {/* Amulets Purchased POS Items */}
           {record.amulets && record.amulets.length > 0 && (
@@ -211,10 +213,10 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
                 <span>{serviceName}:</span>
                 <span className="font-mono text-stone-200">{formatMMK(record.serviceFee)}</span>
               </div>
-              {record.navawinFee > 0 && (
+              {((record.yatraFee && record.yatraFee > 0) || (record.navawinFee && record.navawinFee > 0)) && (
                 <div className="flex justify-between">
-                  <span>{navawinInfo?.label || 'နဝင်းယတြာ'}:</span>
-                  <span className="font-mono text-amber-300">{formatMMK(record.navawinFee)}</span>
+                  <span>{record.yatraName || navawinInfo?.label || 'ယတြာ'}:</span>
+                  <span className="font-mono text-amber-300">{formatMMK(record.yatraFee || record.navawinFee)}</span>
                 </div>
               )}
               {record.amuletsTotal > 0 && (

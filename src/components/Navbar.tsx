@@ -4,21 +4,32 @@ import {
   Menu, 
   PlusCircle, 
   Wallet, 
-  Lock, 
   Crown, 
   Cloud, 
-  LogOut,
-  Tag,
-  Database
+  LogOut, 
+  Database,
+  Smartphone,
+  Wifi,
+  WifiOff,
+  ShieldCheck,
+  UserCheck
 } from 'lucide-react';
-import { SuperAdminAccount } from '../utils/auth';
+import { UserAccount, UserRole } from '../utils/auth';
+import { PWAInstallButton } from './PWAInstallButton';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
-export type ActiveTab = 'consultations' | 'monthly_report' | 'royal_customers' | 'expenses' | 'amulets';
+export type ActiveTab = 
+  | 'consultations' 
+  | 'monthly_report' 
+  | 'royal_customers' 
+  | 'expenses' 
+  | 'amulets'
+  | 'users';
 
 interface NavbarProps {
   onToggleSidebar: () => void;
   activeTab: ActiveTab;
-  currentAccount: SuperAdminAccount;
+  currentAccount: UserAccount;
   onOpenVersionModal: () => void;
   onOpenCloudSyncModal?: () => void;
   onOpenDatabaseQuotaModal?: () => void;
@@ -44,129 +55,112 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   totalIncomeToday,
   todayCount,
-  cloudVersion = '1.3.1',
+  cloudVersion = '1.3.5',
   isNewVersionAvailable = false,
   storageQuotaPercentage,
 }) => {
+  const isOnline = useOnlineStatus();
+
   const getTabTitle = () => {
     switch (activeTab) {
-      case 'consultations': return 'ဗေဒင်မေးသူများ မှတ်တမ်း & POS';
+      case 'consultations': return 'ဗေဒင်မေးသူများ & POS';
       case 'monthly_report': return 'လစဉ် စာရင်းဇယား အစီရင်ခံစာ';
       case 'royal_customers': return 'ဖောက်သည်ကြီးများ (Royal VIP)';
       case 'expenses': return 'အသုံးစရိတ် စီမံခန့်ခွဲမှု';
       case 'amulets': return 'အဆောင်ပစ္စည်း ကတ်တလောက် (POS)';
-      default: return 'မြန်မာ့ရိုးရာဗေဒင်ပညာ မှတ်တမ်း';
+      case 'users': return 'အသုံးပြုသူ အကောင့်များနှင့် လုပ်ပိုင်ခွင့်များ';
+      default: return 'မြန်မာ့ရိုးရာဗေဒင်ပညာ';
+    }
+  };
+
+  const getMobileTabTitle = () => {
+    switch (activeTab) {
+      case 'consultations': return 'ဗေဒင်မှတ်တမ်း';
+      case 'monthly_report': return 'လစဉ်ရှင်းတမ်း';
+      case 'royal_customers': return 'VIP ဖောက်သည်';
+      case 'expenses': return 'အသုံးစရိတ်';
+      case 'amulets': return 'အဆောင် POS';
+      case 'users': return 'အကောင့်များ';
+      default: return 'ဗေဒင်မှတ်တမ်း';
     }
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-stone-900/95 backdrop-blur-md border-b border-amber-500/20 text-stone-100 shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between py-3 gap-3">
+    <header className="sticky top-0 z-30 bg-stone-900/95 backdrop-blur-md border-b border-amber-500/20 text-stone-100 shadow-md w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between py-2.5 sm:py-3 gap-2 w-full min-w-0">
           
-          {/* Left: Menu Trigger (Opens Sidebar Drawer) & Page Title */}
-          <div className="flex items-center gap-3">
+          {/* Left: Menu Trigger & Page Title */}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
             <button
               onClick={onToggleSidebar}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 text-amber-300 border border-amber-500/40 transition cursor-pointer shadow-sm active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition cursor-pointer shadow-sm active:scale-95 shrink-0"
               title="Side Bar ဖွင့်ရန် နှိပ်ပါ"
             >
               <Menu className="w-5 h-5 text-amber-400" />
-              <span className="text-xs font-bold hidden sm:inline">Menu</span>
+              <span className="text-xs font-bold hidden md:inline">Menu</span>
             </button>
 
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold text-amber-200">
-                  {getTabTitle()}
-                </h1>
-                <span className="hidden sm:inline-block text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Service & POS
-                </span>
-              </div>
-              <p className="text-[11px] text-stone-400 hidden sm:block">
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base lg:text-lg font-bold text-amber-200 truncate leading-tight">
+                <span className="hidden sm:inline">{getTabTitle()}</span>
+                <span className="sm:hidden">{getMobileTabTitle()}</span>
+              </h1>
+              <p className="text-[10px] sm:text-[11px] text-stone-400 hidden sm:block truncate">
                 မြန်မာ့ရိုးရာဗေဒင်ပညာ • {currentAccount.sanctuaryName}
               </p>
             </div>
           </div>
 
-          {/* Right: Cloud Version Sync, Metrics, Actions, Super Admin Badge */}
-          <div className="flex items-center gap-2">
+          {/* Right: Clean, Uncluttered Actions */}
+          <div className="flex items-center gap-2 shrink-0">
             
-            {/* Quick Metrics */}
-            <div className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-stone-850 border border-stone-800 text-xs">
+            {/* Desktop Metrics */}
+            <div className="hidden xl:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-stone-850 border border-stone-800 text-xs shrink-0">
               <div>
-                <span className="text-stone-400">ယနေ့ဧည့်သည်: </span>
+                <span className="text-stone-400">ယနေ့: </span>
                 <span className="text-amber-400 font-semibold">{todayCount} ဦး</span>
               </div>
               <div className="h-3 w-px bg-stone-700" />
               <div>
-                <span className="text-stone-400">ယနေ့ဝင်ငွေ: </span>
+                <span className="text-stone-400">ဝင်ငွေ: </span>
                 <span className="text-emerald-400 font-semibold">{totalIncomeToday.toLocaleString()} ကျပ်</span>
               </div>
             </div>
 
-            {/* Cloud Version Status Badge */}
-            <button
-              onClick={onOpenVersionModal}
-              title="Cloud Version History & Verification"
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs border transition cursor-pointer ${
-                isNewVersionAvailable
-                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 animate-pulse'
-                  : 'bg-stone-850 border-emerald-500/30 text-emerald-300 hover:bg-stone-800'
-              }`}
-            >
-              <Cloud className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="font-mono text-[11px] font-semibold">Cloud v{cloudVersion}</span>
-            </button>
-
-            {/* Cloud Real-time Multi-Device Sync Badge */}
-            {onOpenCloudSyncModal && (
+            {/* Desktop Only: PWA Install & Version Badge (Hidden on mobile to keep header clean) */}
+            <div className="hidden md:flex items-center gap-2">
+              <PWAInstallButton variant="header" />
               <button
-                onClick={onOpenCloudSyncModal}
-                title="Google Cloud Real-time Database (Multi-Device Live Sync)"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/50 transition cursor-pointer"
+                onClick={onOpenVersionModal}
+                title="Version History (နှိပ်ပါ)"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs bg-stone-850 border border-stone-700 text-emerald-300 hover:bg-stone-800 transition cursor-pointer"
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[11px] font-medium hidden sm:inline">Live Sync (Multi-User)</span>
-                <span className="text-[11px] font-medium sm:hidden">Live Sync</span>
+                <Cloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="font-mono text-[11px] font-semibold">v{cloudVersion}</span>
               </button>
-            )}
+            </div>
 
-            {/* Database Quota Badge */}
-            {onOpenDatabaseQuotaModal && (
-              <button
-                onClick={onOpenDatabaseQuotaModal}
-                title="Database Quota စစ်ဆေးရန်"
-                className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs bg-stone-850 border border-amber-500/30 text-amber-300 hover:bg-stone-800 transition cursor-pointer"
-              >
-                <Database className="w-3.5 h-3.5 text-amber-400" />
-                <span className="font-mono text-[11px] font-semibold">
-                  Quota {storageQuotaPercentage !== undefined ? `${storageQuotaPercentage}%` : '5MB'}
-                </span>
-              </button>
-            )}
-
-            {/* + New Consultation Button */}
+            {/* + New Consultation Primary Action Button */}
             <button
               onClick={onOpenNewConsultation}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs shadow transition active:scale-95 cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs sm:text-sm shadow-lg transition active:scale-95 cursor-pointer shrink-0"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">ဗေဒင်အသစ်သွင်းရန်</span>
-              <span className="sm:hidden">အသစ်သွင်း</span>
+              <PlusCircle className="w-4 h-4 shrink-0" />
+              <span>+ အသစ်</span>
             </button>
 
-            {/* Super Admin Badge & Logout */}
-            <div className="flex items-center gap-1 bg-stone-850 border border-stone-700/80 rounded-xl p-1 text-xs">
-              <div className="flex items-center gap-1.5 px-2 py-0.5 text-stone-200">
-                <Crown className="w-3.5 h-3.5 text-amber-400" />
-                <span className="font-semibold text-amber-300">{currentAccount.username}</span>
+            {/* Current Logged-in User Account Profile Pill */}
+            <div className="flex items-center gap-1.5 bg-stone-850 border border-stone-700 rounded-2xl px-2.5 py-1.5 text-xs shrink-0">
+              <span className="text-base">{currentAccount.avatarEmoji || '👤'}</span>
+              <div className="text-left hidden sm:block">
+                <span className="font-bold text-amber-300 text-xs block leading-tight">{currentAccount.name}</span>
+                <span className="text-[10px] text-stone-400 block capitalize">{currentAccount.role.replace('_', ' ')}</span>
               </div>
               <button
                 onClick={onLogout}
-                title="Super Admin ထွက်မည် (Logout)"
-                className="p-1 rounded-lg text-stone-400 hover:text-rose-400 hover:bg-stone-800 transition cursor-pointer"
+                title="အကောင့်မှ ထွက်မည် (Logout)"
+                className="p-1 rounded-lg text-stone-400 hover:text-rose-400 hover:bg-stone-800 transition cursor-pointer ml-0.5"
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>

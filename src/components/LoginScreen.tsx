@@ -7,17 +7,18 @@ import {
   ArrowRight, 
   ShieldCheck, 
   Crown, 
-  AlertCircle 
+  AlertCircle,
+  Users
 } from 'lucide-react';
-import { performLogin, SUPER_ADMIN_CREDENTIALS } from '../utils/auth';
+import { performLogin, UserAccount } from '../utils/auth';
 
 interface LoginScreenProps {
-  onLoginSuccess: () => void;
+  onLoginSuccess: (user: UserAccount) => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('Amt');
+  const [password, setPassword] = useState('Amt999');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,15 +28,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     setIsLoading(true);
 
     setTimeout(() => {
-      const success = performLogin(username, password);
-      if (success) {
+      const result = performLogin(username, password);
+      if (result.success && result.user) {
         setIsLoading(false);
-        onLoginSuccess();
+        onLoginSuccess(result.user);
       } else {
         setIsLoading(false);
-        setError('User Name သို့မဟုတ် Password မှားယွင်းနေပါသည်။');
+        setError(result.error || 'User Name သို့မဟုတ် Password မှားယွင်းနေပါသည်။');
       }
     }, 200);
+  };
+
+  const handleQuickFill = (u: string, p: string) => {
+    setUsername(u);
+    setPassword(p);
+    setError('');
   };
 
   return (
@@ -45,7 +52,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       <div className="absolute w-[500px] h-[500px] bg-amber-600/10 rounded-full blur-3xl pointer-events-none -top-24 -left-24" />
       <div className="absolute w-[500px] h-[500px] bg-amber-700/10 rounded-full blur-3xl pointer-events-none -bottom-24 -right-24" />
 
-      <div className="w-full max-w-md bg-stone-900 border border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 space-y-6">
+      <div className="w-full max-w-md bg-stone-900 border border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 space-y-5">
         
         {/* App Logo & Header */}
         <div className="text-center space-y-3">
@@ -55,17 +62,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100">
-              မြန်မာ့ရိုးရာဗေဒင်ပညာ မှတ်တမ်း
+              မြန်မာ့ရိုးရာဗေဒင်ပညာ
             </h1>
             <p className="text-xs text-amber-400/90 font-medium mt-1">
-              Super Admin စနစ်သို့ ဝင်ရောက်ခြင်း (Authentication)
+              User Account Management & POS စနစ်သို့ ဝင်ရောက်ခြင်း
             </p>
           </div>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs">
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs animate-shake">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
             <span>{error}</span>
           </div>
@@ -83,7 +90,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               placeholder="User Name ရိုက်ထည့်ပါ"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 font-medium focus:outline-none focus:border-amber-500 transition"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 font-medium focus:outline-none focus:border-amber-500 transition font-mono"
               required
             />
           </div>
@@ -98,7 +105,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               placeholder="Password ရိုက်ထည့်ပါ"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 focus:outline-none focus:border-amber-500 transition"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 focus:outline-none focus:border-amber-500 transition font-mono"
               required
             />
           </div>
@@ -109,21 +116,62 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-sm shadow-lg transition active:scale-95 cursor-pointer disabled:opacity-50 mt-2"
           >
             {isLoading ? (
-              <span>ဝင်ရောက်နေပါသည်...</span>
+              <span>စစ်ဆေးနေပါသည်...</span>
             ) : (
               <>
-                <span>Super Admin အဖြစ် ဝင်ရောက်မည်</span>
+                <span>အကောင့်သို့ ဝင်ရောက်မည်</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
         </form>
 
+        {/* Quick Fill Demo Roles */}
+        <div className="pt-3 border-t border-stone-800 text-xs space-y-2">
+          <span className="text-[11px] text-stone-400 font-semibold block text-center">
+            အမြန်စမ်းသပ် ဝင်ရောက်ရန် (Role အလိုက် နှိပ်နိုင်ပါသည်):
+          </span>
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <button
+              type="button"
+              onClick={() => handleQuickFill('Amt', 'Amt999')}
+              className="p-2 rounded-xl bg-stone-850 hover:bg-stone-800 border border-amber-500/40 text-amber-300 text-left transition cursor-pointer"
+            >
+              <div className="font-bold">👑 Super Admin</div>
+              <div className="text-[10px] text-stone-400 font-mono">Amt / Amt999</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFill('admin', 'Admin123')}
+              className="p-2 rounded-xl bg-stone-850 hover:bg-stone-800 border border-emerald-500/40 text-emerald-300 text-left transition cursor-pointer"
+            >
+              <div className="font-bold">⚡ Admin</div>
+              <div className="text-[10px] text-stone-400 font-mono">admin / Admin123</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFill('senior1', 'Senior123')}
+              className="p-2 rounded-xl bg-stone-850 hover:bg-stone-800 border border-cyan-500/40 text-cyan-300 text-left transition cursor-pointer"
+            >
+              <div className="font-bold">✨ Senior Staff</div>
+              <div className="text-[10px] text-stone-400 font-mono">senior1 / Senior123</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFill('staff1', 'Staff123')}
+              className="p-2 rounded-xl bg-stone-850 hover:bg-stone-800 border border-stone-700 text-stone-300 text-left transition cursor-pointer"
+            >
+              <div className="font-bold">📝 Staff</div>
+              <div className="text-[10px] text-stone-400 font-mono">staff1 / Staff123</div>
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* Footer System Badges */}
       <div className="mt-6 text-center text-xs text-stone-500 space-y-1">
-        <p>မြန်မာ့ရိုးရာဗေဒင်ပညာ မှတ်တမ်းနှင့် ဝန်ဆောင်မှု POS စနစ် • Cloudflare Pages Ready</p>
+        <p>မြန်မာ့ရိုးရာဗေဒင်ပညာ မှတ်တမ်းနှင့် ဝန်ဆောင်မှု POS စနစ် • Multi-Role RBAC</p>
       </div>
 
     </div>

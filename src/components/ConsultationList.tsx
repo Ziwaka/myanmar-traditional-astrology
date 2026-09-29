@@ -142,50 +142,50 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full min-w-0 overflow-hidden">
       {/* Quick Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-stone-850 p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md">
-          <p className="text-xs text-stone-400">ဗေဒင်မေးသူ စုစုပေါင်း</p>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-2xl font-bold text-amber-200">{stats.total} ဦး</span>
-            <span className="text-xs text-emerald-400">ပြီးစီး {stats.completed}</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 w-full min-w-0">
+        <div className="bg-stone-850 p-3 sm:p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md min-w-0">
+          <p className="text-[11px] sm:text-xs text-stone-400 truncate">ဗေဒင်မေးသူ စုစုပေါင်း</p>
+          <div className="flex items-baseline justify-between mt-1 min-w-0">
+            <span className="text-xl sm:text-2xl font-bold text-amber-200">{stats.total} ဦး</span>
+            <span className="text-[10px] sm:text-xs text-emerald-400">ပြီးစီး {stats.completed}</span>
           </div>
         </div>
 
-        <div className="bg-stone-850 p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md">
-          <p className="text-xs text-stone-400">နဝင်းယတြာ ယူသူ</p>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-2xl font-bold text-amber-400">{stats.navawinCount} ဦး</span>
-            <span className="text-xs text-amber-300/80">ယတြာလုပ်ဆဲ {stats.ongoingYatra}</span>
+        <div className="bg-stone-850 p-3 sm:p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md min-w-0">
+          <p className="text-[11px] sm:text-xs text-stone-400 truncate">နဝင်းယတြာ ယူသူ</p>
+          <div className="flex items-baseline justify-between mt-1 min-w-0">
+            <span className="text-xl sm:text-2xl font-bold text-amber-400">{stats.navawinCount} ဦး</span>
+            <span className="text-[10px] sm:text-xs text-amber-300/80">ယတြာ {stats.ongoingYatra}</span>
           </div>
         </div>
 
-        <div className="bg-stone-850 p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md">
-          <p className="text-xs text-stone-400">ယတြာပြုလုပ်ဆဲ</p>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-2xl font-bold text-blue-400">{stats.ongoingYatra} ဦး</span>
-            <span className="text-xs text-stone-400">စောင့်ကြည့်ဆဲ</span>
+        <div className="bg-stone-850 p-3 sm:p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md min-w-0">
+          <p className="text-[11px] sm:text-xs text-stone-400 truncate">ယတြာပြုလုပ်ဆဲ</p>
+          <div className="flex items-baseline justify-between mt-1 min-w-0">
+            <span className="text-xl sm:text-2xl font-bold text-blue-400">{stats.ongoingYatra} ဦး</span>
+            <span className="text-[10px] sm:text-xs text-stone-400">စောင့်ကြည့်ဆဲ</span>
           </div>
         </div>
 
-        <div className="bg-stone-850 p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md">
-          <p className="text-xs text-stone-400">စာရင်းဝင် ဝင်ငွေစုစုပေါင်း</p>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-xl font-bold text-emerald-400">{stats.totalRevenue.toLocaleString()} ကျပ်</span>
+        <div className="bg-stone-850 p-3 sm:p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md min-w-0">
+          <p className="text-[11px] sm:text-xs text-stone-400 truncate">ဝင်ငွေ စုစုပေါင်း</p>
+          <div className="flex items-baseline justify-between mt-1 min-w-0">
+            <span className="text-lg sm:text-xl font-bold text-emerald-400 truncate">{stats.totalRevenue.toLocaleString()} ကျပ်</span>
           </div>
         </div>
       </div>
 
       {/* Control Bar: Search & Filters */}
-      <div className="bg-stone-850 p-4 rounded-xl border border-stone-800 flex flex-col md:flex-row items-center justify-between gap-3 shadow">
+      <div className="bg-stone-850 p-3 sm:p-4 rounded-xl border border-stone-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow w-full min-w-0">
         
         {/* Search Input */}
-        <div className="relative w-full md:w-80">
+        <div className="relative w-full md:w-72 lg:w-80 min-w-0">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
           <input
             type="text"
-            placeholder="အမည်၊ ဖုန်း၊ ID၊ မှတ်ချက်ဖြင့် ရှာရန်..."
+            placeholder="အမည်၊ ဖုန်း၊ ID ဖြင့် ရှာရန်..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-lg bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-500"
@@ -193,46 +193,46 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto text-xs pb-1 md:pb-0">
-          <span className="text-stone-400 flex items-center gap-1 font-medium pl-1">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto text-xs min-w-0">
+          <span className="text-stone-400 flex items-center gap-1 font-medium text-[11px] hidden sm:flex">
             <Filter className="w-3.5 h-3.5" /> စစ်ထုတ်ရန်:
           </span>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="bg-stone-900 text-stone-200 border border-stone-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 cursor-pointer"
+            className="flex-1 sm:flex-none bg-stone-900 text-stone-200 border border-stone-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 cursor-pointer text-xs min-w-0"
           >
-            <option value="all">အခြေအနေ အားလုံး</option>
+            <option value="all">အခြေအနေ (အားလုံး)</option>
             <option value="today">ယနေ့ ရက်ချိန်းများ</option>
-            <option value="scheduled">ရက်ချိန်းစောင့် (Scheduled)</option>
-            <option value="yatra_ongoing">ယတြာလုပ်ဆဲ (Ongoing)</option>
-            <option value="completed">ပြီးစီး (Completed)</option>
+            <option value="scheduled">ရက်ချိန်းစောင့်</option>
+            <option value="yatra_ongoing">ယတြာလုပ်ဆဲ</option>
+            <option value="completed">ပြီးစီး</option>
           </select>
 
           <select
             value={navawinFilter}
             onChange={(e) => setNavawinFilter(e.target.value as any)}
-            className="bg-stone-900 text-stone-200 border border-stone-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 cursor-pointer"
+            className="flex-1 sm:flex-none bg-stone-900 text-stone-200 border border-stone-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 cursor-pointer text-xs min-w-0"
           >
-            <option value="all">နဝင်းယတြာ (အားလုံး)</option>
-            <option value="with_navawin">နဝင်းယတြာ ပါသူများသာ</option>
-            <option value="3_times">၃ ကြိမ်စာ/အထူးနဝင်း သာ</option>
+            <option value="all">နဝင်း (အားလုံး)</option>
+            <option value="with_navawin">နဝင်းပါသူများ</option>
+            <option value="3_times">၃ ကြိမ်စာ/အထူး</option>
           </select>
 
           <button
             onClick={onOpenNewConsultation}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs shadow transition whitespace-nowrap cursor-pointer ml-auto"
+            className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs shadow transition whitespace-nowrap cursor-pointer sm:ml-auto shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>အသစ်ထည့်ရန်</span>
+            <span>အသစ်ထည့်</span>
           </button>
         </div>
       </div>
 
       {/* Main Table / Records List */}
-      <div className="bg-stone-850 rounded-xl border border-stone-800 shadow-xl overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-stone-850 rounded-xl border border-stone-800 shadow-xl overflow-hidden w-full max-w-full">
+        <div className="overflow-x-auto w-full max-w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-stone-900/90 text-stone-400 uppercase tracking-wider text-xs border-b border-stone-800">
               <tr>
