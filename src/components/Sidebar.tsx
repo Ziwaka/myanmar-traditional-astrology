@@ -19,7 +19,9 @@ import {
   ShieldCheck, 
   Building2,
   CloudCheck,
-  Cloud
+  Cloud,
+  Database,
+  HardDrive
 } from 'lucide-react';
 import { ActiveTab } from './Navbar';
 import { SuperAdminAccount } from '../utils/auth';
@@ -33,12 +35,16 @@ interface SidebarProps {
   setActiveTab: (tab: ActiveTab) => void;
   currentAccount: SuperAdminAccount;
   onOpenVersionModal: () => void;
+  onOpenCloudSyncModal?: () => void;
+  onOpenDatabaseQuotaModal: () => void;
   onOpenNewConsultation: () => void;
   onLogout: () => void;
   onClearAllData: () => void;
   todayCount: number;
   totalIncomeToday: number;
   cloudVersion?: string;
+  storageQuotaUsedFormatted?: string;
+  storageQuotaPercentage?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -48,12 +54,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveTab,
   currentAccount,
   onOpenVersionModal,
+  onOpenCloudSyncModal,
+  onOpenDatabaseQuotaModal,
   onOpenNewConsultation,
   onLogout,
   onClearAllData,
   todayCount,
   totalIncomeToday,
-  cloudVersion = '1.2.1',
+  cloudVersion = '1.3.1',
+  storageQuotaUsedFormatted,
+  storageQuotaPercentage,
 }) => {
   const navItems: { key: ActiveTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     {
@@ -247,6 +257,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span className="font-mono text-[10px] text-emerald-300 bg-emerald-950/60 border border-emerald-800 px-1.5 py-0.5 rounded">
                 v{cloudVersion}
               </span>
+            </button>
+
+            {/* Cloud Real-time Multi-Device Sync Button */}
+            {onOpenCloudSyncModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenCloudSyncModal();
+                  onClose();
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs text-emerald-300 hover:bg-emerald-950/40 border border-emerald-500/30 transition cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Cloud Database (စက်ပေါင်းစုံ Sync)</span>
+                </div>
+                <span className="font-mono text-[10px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800/80">
+                  Live
+                </span>
+              </button>
+            )}
+
+            {/* Database Quota Button */}
+            <button
+              type="button"
+              onClick={() => {
+                onOpenDatabaseQuotaModal();
+                onClose();
+              }}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs text-stone-300 hover:bg-stone-850 border border-stone-800 transition cursor-pointer group"
+            >
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-amber-400" />
+                <span>Database Quota</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                <span className="text-amber-300 bg-amber-950/60 border border-amber-800 px-1.5 py-0.5 rounded">
+                  {storageQuotaPercentage !== undefined ? `${storageQuotaPercentage}%` : '5 MB'}
+                </span>
+              </div>
             </button>
 
             {/* Backup / Export */}

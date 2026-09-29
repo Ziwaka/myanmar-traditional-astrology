@@ -84,6 +84,11 @@ export interface ConsultationRecord {
   yatraInstructions: string;   // ယတြာနှင့် နဝင်းစီး ညွှန်ကြားချက်များ
   notes: string;               // အထွေထွေ မှတ်ချက်
   
+  recordedBy?: string;         // သွင်းသည့် စက်/တာဝန်ခံ (e.g. ကောင်တာ ၁, ဖုန်း ၂)
+  updatedBy?: string;          // နောက်ဆုံး ပြင်ဆင်သည့် စက်/တာဝန်ခံ
+  deviceId?: string;           // စက် ခွဲခြားသတ်မှတ်မှုကုဒ်
+  version?: number;            // Concurrency tracking version counter
+
   createdAt: string;
   updatedAt: string;
 }
@@ -114,6 +119,7 @@ export interface ExpenseRecord {
   date: string; // YYYY-MM-DD
   note?: string;
   receiptNumber?: string;
+  recordedBy?: string;
   createdAt: string;
 }
 

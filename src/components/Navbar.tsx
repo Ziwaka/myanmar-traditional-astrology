@@ -8,7 +8,8 @@ import {
   Crown, 
   Cloud, 
   LogOut,
-  Tag 
+  Tag,
+  Database
 } from 'lucide-react';
 import { SuperAdminAccount } from '../utils/auth';
 
@@ -19,6 +20,8 @@ interface NavbarProps {
   activeTab: ActiveTab;
   currentAccount: SuperAdminAccount;
   onOpenVersionModal: () => void;
+  onOpenCloudSyncModal?: () => void;
+  onOpenDatabaseQuotaModal?: () => void;
   onOpenNewConsultation: () => void;
   onOpenNewExpense: () => void;
   onLogout: () => void;
@@ -26,6 +29,7 @@ interface NavbarProps {
   todayCount: number;
   cloudVersion?: string;
   isNewVersionAvailable?: boolean;
+  storageQuotaPercentage?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,13 +37,16 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   currentAccount,
   onOpenVersionModal,
+  onOpenCloudSyncModal,
+  onOpenDatabaseQuotaModal,
   onOpenNewConsultation,
   onOpenNewExpense,
   onLogout,
   totalIncomeToday,
   todayCount,
-  cloudVersion = '1.2.1',
+  cloudVersion = '1.3.1',
   isNewVersionAvailable = false,
+  storageQuotaPercentage,
 }) => {
   const getTabTitle = () => {
     switch (activeTab) {
@@ -112,6 +119,33 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Cloud className="w-3.5 h-3.5 text-emerald-400" />
               <span className="font-mono text-[11px] font-semibold">Cloud v{cloudVersion}</span>
             </button>
+
+            {/* Cloud Real-time Multi-Device Sync Badge */}
+            {onOpenCloudSyncModal && (
+              <button
+                onClick={onOpenCloudSyncModal}
+                title="Google Cloud Real-time Database (Multi-Device Live Sync)"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/50 transition cursor-pointer"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[11px] font-medium hidden sm:inline">Live Sync (Multi-User)</span>
+                <span className="text-[11px] font-medium sm:hidden">Live Sync</span>
+              </button>
+            )}
+
+            {/* Database Quota Badge */}
+            {onOpenDatabaseQuotaModal && (
+              <button
+                onClick={onOpenDatabaseQuotaModal}
+                title="Database Quota စစ်ဆေးရန်"
+                className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs bg-stone-850 border border-amber-500/30 text-amber-300 hover:bg-stone-800 transition cursor-pointer"
+              >
+                <Database className="w-3.5 h-3.5 text-amber-400" />
+                <span className="font-mono text-[11px] font-semibold">
+                  Quota {storageQuotaPercentage !== undefined ? `${storageQuotaPercentage}%` : '5MB'}
+                </span>
+              </button>
+            )}
 
             {/* + New Consultation Button */}
             <button

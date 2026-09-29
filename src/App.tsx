@@ -41,8 +41,25 @@ import { ExpensesView } from './components/ExpensesView';
 import { AmuletsCatalogView } from './components/AmuletsCatalogView';
 import { PrintReceiptModal } from './components/PrintReceiptModal';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
+import { DatabaseQuotaModal } from './components/DatabaseQuotaModal';
+import { CloudSyncModal } from './components/CloudSyncModal';
 import { LoginScreen } from './components/LoginScreen';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { getDatabaseQuotaReport } from './utils/databaseQuota';
+import { 
+  testFirestoreConnection,
+  subscribeToConsultations, 
+  subscribeToExpenses, 
+  subscribeToAmulets, 
+  saveConsultationToCloud, 
+  deleteConsultationFromCloud, 
+  saveExpenseToCloud, 
+  deleteExpenseFromCloud, 
+  saveAmuletToCloud, 
+  deleteAmuletFromCloud,
+  seedOrMigrateLocalToCloud
+} from './utils/firebase';
+import { getDeviceId, getDeviceName } from './utils/deviceProfile';
 
 export default function App() {
   // Authentication State (Super Admin Amt)
@@ -64,6 +81,21 @@ export default function App() {
   const [isNewVersionAvailable, setIsNewVersionAvailable] = useState<boolean>(false);
   const [isCheckingCloud, setIsCheckingCloud] = useState<boolean>(false);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState<boolean>(false);
+  const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState<boolean>(false);
+  const [isDatabaseQuotaModalOpen, setIsDatabaseQuotaModalOpen] = useState<boolean>(false);
+  const [storageQuotaPercentage, setStorageQuotaPercentage] = useState<number>(0);
+  const [storageQuotaUsedFormatted, setStorageQuotaUsedFormatted] = useState<string>('0 B');
+
+  // Refresh Database Quota metrics
+  const refreshDatabaseQuota = useCallback(async () => {
+    try {
+      const q = await getDatabaseQuotaReport();
+      setStorageQuotaPercentage(q.usedPercentage);
+      setStorageQuotaUsedFormatted(q.formattedUsed);
+    } catch (e) {
+      console.warn('Could not load quota report', e);
+    }
+  }, []);
 
   // Modals state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -98,23 +130,64 @@ export default function App() {
 
   // Initialize data and setup online event listener
   useEffect(() => {
-    setConsultations(loadConsultations());
-    setExpenses(loadExpenses());
-    setAmuletsCatalog(loadAmuletsCatalog());
+    // Load offline cached data initially
+    const localC = loadConsultations();
+    const localE = loadExpenses();
+    const localA = loadAmuletsCatalog();
+    setConsultations(localC);
+    setExpenses(localE);
+    setAmuletsCatalog(localA);
 
     // Initial check on mount
     checkCloudVersion(true);
+    refreshDatabaseQuota();
+
+    // Test Firestore connection & seed if cloud is empty
+    testFirestoreConnection().then(() => {
+      seedOrMigrateLocalToCloud(localC, localE, localA);
+    }).catch(err => {
+      console.warn('Initial cloud sync check:', err);
+    });
+
+    // Real-time Firestore subscriptions for 2-user / multi-device instant sync
+    const unsubConsultations = subscribeToConsultations((cloudRecords) => {
+      if (cloudRecords && cloudRecords.length > 0) {
+        setConsultations(cloudRecords);
+        saveConsultations(cloudRecords);
+        refreshDatabaseQuota();
+      }
+    });
+
+    const unsubExpenses = subscribeToExpenses((cloudExpenses) => {
+      if (cloudExpenses && cloudExpenses.length > 0) {
+        setExpenses(cloudExpenses);
+        saveExpenses(cloudExpenses);
+        refreshDatabaseQuota();
+      }
+    });
+
+    const unsubAmulets = subscribeToAmulets((cloudAmulets) => {
+      if (cloudAmulets && cloudAmulets.length > 0) {
+        setAmuletsCatalog(cloudAmulets);
+        saveAmuletsCatalog(cloudAmulets);
+        refreshDatabaseQuota();
+      }
+    });
 
     // Whenever internet comes online, re-check Cloud version
     const handleOnline = () => {
       checkCloudVersion(true);
+      refreshDatabaseQuota();
     };
 
     window.addEventListener('online', handleOnline);
     return () => {
+      unsubConsultations();
+      unsubExpenses();
+      unsubAmulets();
       window.removeEventListener('online', handleOnline);
     };
-  }, [checkCloudVersion]);
+  }, [checkCloudVersion, refreshDatabaseQuota]);
 
   // Apply Cloud Authoritative Version Update
   const handleApplyCloudUpdate = () => {
@@ -126,21 +199,56 @@ export default function App() {
     }
   };
 
-  // Save Consultations when modified
+  // Save Consultations when modified (writes to Cloud & triggers realtime sync for all devices)
   const handleSaveConsultation = (record: ConsultationRecord) => {
-    const existingIndex = consultations.findIndex(c => c.id === record.id);
+    let finalRecord = { ...record };
+    const isNew = !editingRecord;
+
+    // Collision & Overwrite Guard:
+    // If saving a new record, but another device created this ID in the meantime:
+    if (isNew && consultations.some(c => c.id === finalRecord.id)) {
+      const freshId = generateNextConsultationId(consultations);
+      finalRecord.id = freshId;
+    }
+
+    // Multi-User Auditing & Concurrency versioning
+    const currentDevice = getDeviceName();
+    finalRecord.updatedAt = new Date().toISOString();
+    finalRecord.updatedBy = currentDevice;
+    if (!finalRecord.recordedBy) {
+      finalRecord.recordedBy = currentDevice;
+    }
+    finalRecord.deviceId = getDeviceId();
+    finalRecord.version = (finalRecord.version || 0) + 1;
+
+    const existingIndex = consultations.findIndex(c => c.id === finalRecord.id);
     let updated: ConsultationRecord[];
     if (existingIndex >= 0) {
+      // Smart Field Merge: keep existing predictions or payment if edited from another device
+      const existing = consultations[existingIndex];
+      const mergedRecord: ConsultationRecord = {
+        ...existing,
+        ...finalRecord,
+        // Ensure non-empty predictions/notes are preserved
+        predictions: finalRecord.predictions || existing.predictions,
+        yatraInstructions: finalRecord.yatraInstructions || existing.yatraInstructions,
+        notes: finalRecord.notes || existing.notes,
+      };
       updated = [...consultations];
-      updated[existingIndex] = record;
+      updated[existingIndex] = mergedRecord;
+      finalRecord = mergedRecord;
     } else {
-      updated = [record, ...consultations];
+      updated = [finalRecord, ...consultations];
     }
     setConsultations(updated);
     saveConsultations(updated);
+    refreshDatabaseQuota();
 
-    if (selectedRecord && selectedRecord.id === record.id) {
-      setSelectedRecord(record);
+    // Push to Google Cloud Firestore (deep merge)
+    saveConsultationToCloud(finalRecord).catch(e => console.warn('Cloud save error:', e));
+
+    if (selectedRecord && selectedRecord.id === finalRecord.id) {
+      setSelectedRecord(finalRecord);
     }
   };
 
@@ -149,25 +257,38 @@ export default function App() {
     const updated = consultations.filter(c => c.id !== id);
     setConsultations(updated);
     saveConsultations(updated);
+    refreshDatabaseQuota();
+
+    // Push deletion to Cloud Firestore
+    deleteConsultationFromCloud(id).catch(e => console.warn('Cloud delete error:', e));
+
     if (selectedRecord?.id === id) setSelectedRecord(null);
   };
 
   // Toggle Task Done
   const handleToggleTaskDone = (id: string) => {
+    let updatedTarget: ConsultationRecord | null = null;
     const updated = consultations.map(c => {
       if (c.id === id) {
         const nextDone = !c.taskDone;
-        return {
+        const rec = {
           ...c,
           taskDone: nextDone,
           status: nextDone ? ('completed' as const) : c.status === 'completed' ? ('scheduled' as const) : c.status,
           updatedAt: new Date().toISOString()
         };
+        updatedTarget = rec;
+        return rec;
       }
       return c;
     });
     setConsultations(updated);
     saveConsultations(updated);
+    refreshDatabaseQuota();
+
+    if (updatedTarget) {
+      saveConsultationToCloud(updatedTarget).catch(e => console.warn('Cloud update error:', e));
+    }
 
     if (selectedRecord && selectedRecord.id === id) {
       const found = updated.find(c => c.id === id);
@@ -177,9 +298,15 @@ export default function App() {
 
   // Add Expense
   const handleAddExpense = (expense: ExpenseRecord) => {
-    const updated = [expense, ...expenses];
+    const finalExpense: ExpenseRecord = {
+      ...expense,
+      recordedBy: getDeviceName(),
+    };
+    const updated = [finalExpense, ...expenses];
     setExpenses(updated);
     saveExpenses(updated);
+    refreshDatabaseQuota();
+    saveExpenseToCloud(finalExpense).catch(e => console.warn('Cloud expense save error:', e));
   };
 
   // Delete Expense
@@ -187,6 +314,8 @@ export default function App() {
     const updated = expenses.filter(e => e.id !== id);
     setExpenses(updated);
     saveExpenses(updated);
+    refreshDatabaseQuota();
+    deleteExpenseFromCloud(id).catch(e => console.warn('Cloud expense delete error:', e));
   };
 
   // Add Amulet to Catalog
@@ -194,6 +323,8 @@ export default function App() {
     const updated = [...amuletsCatalog, item];
     setAmuletsCatalog(updated);
     saveAmuletsCatalog(updated);
+    refreshDatabaseQuota();
+    saveAmuletToCloud(item).catch(e => console.warn('Cloud amulet save error:', e));
   };
 
   // Delete Amulet from Catalog
@@ -201,13 +332,26 @@ export default function App() {
     const updated = amuletsCatalog.filter(a => a.id !== id);
     setAmuletsCatalog(updated);
     saveAmuletsCatalog(updated);
+    refreshDatabaseQuota();
+    deleteAmuletFromCloud(id).catch(e => console.warn('Cloud amulet delete error:', e));
   };
 
   // Toggle Stock for Amulet
   const handleToggleStock = (id: string) => {
-    const updated = amuletsCatalog.map(a => a.id === id ? { ...a, inStock: !a.inStock } : a);
+    let targetItem: AmuletCatalogItem | null = null;
+    const updated = amuletsCatalog.map(a => {
+      if (a.id === id) {
+        const item = { ...a, inStock: !a.inStock };
+        targetItem = item;
+        return item;
+      }
+      return a;
+    });
     setAmuletsCatalog(updated);
     saveAmuletsCatalog(updated);
+    if (targetItem) {
+      saveAmuletToCloud(targetItem).catch(e => console.warn('Cloud amulet stock error:', e));
+    }
   };
 
   // Clear All Data
@@ -216,8 +360,17 @@ export default function App() {
       clearAllData();
       setConsultations([]);
       setExpenses([]);
+      refreshDatabaseQuota();
       alert('စာရင်းများ အားလုံး ရှင်းထုတ်ပြီးပါပြီ။');
     }
+  };
+
+  // Handle data restored / imported
+  const handleDataImported = () => {
+    setConsultations(loadConsultations());
+    setExpenses(loadExpenses());
+    setAmuletsCatalog(loadAmuletsCatalog());
+    refreshDatabaseQuota();
   };
 
   // Logout Super Admin
@@ -303,6 +456,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         currentAccount={currentAccount}
         onOpenVersionModal={() => setIsVersionModalOpen(true)}
+        onOpenCloudSyncModal={() => setIsCloudSyncModalOpen(true)}
+        onOpenDatabaseQuotaModal={() => setIsDatabaseQuotaModalOpen(true)}
         onOpenNewConsultation={() => {
           setEditingRecord(null);
           setIsFormOpen(true);
@@ -311,7 +466,9 @@ export default function App() {
         onClearAllData={handleClearAllData}
         todayCount={todayConsultations.length}
         totalIncomeToday={totalIncomeToday}
-        cloudVersion={cloudInfo?.version || '1.2.1'}
+        cloudVersion={cloudInfo?.version || LOCAL_APP_VERSION}
+        storageQuotaPercentage={storageQuotaPercentage}
+        storageQuotaUsedFormatted={storageQuotaUsedFormatted}
       />
 
       {/* Main Full-Width Content Container (No permanent sidebar displacement) */}
@@ -323,6 +480,8 @@ export default function App() {
           activeTab={activeTab}
           currentAccount={currentAccount}
           onOpenVersionModal={() => setIsVersionModalOpen(true)}
+          onOpenCloudSyncModal={() => setIsCloudSyncModalOpen(true)}
+          onOpenDatabaseQuotaModal={() => setIsDatabaseQuotaModalOpen(true)}
           onOpenNewConsultation={() => {
             setEditingRecord(null);
             setIsFormOpen(true);
@@ -333,8 +492,9 @@ export default function App() {
           onLogout={handleLogout}
           totalIncomeToday={totalIncomeToday}
           todayCount={todayConsultations.length}
-          cloudVersion={cloudInfo?.version || '1.2.1'}
+          cloudVersion={cloudInfo?.version || LOCAL_APP_VERSION}
           isNewVersionAvailable={isNewVersionAvailable}
+          storageQuotaPercentage={storageQuotaPercentage}
         />
 
         {/* Main Tab Views */}
@@ -448,6 +608,29 @@ export default function App() {
           onApplyCloudUpdate={handleApplyCloudUpdate}
           isCheckingCloud={isCheckingCloud}
           onCheckNow={() => checkCloudVersion(false)}
+        />
+      )}
+
+      {/* Modal 5: Database Quota & Storage Analytics */}
+      {isDatabaseQuotaModalOpen && (
+        <DatabaseQuotaModal
+          isOpen={isDatabaseQuotaModalOpen}
+          onClose={() => setIsDatabaseQuotaModalOpen(false)}
+          onDataImported={handleDataImported}
+        />
+      )}
+
+      {/* Modal 6: Google Cloud Database 2-User Sync */}
+      {isCloudSyncModalOpen && (
+        <CloudSyncModal
+          isOpen={isCloudSyncModalOpen}
+          onClose={() => setIsCloudSyncModalOpen(false)}
+          isOnline={navigator.onLine}
+          totalConsultations={consultations.length}
+          totalExpenses={expenses.length}
+          onSyncComplete={() => {
+            refreshDatabaseQuota();
+          }}
         />
       )}
 

@@ -1,0 +1,98 @@
+{
+  "entities": {
+    "ConsultationRecord": {
+      "title": "ConsultationRecord",
+      "description": "Myanmar Traditional Astrology consultation and POS order record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerName": { "type": "string" },
+        "phone": { "type": "string" },
+        "birthDayOfWeek": { "type": "string" },
+        "birthDate": { "type": "string" },
+        "age": { "type": "number" },
+        "mahabote": { "type": "string" },
+        "bookingDate": { "type": "string" },
+        "readingDateTime": { "type": "string" },
+        "serviceCategory": { "type": "string" },
+        "serviceFee": { "type": "number" },
+        "navawinType": { "type": "string" },
+        "navawinFee": { "type": "number" },
+        "amulets": { "type": "array" },
+        "amuletsTotal": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "paymentStatus": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "status": { "type": "string" },
+        "taskDone": { "type": "boolean" },
+        "predictions": { "type": "string" },
+        "yatraInstructions": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "customerName", "phone", "birthDayOfWeek", "bookingDate", "totalAmount"]
+    },
+    "ExpenseRecord": {
+      "title": "ExpenseRecord",
+      "description": "Astrology sanctuary operations and administrative expense record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "date": { "type": "string" },
+        "notes": { "type": "string" },
+        "recordedBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "amount", "category", "date"]
+    },
+    "AmuletCatalogItem": {
+      "title": "AmuletCatalogItem",
+      "description": "Consecrated amulet, yantra, or gemstones merchandise item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "inStock": { "type": "boolean" },
+        "image": { "type": "string" }
+      },
+      "required": ["id", "name", "price", "category", "inStock"]
+    },
+    "SystemInfo": {
+      "title": "SystemInfo",
+      "description": "System metadata, version synchronization, and connectivity status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "lastSyncedAt": { "type": "string" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["id"]
+    }
+  },
+  "firestore": {
+    "/consultations/{consultationId}": {
+      "schema": "ConsultationRecord",
+      "description": "Collection of astrology consultations and customer billing records"
+    },
+    "/expenses/{expenseId}": {
+      "schema": "ExpenseRecord",
+      "description": "Collection of business operating expense items"
+    },
+    "/amulets/{amuletId}": {
+      "schema": "AmuletCatalogItem",
+      "description": "Collection of amulets and sacred merchandise"
+    },
+    "/system/{systemId}": {
+      "schema": "SystemInfo",
+      "description": "System state heartbeat and sync signals"
+    }
+  }
+}

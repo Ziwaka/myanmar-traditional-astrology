@@ -250,6 +250,19 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
             </div>
           )}
 
+          {/* Multi-Device Audit Trail */}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-stone-500 bg-stone-900/40 px-3 py-2 rounded-xl border border-stone-800/60">
+            <span>
+              သွင်းသည့် စက်/တာဝန်ခံ: <strong className="text-stone-300">{record.recordedBy || 'စက် (၁)'}</strong>
+            </span>
+            {record.updatedBy && (
+              <span>
+                နောက်ဆုံးပြင်သူ: <strong className="text-emerald-400">{record.updatedBy}</strong>{' '}
+                <span className="text-stone-600 font-mono">({new Date(record.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span>
+              </span>
+            )}
+          </div>
+
           {/* Footer Status Toggle */}
           <div className="flex items-center justify-between pt-3 border-t border-stone-800">
             <button
