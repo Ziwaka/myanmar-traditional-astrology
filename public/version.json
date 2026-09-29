@@ -1,0 +1,13 @@
+{
+  "version": "1.2.1",
+  "releaseDate": "2026-09-29",
+  "title": "Cloudflare Pages & Super Admin Release",
+  "isCloudAuthoritative": true,
+  "changelog": [
+    "Online ဝင်တိုင်း Cloud ဗားရှင်းနှင့် Local ဗားရှင်း အလိုအလျောက် တိုက်စစ်ဆေးမှု စနစ် (Cloud ကို အတည်ယူခြင်း)။",
+    "Super Admin သီးသန့် အကောင့်စနစ် (User Name: Amt / Password: Amt999) ဖြင့်သာ ဝင်ရောက်နိုင်ခြင်း။",
+    "ကျန်ရှိသော User Accounts အားလုံးကို ဖျက်ပစ်ပြီး လုံခြုံရေး အဆင့်မြှင့်တင်ခြင်း။",
+    "Side Bar ကို ခေါ်မှသာ ပေါ်စေသော On-demand Drawer အဖြစ် ပြင်ဆင်ခြင်း။",
+    "GitHub Push & Cloudflare Pages Static Deployment အတွက် အပြည့်အဝ ပြင်ဆင်ပြီးစီးခြင်း။"
+  ]
+}
