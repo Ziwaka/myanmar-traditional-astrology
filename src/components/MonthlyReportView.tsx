@@ -17,7 +17,7 @@ import {
   PieChart
 } from 'lucide-react';
 import { ConsultationRecord, ExpenseRecord } from '../types';
-import { formatMMK, NAWAWIN_OPTIONS, SERVICE_CATEGORIES, EXPENSE_CATEGORIES } from '../utils/astrology';
+import { formatMMK, NAWAWIN_OPTIONS, EXPENSE_CATEGORIES } from '../utils/astrology';
 
 interface MonthlyReportViewProps {
   consultations: ConsultationRecord[];

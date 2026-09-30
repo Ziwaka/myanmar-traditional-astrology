@@ -1,4 +1,4 @@
-import { DayOfWeekBurmese, MahaboteHouse, NavawinCountType, ServiceCategory, ExpenseCategory } from '../types';
+import { DayOfWeekBurmese, MahaboteHouse, NavawinCountType, ExpenseCategory } from '../types';
 
 export const BURMESE_DAYS: { key: DayOfWeekBurmese; label: string; planet: string; number: number; animal: string }[] = [
   { key: 'တနင်္ဂနွေ', label: 'တနင်္ဂနွေ (Sunday)', planet: 'နေမင်း', number: 1, animal: 'ဂဠုန်' },
@@ -19,16 +19,6 @@ export const MAHABOTE_HOUSES: { key: MahaboteHouse; label: string; meaning: stri
   { key: 'ရာဇ', label: 'ရာဇ', meaning: 'အာဏာ၊ အုပ်ချုပ်၊ မင်းစိုးရာဇာ' },
   { key: 'ပုတိ', label: 'ပုတိ', meaning: 'ဆုတ်ယုတ်၊ ညစ်နွမ်း၊ နှောင့်နှေး' },
   { key: 'အဓိပတိ', label: 'အဓိပတိ', meaning: 'ခေါင်းဆောင်၊ ကြီးစိုး၊ အောင်မြင်' },
-];
-
-export const SERVICE_CATEGORIES: { key: ServiceCategory; label: string; defaultFee: number; desc: string }[] = [
-  { key: 'general_reading', label: 'ဗေဒင်ဟောစာတမ်း (အထွေထွေ)', defaultFee: 20000, desc: '၁ နှစ်စာ ကံကြမ္မာ အတက်အကျနှင့် သတိပြုရန်များ' },
-  { key: 'detailed_horoscope', label: 'ဇာတာဖွဲ့/လက်ခဏာစစ်', defaultFee: 35000, desc: 'မွေးဇာတာဖွဲ့စည်း၍ တသက်တာ ကံကြမ္မာ စစ်ဆေးခြင်း' },
-  { key: 'navawin_ritual', label: 'နဝင်းယတြာ အထူးကုစားမှု', defaultFee: 30000, desc: 'ဂြိုဟ်ဆိုးပြေ ပုတီးစိပ်၊ နဝင်းလှည့် ယတြာအစီအရင်' },
-  { key: 'name_naming', label: 'အမည်ပေး မင်္ဂလာ', defaultFee: 25000, desc: 'မွေးနေ့နံဓာတ်နှင့် ကိုက်ညီသော မင်္ဂလာအမည် ရွေးချယ်ပေးခြင်း' },
-  { key: 'marriage_match', label: 'အိမ်ထောင်ဖက် ဓာတ်စစ်', defaultFee: 30000, desc: 'ဇနီးမောင်နှံ ဓာတ်ဆန့်ကျင်/ဓာတ်ပြေနှင့် မင်္ဂလာရက်ရွေး' },
-  { key: 'business_prosperity', label: 'စီးပွားလာဘ်ရွှင် ယတြာ', defaultFee: 40000, desc: 'အရောင်းအဝယ် ကံပွင့်၊ လာဘ်ရွှင် အစီအရင်' },
-  { key: 'health_protection', label: 'ကျန်းမာရေး/အန္တရာယ်ကင်း', defaultFee: 25000, desc: 'ရောဂါဝေဒနာ သက်သာစေရန်နှင့် ဘေးလွတ်ကင်း ယတြာ' },
 ];
 
 export const NAWAWIN_OPTIONS: { key: NavawinCountType; label: string; count: number; defaultFee: number }[] = [
@@ -59,68 +49,48 @@ export function formatNumberEN(amount: number | undefined | null): string {
   return new Intl.NumberFormat('en-US').format(amount);
 }
 
-// Convert English numbers to Burmese numerals (e.g. 1234 -> ၁,၂၃၄)
-export function toBurmeseNumerals(n: number | string): string {
-  const burmeseDigits = ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'];
-  return String(n).replace(/[0-9]/g, (w) => burmeseDigits[+w]);
+// Convert English Date to Burmese Day of Week
+export function getBurmeseDayFromDate(dateString: string): DayOfWeekBurmese {
+  if (!dateString) return 'တနင်္လာ';
+  const date = new Date(dateString);
+  const day = date.getDay(); // 0 = Sunday, 1 = Monday, ...
+  switch (day) {
+    case 0: return 'တနင်္ဂနွေ';
+    case 1: return 'တနင်္လာ';
+    case 2: return 'အင်္ဂါ';
+    case 3: return 'ဗုဒ္ဓဟူး';
+    case 4: return 'ကြာသပတေး';
+    case 5: return 'သောကြာ';
+    case 6: return 'စနေ';
+    default: return 'တနင်္လာ';
+  }
 }
 
-// Helper to get Burmese day of week from standard date string YYYY-MM-DD
-export function getBurmeseDayFromDate(dateStr: string): DayOfWeekBurmese {
-  if (!dateStr) return 'တနင်္ဂနွေ';
-  const d = new Date(dateStr);
-  const day = d.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
-  const map: Record<number, DayOfWeekBurmese> = {
-    0: 'တနင်္ဂနွေ',
-    1: 'တနင်္လာ',
-    2: 'အင်္ဂါ',
-    3: 'ဗုဒ္ဓဟူး',
-    4: 'ကြာသပတေး',
-    5: 'သောကြာ',
-    6: 'စနေ'
-  };
-  return map[day] || 'တနင်္ဂနွေ';
-}
-
-// Helper to calculate approximate Mahabote house from Gregorian birthdate and Burmese day
-export function calculateMahabote(birthDateStr: string, dayOfWeek: DayOfWeekBurmese): MahaboteHouse {
-  if (!birthDateStr) return 'အထွန်း';
-  const d = new Date(birthDateStr);
-  const year = d.getFullYear();
-  // Myanmar Era approx: CE year - 638 (if after Tagu approx April)
-  const myanmarYear = Math.max(1, year - 638);
-  const remainder = myanmarYear % 7;
-
+// Calculate Mahabote House from Burmese Era Year and Day
+export function calculateMahabote(burmeseYear: number, dayOfWeek: DayOfWeekBurmese): MahaboteHouse {
+  const remainder = burmeseYear % 7;
   const dayNumberMap: Record<DayOfWeekBurmese, number> = {
     'တနင်္ဂနွေ': 1,
     'တနင်္လာ': 2,
     'အင်္ဂါ': 3,
     'ဗုဒ္ဓဟူး': 4,
-    'ရာဟု': 8, // treated astrologically or 4
+    'ရာဟု': 4,
     'ကြာသပတေး': 5,
     'သောကြာ': 6,
-    'စနေ': 0, // or 7
+    'စနေ': 0, // In standard mahabote, Saturday is remainder 0
   };
 
-  const dayNum = dayNumberMap[dayOfWeek] === 8 ? 4 : dayNumberMap[dayOfWeek];
-  // Standard Mahabote chart position: (Remainder offset + day) % 7
-  const houseOrder: MahaboteHouse[] = ['ဘင်္ဂ', 'အထွန်း', 'ရာဇ', 'အဓိပတိ', 'မရဏ', 'သိုက်', 'ပုတိ'];
-  const index = Math.abs((dayNum - remainder + 7) % 7);
-  return houseOrder[index] || 'အထွန်း';
-}
+  const dayNum = dayNumberMap[dayOfWeek];
+  const houseRemainder = (remainder - dayNum + 7) % 7;
 
-// Format Date to friendly localized format
-export function formatFriendlyDate(dateStr: string): string {
-  if (!dateStr) return '';
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('my-MM', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  } catch {
-    return dateStr;
+  switch (houseRemainder) {
+    case 1: return 'ဘင်္ဂ';
+    case 2: return 'မရဏ';
+    case 3: return 'အထွန်း';
+    case 4: return 'သိုက်';
+    case 5: return 'ရာဇ';
+    case 6: return 'ပုတိ';
+    case 0: return 'အဓိပတိ';
+    default: return 'အထွန်း';
   }
 }

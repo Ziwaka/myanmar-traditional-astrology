@@ -17,7 +17,7 @@ import {
   Plus
 } from 'lucide-react';
 import { ConsultationRecord, ConsultationStatus } from '../types';
-import { formatMMK, NAWAWIN_OPTIONS, SERVICE_CATEGORIES } from '../utils/astrology';
+import { formatMMK, NAWAWIN_OPTIONS } from '../utils/astrology';
 
 interface ConsultationListProps {
   records: ConsultationRecord[];
@@ -81,16 +81,15 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
     const total = records.length;
     const completed = records.filter(r => r.taskDone || r.status === 'completed').length;
     const ongoingYatra = records.filter(r => r.status === 'yatra_ongoing').length;
-    const navawinCount = records.filter(r => r.navawinType !== 'none').length;
+    const yatraCount = records.filter(r => r.yatraEnabled || r.yatraName || (r.yatraFee && r.yatraFee > 0) || r.navawinType !== 'none').length;
     const totalRevenue = records.reduce((sum, r) => sum + r.totalAmount, 0);
 
-    return { total, completed, ongoingYatra, navawinCount, totalRevenue };
+    return { total, completed, ongoingYatra, yatraCount, totalRevenue };
   }, [records]);
 
   // Helper labels
   const getServiceName = (cat: string) => {
-    const found = SERVICE_CATEGORIES.find(s => s.key === cat);
-    return found ? found.label : cat;
+    return cat || 'ဗေဒင်ဝန်ဆောင်မှု';
   };
 
   const getNavawinBadge = (type: string) => {
@@ -154,9 +153,9 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
         </div>
 
         <div className="bg-stone-850 p-3 sm:p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md min-w-0">
-          <p className="text-[11px] sm:text-xs text-stone-400 truncate">နဝင်းယတြာ ယူသူ</p>
+          <p className="text-[11px] sm:text-xs text-stone-400 truncate">ယတြာ ယူသူ (စုစုပေါင်း)</p>
           <div className="flex items-baseline justify-between mt-1 min-w-0">
-            <span className="text-xl sm:text-2xl font-bold text-amber-400">{stats.navawinCount} ဦး</span>
+            <span className="text-xl sm:text-2xl font-bold text-amber-400">{stats.yatraCount} ဦး</span>
             <span className="text-[10px] sm:text-xs text-amber-300/80">ယတြာ {stats.ongoingYatra}</span>
           </div>
         </div>
@@ -389,7 +388,15 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
 
                       {/* Actions */}
                       <td className="py-3 px-3 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => onPrintRecord(rec)}
+                            title="ပြေစာ/ဟောစာတမ်း ပရင့်ထုတ်ရန် / PDF / PNG ဒေါင်းလုဒ်ဆွဲရန်"
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/50 transition cursor-pointer font-bold text-xs shadow"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span>Print / PDF</span>
+                          </button>
                           <button
                             onClick={() => onSelectRecord(rec)}
                             title="ဟောချက်နှင့် ကိုယ်ရေးအချက်အလက် ကြည့်ရန်"
@@ -403,13 +410,6 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                             className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-blue-300 hover:text-blue-200 transition cursor-pointer"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => onPrintRecord(rec)}
-                            title="ပြေစာ/ဟောစာတမ်း ပရင့်ထုတ်ရန်"
-                            className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-emerald-300 hover:text-emerald-200 transition cursor-pointer"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => {

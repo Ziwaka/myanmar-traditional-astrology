@@ -15,21 +15,57 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.3.5';
+export const LOCAL_APP_VERSION = '1.3.8';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 // All historical versions curated in code for immediate offline/online display
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
   {
+    version: '1.3.8',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀',
+    title: 'Direct PDF, PNG & JPEG Export with Full Horoscope Dossier, Yatra, Predictions & Financial Breakdown',
+    badge: 'Latest Release',
+    changelog: [
+      'PDF၊ PNG ပုံရိပ်နှင့် JPEG ပုံစံစုံ ထုတ်ယူနိုင်ခြင်း (Multi-Format PDF/PNG/JPEG Export): Print ထုတ်သည့်အခါ ပရင်တာဖြင့်သာမက Direct PDF ဖိုင်ဒေါင်းလုဒ်၊ Viber/Telegram/Messenger တွင် ပေးပို့ရန် အထူးကြည်လင်ပြတ်သားသော PNG ပုံရိပ် နှင့် JPEG ပုံစံများဖြင့် ၁ ချက်နှိပ် ထုတ်ယူနိုင်ခြင်း။',
+      'မေးသူဇာတာ အပြည့်အစုံ ထည့်သွင်းပေးထားမှု (Client Horoscope Dossier): အမည်၊ ID၊ မွေးဖွားသည့် နေ့နံ (ဂြိုဟ်/တိရစ္ဆာန်ရုပ်)၊ မွေးသက္ကရာဇ်၊ အသက်၊ မွေးဖွားချိန်၊ မဟာဘုတ်ခွင်နှင့် ဟောကြားသည့် အချိန် အသေးစိတ်။',
+      'ယတြာအစီအရင်နှင့် ညွှန်ကြားချက်များ (Yatra Rituals & Instructions): ယတြာအမည်၊ ကုန်ကျစရိတ်/အလှူငွေ နှင့် ဆောင်ရွက်ရမည့် အသေးစိတ် ညွှန်ကြားချက်များ။',
+      'ဆရာ့ဟောကိန်း အပြည့်အစုံ (Astrological Predictions): ဆရာ့ထံမှ ပေးလိုက်သော ကံကြမ္မာဟောချက်နှင့် အကြံပြုချက်များ။',
+      'ကျသင့်ငွေစာရင်း အသေးစိတ် (Itemized Financial Breakdown): ဟောခ၊ ယတြာစရိတ်၊ အဆောင်ပစ္စည်းများ၊ စုစုပေါင်း၊ ပေးပြီးငွေ၊ ကျန်ငွေနှင့် ငွေပေးချေသည့် နည်းလမ်း အတိအကျ။'
+    ]
+  },
+  {
+    version: '1.3.7',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀',
+    title: 'Zero Presets, Memory Chips, Collision-Proof Multi-User ID & Returning Customer History Dossier',
+    changelog: [
+      'ကြိုတင်သတ်မှတ်ထားသော Preset များ အကုန်ဖျက်သိမ်းခြင်း (Zero Presets)',
+      'ထည့်ဖူးသော စာရင်းများ မှတ်သားပေးထားမှု (Memory Quick-Chips)',
+      'စက် ၂/၃ လုံး ပြိုင်တူသုံးသော်လည်း ID မထပ်နိုင်သော စနစ် (Collision-Proof Customer ID)',
+      'Customer အဟောင်း ရှာဖွေမှုနှင့် မှတ်တမ်းရာဇဝင် (Returning Customer History Dossier)',
+      'စာရင်းအချက်အလက် ခေါင်းစဉ် ပြင်ဆင်ခြင်း (Fixed Summary Stats)'
+    ]
+  },
+  {
+    version: '1.3.6',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀',
+    title: 'Forced PWA Install Prompt, Guaranteed Version Pop-up & Multi-Role User RBAC',
+    changelog: [
+      'Forced PWA Mobile App Install Prompt (PWA အက်ပ် ထည့်သွင်းရန် အမြဲတမ်း အချက်ပြစနစ်)',
+      'Guaranteed Version Changelog Pop-up (ဗားရှင်းအသစ်တိုင်း Pop-up မဖြစ်မနေ ပေါ်စေခြင်း)',
+      'Role-Based User Account Management & Permissions Matrix (အသုံးပြုသူ အကောင့်များနှင့် လုပ်ပိုင်ခွင့်များ)',
+      'Clean Header & Mobile UX (ထိပ်ပိုင်း အိုင်ကွန်များ ရှင်းလင်းကျစ်လျစ်စေခြင်း)',
+      'Purely Custom Yatra System (စိတ်ကြိုက် ယတြာ တိုက်ရိုက်ထည့်သွင်းမှု စနစ်)'
+    ]
+  },
+  {
     version: '1.3.5',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀',
     title: 'Clean Header, Pure Custom Yatra & Multi-Role User Account Management',
-    badge: 'Latest Release',
     changelog: [
-      'ထိပ်ပိုင်း အိုင်ကွန်များ ရှင်းလင်းကျစ်လျစ်စေခြင်း (Clean Header & Mobile UX): Mobile မျက်နှာပြင်တွင် ရှုပ်ထွေးနေသော Icon များကို ရှင်းလင်းလိုက်ပြီး Menu၊ ဗေဒင်ခေါင်းစဉ်၊ + အသစ် ခလုတ် နှင့် User Profile Pill သာ ထားရှိကာ အခြား အရန်ကိရိယာများကို Sidebar အတွင်းသို့ စနစ်တကျ ပြောင်းရွှေ့ပေးခြင်း။',
-      'စိတ်ကြိုက် ယတြာ တိုက်ရိုက်ထည့်သွင်းမှု စနစ် (Purely Custom Yatra System): မလိုအပ်သော အမည်သတ်မှတ်ပြီး ယတြာ Dropdown များ အားလုံးအား ဖယ်ရှားရှင်းထုတ်လိုက်ပြီး ဆရာကိုယ်တိုင် စိတ်ကြိုက် ယတြာအမည်၊ ယတြာစရိတ်/အလှူငွေ နှင့် ညွှန်ကြားချက်များကို တိုက်ရိုက် ထည့်သွင်းနိုင်သော ခလုတ်နှင့် နေရာ ပြင်ဆင်ပေးခြင်း။',
-      'အသုံးပြုသူ အကောင့်များနှင့် လုပ်ပိုင်ခွင့်များ စီမံခန့်ခွဲမှု (User Account Management & Permissions Matrix): Super Admin, Admin, Senior Staff, Staff ဟူ၍ ရာထူး (၄) မျိုး သတ်မှတ်ပေးပြီး Super Admin မှ ရာထူးအလိုက် လုပ်ပိုင်ခွင့်များ (Permissions Matrix) အား စိတ်ကြိုက် သတ်မှတ်ခွင့် ထည့်သွင်းခြင်း။'
+      'ထိပ်ပိုင်း အိုင်ကွန်များ ရှင်းလင်းကျစ်လျစ်စေခြင်း (Clean Header & Mobile UX)',
+      'စိတ်ကြိုက် ယတြာ တိုက်ရိုက်ထည့်သွင်းမှု စနစ် (Purely Custom Yatra System)',
+      'အသုံးပြုသူ အကောင့်များနှင့် လုပ်ပိုင်ခွင့်များ စီမံခန့်ခွဲမှု (User Management & Permissions Matrix)'
     ]
   },
   {
@@ -163,7 +199,7 @@ export function setLastSeenChangelogVersion(version: string): void {
   }
 }
 
-// Compare semantic versions (e.g. "1.3.5" > "1.3.4")
+// Compare semantic versions (e.g. "1.3.8" > "1.3.7")
 export function compareVersions(cloudVer: string, localVer: string): number {
   const cParts = cloudVer.split('.').map(n => parseInt(n, 10) || 0);
   const lParts = localVer.split('.').map(n => parseInt(n, 10) || 0);

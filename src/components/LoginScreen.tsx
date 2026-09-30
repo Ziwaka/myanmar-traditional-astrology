@@ -8,9 +8,14 @@ import {
   ShieldCheck, 
   Crown, 
   AlertCircle,
-  Users
+  Users,
+  Cloud,
+  History
 } from 'lucide-react';
 import { performLogin, UserAccount } from '../utils/auth';
+import { LOCAL_APP_VERSION } from '../utils/versionCheck';
+import { ForcedPWAInstallBanner } from './ForcedPWAInstallBanner';
+import { ReleaseChangelogPopUpModal } from './ReleaseChangelogPopUpModal';
 
 interface LoginScreenProps {
   onLoginSuccess: (user: UserAccount) => void;
@@ -21,6 +26,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('Amt999');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isChangelogModalOpen, setIsChangelogModalOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +57,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       {/* Background Astrological Aura */}
       <div className="absolute w-[500px] h-[500px] bg-amber-600/10 rounded-full blur-3xl pointer-events-none -top-24 -left-24" />
       <div className="absolute w-[500px] h-[500px] bg-amber-700/10 rounded-full blur-3xl pointer-events-none -bottom-24 -right-24" />
+
+      {/* Top Floating Version Badge */}
+      <div className="mb-4 z-10">
+        <button
+          onClick={() => setIsChangelogModalOpen(true)}
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold shadow-lg transition active:scale-95 cursor-pointer"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+          <span>v{LOCAL_APP_VERSION} Update အသစ် Changelog ကြည့်ရန်</span>
+        </button>
+      </div>
 
       <div className="w-full max-w-md bg-stone-900 border border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 space-y-5">
         
@@ -173,6 +190,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       <div className="mt-6 text-center text-xs text-stone-500 space-y-1">
         <p>မြန်မာ့ရိုးရာဗေဒင်ပညာ မှတ်တမ်းနှင့် ဝန်ဆောင်မှု POS စနစ် • Multi-Role RBAC</p>
       </div>
+
+      {/* Forced PWA Install Prompt Banner */}
+      <ForcedPWAInstallBanner />
+
+      {/* Changelog Modal */}
+      <ReleaseChangelogPopUpModal
+        isOpen={isChangelogModalOpen}
+        onClose={() => setIsChangelogModalOpen(false)}
+        version={LOCAL_APP_VERSION}
+      />
 
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, 
   Save, 
@@ -17,7 +17,13 @@ import {
   Flame,
   Tag,
   CheckCircle2,
-  Edit3
+  Edit3,
+  Search,
+  History,
+  ChevronDown,
+  ChevronUp,
+  UserCheck,
+  Printer
 } from 'lucide-react';
 import { 
   AmuletCatalogItem, 
@@ -25,8 +31,7 @@ import {
   DayOfWeekBurmese, 
   MahaboteHouse, 
   NavawinCountType, 
-  PurchasedAmulet, 
-  ServiceCategory 
+  PurchasedAmulet 
 } from '../types';
 import { 
   BURMESE_DAYS, 
@@ -34,26 +39,36 @@ import {
   formatMMK, 
   getBurmeseDayFromDate, 
   MAHABOTE_HOUSES, 
-  NAWAWIN_OPTIONS, 
-  SERVICE_CATEGORIES
+  NAWAWIN_OPTIONS 
 } from '../utils/astrology';
+import { 
+  loadSavedCustomServices, 
+  rememberCustomService, 
+  loadSavedCustomYatras, 
+  rememberCustomYatra,
+  searchCustomerHistoryProfiles,
+  CustomerHistoryProfile
+} from '../utils/storage';
 
 interface ConsultationFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (record: ConsultationRecord) => void;
+  onDirectPrint?: (record: ConsultationRecord) => void;
   initialData?: ConsultationRecord | null;
-  amuletsCatalog: AmuletCatalogItem[];
+  amuletsCatalog?: AmuletCatalogItem[];
   nextId: string;
+  allRecords?: ConsultationRecord[];
 }
 
 export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  onDirectPrint,
   initialData,
-  amuletsCatalog,
   nextId,
+  allRecords = [],
 }) => {
   if (!isOpen) return null;
 
@@ -76,6 +91,16 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
     };
   }, []);
 
+  // Customer History Lookup state
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [selectedHistoryProfile, setSelectedHistoryProfile] = useState<CustomerHistoryProfile | null>(null);
+  const [showHistoryDossier, setShowHistoryDossier] = useState(false);
+
+  const matchedCustomers = useMemo(() => {
+    if (!customerSearchQuery.trim() || isEditing) return [];
+    return searchCustomerHistoryProfiles(customerSearchQuery, allRecords);
+  }, [customerSearchQuery, allRecords, isEditing]);
+
   // Form states - ID
   const [id, setId] = useState(initialData?.id || nextId);
   const [isCustomizingId, setIsCustomizingId] = useState(false);
@@ -96,35 +121,34 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   const [status, setStatus] = useState<'scheduled' | 'yatra_ongoing' | 'completed' | 'cancelled'>(initialData?.status || 'completed');
   const [taskDone, setTaskDone] = useState<boolean>(initialData?.taskDone || true);
 
-  // Service Fee
-  const [serviceCategory, setServiceCategory] = useState<ServiceCategory>(initialData?.serviceCategory || 'general_reading');
-  const [serviceFee, setServiceFee] = useState<number>(initialData?.serviceFee !== undefined ? initialData.serviceFee : 20000);
+  // Custom Services with Memory
+  const [savedServices, setSavedServices] = useState(loadSavedCustomServices());
+  const [serviceName, setServiceName] = useState<string>(
+    initialData?.serviceCategory || 'ဗေဒင်ဟောစာတမ်း'
+  );
+  const [serviceFee, setServiceFee] = useState<number>(
+    initialData?.serviceFee !== undefined ? initialData.serviceFee : 20000
+  );
 
-  // Yatra System
+  // Custom Yatra with Memory
+  const [savedYatras, setSavedYatras] = useState(loadSavedCustomYatras());
   const [yatraEnabled, setYatraEnabled] = useState<boolean>(
     initialData?.yatraEnabled !== undefined 
       ? initialData.yatraEnabled 
-      : (initialData?.navawinType && initialData.navawinType !== 'none') || false
-  );
-  const [yatraType, setYatraType] = useState<string>(
-    initialData?.yatraType || 
-    (initialData?.navawinType === 'special' ? 'navawin_special' : initialData?.navawinType === '3_times' ? 'navawin_3' : 'navawin_3')
+      : !!(initialData?.yatraName || (initialData?.yatraFee && initialData.yatraFee > 0) || (initialData?.navawinType && initialData.navawinType !== 'none'))
   );
   const [customYatraName, setCustomYatraName] = useState<string>(initialData?.yatraName || '');
   const [yatraFee, setYatraFee] = useState<number>(
     initialData?.yatraFee !== undefined 
       ? initialData.yatraFee 
-      : (initialData?.navawinFee || 45000)
+      : (initialData?.navawinFee || 30000)
   );
 
-  // Amulets (POS)
+  // Amulets (Pure Custom POS - Zero Presets / Zero Dummy Data)
   const [amulets, setAmulets] = useState<PurchasedAmulet[]>(initialData?.amulets || []);
-
-  // Custom Amulet Inputs
   const [customAmuletName, setCustomAmuletName] = useState('');
   const [customAmuletPrice, setCustomAmuletPrice] = useState<number | ''>(15000);
   const [customAmuletQty, setCustomAmuletQty] = useState<number>(1);
-  const [showCustomAmuletForm, setShowCustomAmuletForm] = useState(false);
 
   // Payment
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>(initialData?.paymentStatus || 'paid');
@@ -137,75 +161,77 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   const [notes, setNotes] = useState(initialData?.notes || '');
 
   // Calculate totals
-  const amuletsTotal = amulets.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const currentYatraFee = yatraEnabled ? (Number(yatraFee) || 0) : 0;
-  const totalAmount = (Number(serviceFee) || 0) + currentYatraFee + amuletsTotal;
+  const amuletsTotal = useMemo(() => {
+    return amulets.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  }, [amulets]);
 
-  // Auto calculate birth day & mahabote when birthdate changes
-  const handleBirthDateChange = (val: string) => {
-    setBirthDate(val);
-    if (val) {
-      const calculatedDay = getBurmeseDayFromDate(val);
-      setBirthDayOfWeek(calculatedDay);
-      const calculatedMahabote = calculateMahabote(val, calculatedDay);
-      setMahabote(calculatedMahabote);
+  const totalAmount = useMemo(() => {
+    const sFee = Number(serviceFee) || 0;
+    const yFee = yatraEnabled ? (Number(yatraFee) || 0) : 0;
+    return sFee + yFee + amuletsTotal;
+  }, [serviceFee, yatraEnabled, yatraFee, amuletsTotal]);
 
-      // Estimate age
-      const bYear = new Date(val).getFullYear();
-      const currentYear = new Date().getFullYear();
-      if (bYear && currentYear >= bYear) {
-        setAge(currentYear - bYear);
+  useEffect(() => {
+    if (!initialData && paymentStatus === 'paid') {
+      setPaidAmount(totalAmount);
+    }
+  }, [totalAmount, paymentStatus, initialData]);
+
+  const handleBirthDateChange = (dateStr: string) => {
+    setBirthDate(dateStr);
+    if (dateStr) {
+      const day = getBurmeseDayFromDate(dateStr);
+      setBirthDayOfWeek(day);
+
+      const year = new Date(dateStr).getFullYear();
+      if (year) {
+        const myanmarYear = year - 638;
+        const house = calculateMahabote(myanmarYear, day);
+        setMahabote(house);
+
+        const currentYear = new Date().getFullYear();
+        setAge(currentYear - year);
       }
     }
   };
 
-  // Change Service Category and update fee default
-  const handleServiceChange = (cat: ServiceCategory) => {
-    setServiceCategory(cat);
-    const found = SERVICE_CATEGORIES.find(s => s.key === cat);
-    if (found) {
-      setServiceFee(found.defaultFee);
-    }
+  const handleSelectExistingCustomer = (profile: CustomerHistoryProfile) => {
+    setCustomerName(profile.customerName);
+    setPhone(profile.phone);
+    if (profile.gender) setGender(profile.gender);
+    if (profile.birthDayOfWeek) setBirthDayOfWeek(profile.birthDayOfWeek as DayOfWeekBurmese);
+    if (profile.birthDate) setBirthDate(profile.birthDate);
+    if (profile.birthTime) setBirthTime(profile.birthTime);
+    if (profile.age) setAge(profile.age);
+    if (profile.mahabote) setMahabote(profile.mahabote as MahaboteHouse);
+
+    setSelectedHistoryProfile(profile);
+    setShowHistoryDossier(true);
+    setCustomerSearchQuery('');
   };
 
-  // Auto-adjust paid amount if full payment selected
-  const handleSetPaidFull = () => {
-    setPaymentStatus('paid');
-    setPaidAmount(totalAmount);
+  const handleSelectSavedService = (sName: string, sFee: number) => {
+    setServiceName(sName);
+    setServiceFee(sFee);
   };
 
-  // Add amulet from preset catalog
-  const handleAddCatalogAmulet = (catalogItem: AmuletCatalogItem) => {
-    const existingIndex = amulets.findIndex(a => a.id === catalogItem.id);
-    if (existingIndex >= 0) {
-      const updated = [...amulets];
-      updated[existingIndex].quantity += 1;
-      setAmulets(updated);
-    } else {
-      setAmulets([
-        ...amulets,
-        {
-          id: catalogItem.id,
-          name: catalogItem.name,
-          category: catalogItem.category,
-          price: catalogItem.price,
-          quantity: 1,
-        }
-      ]);
-    }
+  const handleSelectSavedYatra = (yName: string, yFee: number) => {
+    setCustomYatraName(yName);
+    setYatraFee(yFee);
+    setYatraEnabled(true);
   };
 
-  // Add Custom Amulet item with custom name and price
+  // Add Custom Amulet Item
   const handleAddCustomAmulet = () => {
     if (!customAmuletName.trim()) {
-      alert('အဆောင်ပစ္စည်း အမည် ထည့်သွင်းပေးပါ။');
+      alert('အဆောင်ပစ္စည်း အမည် ရိုက်ထည့်ပေးပါ');
       return;
     }
     const priceNum = Number(customAmuletPrice) || 0;
     const qtyNum = Math.max(1, Number(customAmuletQty) || 1);
 
     const newItem: PurchasedAmulet = {
-      id: `custom-amulet-${Date.now()}`,
+      id: `amulet-${Date.now()}`,
       name: customAmuletName.trim(),
       category: 'စိတ်ကြိုက်အဆောင်',
       price: priceNum,
@@ -216,35 +242,20 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
     setCustomAmuletName('');
     setCustomAmuletPrice(15000);
     setCustomAmuletQty(1);
-    setShowCustomAmuletForm(false);
   };
 
-  // Update amulet price or quantity in cart
-  const handleUpdateAmuletItem = (index: number, updates: Partial<PurchasedAmulet>) => {
-    const updated = [...amulets];
-    updated[index] = { ...updated[index], ...updates };
-    setAmulets(updated);
-  };
-
-  // Remove amulet
   const handleRemoveAmulet = (index: number) => {
     setAmulets(amulets.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customerName.trim()) {
-      alert('ကျေးဇူးပြု၍ ဗေဒင်မေးသူအမည် ထည့်သွင်းပေးပါ။');
-      return;
-    }
-
-    // Determine final yatra name & legacy navawin mapping
+  const buildCurrentRecord = (): ConsultationRecord => {
+    const cleanServiceName = serviceName.trim() || 'ဗေဒင်ဝန်ဆောင်မှု';
     const finalYatraName = customYatraName.trim() || (yatraEnabled ? 'ယတြာ အစီအရင်' : '');
     const legacyNavawin: NavawinCountType = yatraEnabled ? '3_times' : 'none';
 
-    const record: ConsultationRecord = {
+    return {
       id: id || nextId,
-      customerName: customerName.trim(),
+      customerName: customerName.trim() || 'ဗေဒင်မေးသူ',
       phone: phone.trim() || '09-',
       gender,
       birthDayOfWeek,
@@ -254,98 +265,215 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
       mahabote,
       bookingDate,
       readingDateTime,
-      serviceCategory,
+      serviceCategory: cleanServiceName as any,
       serviceFee: Number(serviceFee) || 0,
       
-      // Yatra system
       yatraEnabled,
-      yatraType: yatraEnabled ? yatraType : undefined,
-      yatraName: yatraEnabled ? finalYatraName : undefined,
-      yatraFee: currentYatraFee,
-
-      // Legacy Navawin
+      yatraName: finalYatraName,
+      yatraFee: yatraEnabled ? (Number(yatraFee) || 0) : 0,
       navawinType: legacyNavawin,
-      navawinFee: currentYatraFee,
+      navawinFee: yatraEnabled ? (Number(yatraFee) || 0) : 0,
 
       amulets,
       amuletsTotal,
+
       totalAmount,
-      paidAmount: paymentStatus === 'paid' ? totalAmount : Number(paidAmount) || 0,
+      paidAmount: Number(paidAmount) || 0,
       paymentStatus,
       paymentMethod,
+      
       status,
-      taskDone: status === 'completed' ? true : taskDone,
-      predictions: predictions.trim(),
-      yatraInstructions: yatraInstructions.trim(),
-      notes: notes.trim(),
+      taskDone: status === 'completed',
+      predictions,
+      yatraInstructions,
+      notes,
+      
+      recordedBy: initialData?.recordedBy || 'ကောင်တာ ၁',
+      updatedBy: 'ကောင်တာ ၁',
       createdAt: initialData?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+  };
 
+  const handlePrintClick = () => {
+    const rec = buildCurrentRecord();
+    if (onDirectPrint) {
+      onDirectPrint(rec);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customerName.trim()) {
+      alert('ကျေးဇူးပြု၍ ဗေဒင်မေးသူအမည် ထည့်သွင်းပေးပါ။');
+      return;
+    }
+
+    const cleanServiceName = serviceName.trim() || 'ဗေဒင်ဝန်ဆောင်မှု';
+    const finalYatraName = customYatraName.trim() || (yatraEnabled ? 'ယတြာ အစီအရင်' : '');
+
+    rememberCustomService(cleanServiceName, Number(serviceFee) || 0);
+    if (yatraEnabled && finalYatraName) {
+      rememberCustomYatra(finalYatraName, Number(yatraFee) || 0);
+    }
+
+    const record = buildCurrentRecord();
     onSave(record);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-stone-900 border border-amber-500/30 rounded-3xl w-full max-w-4xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-stone-900 border border-amber-500/40 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] my-auto">
         
-        {/* Header with Auto-ID & Live Online/Offline Status */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-stone-800 bg-stone-950/90 shrink-0">
+        {/* Modal Header */}
+        <div className="bg-stone-850 p-4 sm:p-5 border-b border-stone-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
-              <Sparkles className="w-5 h-5" />
+            <div className="p-2 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow">
+              <Sparkles className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-sm sm:text-base font-bold text-amber-200">
-                  {isEditing ? 'ဗေဒင်မှတ်တမ်း & POS ပြင်ဆင်ရန်' : 'ဗေဒင်မေးသူ အသစ်စာရင်းသွင်းခြင်း & POS'}
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-amber-200">
+                  {isEditing ? 'ဗေဒင်မေးသူ အချက်အလက် ပြင်ဆင်ခြင်း' : 'ဗေဒင်မေးသူ အသစ်စာရင်းသွင်းခြင်း & POS'}
                 </h2>
                 
-                {/* Live Online / Offline Status Badge */}
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 border ${
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                   isOnline 
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
-                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50' 
+                    : 'bg-rose-950/80 text-rose-300 border-rose-500/50'
                 }`}>
-                  {isOnline ? (
-                    <>
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Online (Cloud Sync)</span>
-                    </>
-                  ) : (
-                    <>
-                      <WifiOff className="w-3 h-3 text-amber-400" />
-                      <span>Offline (စက်တွင်းသိမ်းမည်)</span>
-                    </>
-                  )}
+                  {isOnline ? <Wifi className="w-3 h-3 text-emerald-400" /> : <WifiOff className="w-3 h-3 text-rose-400" />}
+                  <span>{isOnline ? 'Online (Cloud Sync)' : 'Offline (စက်တွင်းသိမ်းမည်)'}</span>
                 </span>
               </div>
               <p className="text-[11px] text-stone-400">
-                မေးသူအချက်အလက်၊ စိတ်ကြိုက်ယတြာ၊ အဆောင်ဝယ်ယူမှု POS နှင့် ဟောချက်များ
+                မေးသူဇာတာ၊ စိတ်ကြိုက်ယတြာ၊ စိတ်ကြိုက်အဆောင် POS နှင့် ဟောကိန်းများ
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Direct Print / Export Button in Header */}
+            <button
+              type="button"
+              onClick={handlePrintClick}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg transition active:scale-95 cursor-pointer"
+              title="ပြေစာ/ဟောစာတမ်း ပရင့်ထုတ်ရန် သို့မဟုတ် PDF/PNG သိမ်းဆည်းရန်"
+            >
+              <Printer className="w-4 h-4" />
+              <span>🖨️ Print / PDF / PNG</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-xl text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="overflow-y-auto p-4 sm:p-6 space-y-5 text-xs sm:text-sm">
           
-          {/* Section 1: Customer Profile & Auto-Generated ID */}
+          {/* Returning Customer Quick Search Box */}
+          {!isEditing && (
+            <div className="bg-stone-850 p-3.5 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-stone-850 via-amber-950/20 to-stone-850 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <Search className="w-4 h-4 text-amber-400" />
+                  <span>🔍 Customer အဟောင်း ရှာဖွေရန် (ID၊ ဖုန်း သို့မဟုတ် အမည် ရိုက်ထည့်ပါ):</span>
+                </label>
+                {selectedHistoryProfile && (
+                  <button
+                    type="button"
+                    onClick={() => setShowHistoryDossier(!showHistoryDossier)}
+                    className="flex items-center gap-1 text-[11px] text-amber-400 hover:underline font-semibold"
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    <span>ယခင်မေးမှတ်တမ်း ({selectedHistoryProfile.totalVisits} ကြိမ်)</span>
+                    {showHistoryDossier ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  </button>
+                )}
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="ဖုန်းနံပါတ် သို့မဟုတ် အမည် သို့မဟုတ် ID ဖြင့် ရိုက်ရှာပါ..."
+                  value={customerSearchQuery}
+                  onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 placeholder-stone-500 focus:border-amber-400 text-xs sm:text-sm"
+                />
+
+                {matchedCustomers.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-stone-900 border border-amber-500/50 rounded-2xl shadow-2xl p-2 space-y-1.5 max-h-48 overflow-y-auto">
+                    {matchedCustomers.map((cust, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => handleSelectExistingCustomer(cust)}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-stone-850 hover:bg-amber-950/50 hover:border-amber-500/40 border border-stone-800 cursor-pointer transition text-xs"
+                      >
+                        <div>
+                          <span className="font-bold text-amber-200">{cust.customerName}</span>
+                          <span className="text-stone-400 ml-2 font-mono">{cust.phone}</span>
+                          <span className="text-[10px] text-amber-400/80 ml-2">({cust.birthDayOfWeek}နေ့နံ)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 text-[10px] border border-emerald-800">
+                            မေးဖူးသူ ({cust.totalVisits} ကြိမ်)
+                          </span>
+                          <span className="text-amber-400 font-bold text-xs">ရွေးချယ်မည် →</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {selectedHistoryProfile && showHistoryDossier && (
+                <div className="mt-3 p-3.5 rounded-2xl bg-stone-900 border border-amber-500/40 space-y-2.5 animate-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
+                      <UserCheck className="w-4 h-4 text-emerald-400" />
+                      <span>{selectedHistoryProfile.customerName} ၏ လွန်ခဲ့သော ဗေဒင်မှတ်တမ်း ရာဇဝင်</span>
+                    </div>
+                    <span className="text-[11px] text-stone-400">
+                      စုစုပေါင်း မေးပြီးငွေ: <strong className="text-emerald-400 font-mono">{formatMMK(selectedHistoryProfile.totalSpent)}</strong>
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    {selectedHistoryProfile.allRecords.map((hist, hIdx) => (
+                      <div key={hIdx} className="p-2.5 rounded-xl bg-stone-850 border border-stone-800 text-[11px] space-y-1">
+                        <div className="flex justify-between items-center text-stone-300">
+                          <span className="font-mono text-amber-300 font-semibold">{hist.id}</span>
+                          <span className="text-stone-400">{hist.readingDateTime?.slice(0, 10) || hist.bookingDate}</span>
+                          <span className="font-bold text-emerald-400">{formatMMK(hist.totalAmount)}</span>
+                        </div>
+                        <div className="text-stone-300">
+                          <span className="text-stone-400">ဝန်ဆောင်မှု: </span>
+                          <span>{hist.serviceCategory}</span>
+                          {hist.yatraName && (
+                            <span className="text-amber-300 ml-2">[{hist.yatraName}]</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Section 1: Customer Profile & Collision-Proof ID */}
           <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800 space-y-3.5">
-            
-            {/* Auto ID Display & Customizer */}
             <div className="bg-stone-900/90 border border-amber-500/30 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Tag className="w-4 h-4 text-amber-400" />
                 <span className="font-semibold text-amber-300">
-                  ဗေဒင်မေးသူ ID (အလိုအလျောက် ထွက်ရှိသည်):
+                  ဗေဒင်မေးသူ ID (စက်ပြိုင်တူသုံးသော်လည်း မထပ်ပါ):
                 </span>
                 <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold text-xs sm:text-sm">
                   {id}
@@ -377,69 +505,63 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                     className="flex items-center gap-1 text-[11px] text-stone-400 hover:text-amber-300 underline cursor-pointer"
                   >
                     <Edit3 className="w-3 h-3" />
-                    <span>ID ပြင်လိုပါက နှိပ်ပါ</span>
+                    <span>ID စိတ်ကြိုက်ပြင်ရန်</span>
                   </button>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-amber-400 font-semibold border-b border-stone-800 pb-2">
-              <User className="w-4 h-4" />
-              <span>၁။ ဗေဒင်မေးသူ ကိုယ်ရေးအချက်အလက်နှင့် မွေးဇာတာ</span>
-            </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-stone-400 mb-1">ဗေဒင်မေးသူ အမည် *</label>
+                <label className="block text-stone-300 font-medium mb-1">ဗေဒင်မေးသူ အမည် *</label>
                 <input
                   type="text"
-                  placeholder="ဥပမာ - ဒေါ်သန်းသန်းဆွေ"
+                  placeholder="မမေသူ (သို့) ကိုအောင်ကျော်"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500 font-medium"
+                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 font-medium focus:border-amber-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-stone-400 mb-1">ဖုန်းနံပါတ် *</label>
+                <label className="block text-stone-300 font-medium mb-1">ဖုန်းနံပါတ်</label>
                 <input
                   type="text"
                   placeholder="09-xxxxxxxxx"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500"
-                  required
+                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500 font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-stone-400 mb-1">ကျား / မ ရွေးချယ်မှု</label>
+                <label className="block text-stone-300 font-medium mb-1">ကျား/မ</label>
                 <select
                   value={gender}
                   onChange={(e) => setGender(e.target.value as any)}
                   className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500 cursor-pointer"
                 >
-                  <option value="female">မ (Female)</option>
-                  <option value="male">ကျား (Male)</option>
-                  <option value="other">အခြား (Other)</option>
+                  <option value="female">အမျိုးသမီး (Female)</option>
+                  <option value="male">အမျိုးသား (Male)</option>
+                  <option value="other">အခြား</option>
                 </select>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
               <div>
-                <label className="block text-stone-400 mb-1">မွေးနေ့ရက်စွဲ</label>
+                <label className="block text-stone-400 mb-1">မွေးသက္ကရာဇ် (ရက်စွဲ)</label>
                 <input
                   type="date"
                   value={birthDate}
                   onChange={(e) => handleBirthDateChange(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500"
+                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-stone-400 mb-1">နေ့နံ (Day of Week)</label>
+                <label className="block text-stone-400 mb-1">မွေးနေ့ (နေ့နံ)</label>
                 <select
                   value={birthDayOfWeek}
                   onChange={(e) => setBirthDayOfWeek(e.target.value as DayOfWeekBurmese)}
@@ -531,35 +653,34 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
             </div>
           </div>
 
-          {/* Section 3: Consultation Services */}
+          {/* Section 3: Purely Custom Service Name & Fee */}
           <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800 space-y-3.5">
             <div className="flex items-center justify-between border-b border-stone-800 pb-2">
               <div className="flex items-center gap-2 text-amber-400 font-semibold">
                 <Calculator className="w-4 h-4" />
-                <span>၃။ ဗေဒင်ဝန်ဆောင်မှု အမျိုးအစားနှင့် ဟောခ</span>
+                <span>၃။ ဗေဒင်ဝန်ဆောင်မှု အမည်နှင့် ဟောခ (ကိုယ်တိုင်စိတ်ကြိုက် ထည့်သွင်းခြင်း)</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-              <div className="bg-stone-900/80 p-3 rounded-xl border border-stone-800 space-y-2">
-                <label className="block text-stone-300 font-medium">ဗေဒင်ဝန်ဆောင်မှု အမျိုးအစား</label>
-                <select
-                  value={serviceCategory}
-                  onChange={(e) => handleServiceChange(e.target.value as ServiceCategory)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 focus:border-amber-500 cursor-pointer"
-                >
-                  {SERVICE_CATEGORIES.map((s) => (
-                    <option key={s.key} value={s.key}>
-                      {s.label} ({formatMMK(s.defaultFee)})
-                    </option>
-                  ))}
-                </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-stone-900/80 p-3 rounded-xl border border-stone-800 space-y-1.5">
+                <label className="block text-stone-300 font-medium text-xs">
+                  ဗေဒင်ဝန်ဆောင်မှု အမည် (ရိုက်ထည့်ပါ) *
+                </label>
+                <input
+                  type="text"
+                  placeholder="ဥပမာ - ဗေဒင်ဟောစာတမ်း၊ မဟာဘုတ်ဟောချက်၊ ဇာတာစစ်"
+                  value={serviceName}
+                  onChange={(e) => setServiceName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-stone-950 border border-amber-500/40 text-stone-100 focus:border-amber-400 font-medium"
+                  required
+                />
               </div>
 
               <div className="bg-stone-900/80 p-3 rounded-xl border border-stone-800 flex items-center justify-between">
                 <div>
-                  <span className="text-stone-300 font-medium block">ဗေဒင်ဟောခ (ကျပ်)</span>
-                  <span className="text-[10px] text-stone-500">စိတ်ကြိုက် ပြင်ဆင်နိုင်သည်</span>
+                  <span className="text-stone-300 font-medium block text-xs">ဗေဒင်ဟောခ (ကျပ်) *</span>
+                  <span className="text-[10px] text-stone-500">စိတ်ကြိုက် သတ်မှတ်ပါ</span>
                 </div>
                 <input
                   type="number"
@@ -569,17 +690,40 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                 />
               </div>
             </div>
+
+            {savedServices.length > 0 && (
+              <div className="space-y-1 pt-1">
+                <span className="text-[11px] text-stone-400 font-medium block">
+                  ယခင်ထည့်ထားသော ဝန်ဆောင်မှုများ (၁ ချက်နှိပ်ရွေးရန်):
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {savedServices.map((srv) => (
+                    <button
+                      key={srv.id}
+                      type="button"
+                      onClick={() => handleSelectSavedService(srv.name, srv.defaultFee)}
+                      className={`px-2.5 py-1 rounded-lg text-xs border transition cursor-pointer ${
+                        serviceName === srv.name
+                          ? 'bg-amber-500/30 text-amber-300 border-amber-500 font-bold'
+                          : 'bg-stone-900 hover:bg-stone-800 text-stone-300 border-stone-700'
+                      }`}
+                    >
+                      {srv.name} ({formatMMK(srv.defaultFee)})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Section 4: Purely Custom User-Defined Yatra */}
+          {/* Section 4: Purely Custom Yatra with Memory */}
           <div className="bg-stone-850 p-4 rounded-2xl border border-amber-500/30 space-y-3.5 bg-gradient-to-br from-stone-850 to-amber-950/20">
             <div className="flex items-center justify-between border-b border-stone-800 pb-2">
               <div className="flex items-center gap-2 text-amber-400 font-semibold">
                 <Flame className="w-4 h-4 text-amber-400" />
-                <span>၄။ ယတြာ ပြုလုပ်ဆောင်ရွက်မှု</span>
+                <span>၄။ ယတြာ ပြုလုပ်ဆောင်ရွက်မှု (ကိုယ်တိုင်စိတ်ကြိုက် ထည့်သွင်းခြင်း)</span>
               </div>
 
-              {/* Yatra Enable Toggle Button */}
               <label className="flex items-center gap-2 cursor-pointer bg-stone-900 px-3 py-1.5 rounded-xl border border-amber-500/40 hover:bg-stone-800 transition">
                 <input
                   type="checkbox"
@@ -596,8 +740,6 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
             {yatraEnabled ? (
               <div className="space-y-3 pt-1">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  
-                  {/* Yatra Name Direct Input */}
                   <div className="bg-stone-900/90 p-3 rounded-xl border border-stone-800 space-y-1.5">
                     <label className="block text-stone-300 font-medium text-xs">
                       ယတြာ အမည် (ရိုက်ထည့်ပါ) *
@@ -612,7 +754,6 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                     />
                   </div>
 
-                  {/* Yatra Fee Input */}
                   <div className="bg-stone-900/90 p-3 rounded-xl border border-stone-800 flex items-center justify-between">
                     <div>
                       <span className="text-stone-300 font-medium block text-xs">ယတြာ ကုန်ကျငွေ / အလှူငွေ (ကျပ်) *</span>
@@ -627,6 +768,30 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                     />
                   </div>
                 </div>
+
+                {savedYatras.length > 0 && (
+                  <div className="space-y-1 pt-1">
+                    <span className="text-[11px] text-stone-400 font-medium block">
+                      ယခင်ထည့်ထားသော ယတြာများ (၁ ချက်နှိပ်ရွေးရန်):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {savedYatras.map((yat) => (
+                        <button
+                          key={yat.id}
+                          type="button"
+                          onClick={() => handleSelectSavedYatra(yat.name, yat.defaultFee)}
+                          className={`px-2.5 py-1 rounded-lg text-xs border transition cursor-pointer ${
+                            customYatraName === yat.name
+                              ? 'bg-amber-500/30 text-amber-300 border-amber-500 font-bold'
+                              : 'bg-stone-900 hover:bg-stone-800 text-stone-300 border-stone-700'
+                          }`}
+                        >
+                          {yat.name} ({formatMMK(yat.defaultFee)})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-xs text-stone-400 italic bg-stone-900/50 p-3 rounded-xl border border-stone-800">
@@ -635,303 +800,228 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
             )}
           </div>
 
-          {/* Section 5: Amulets & Custom Price / Manual Item Entry (POS) */}
-          <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800 space-y-3.5">
+          {/* Section 5: PURE CUSTOM AMULETS POS (ZERO PRESETS / ZERO DUMMIES) */}
+          <div className="bg-stone-850 p-4 rounded-2xl border border-purple-500/30 space-y-3.5 bg-gradient-to-br from-stone-850 to-purple-950/20">
             <div className="flex items-center justify-between border-b border-stone-800 pb-2">
-              <div className="flex items-center gap-2 text-purple-400 font-semibold">
-                <ShoppingBag className="w-4 h-4" />
-                <span>၅။ အဆောင်ပစ္စည်း ဝယ်ယူမှု (POS) & စိတ်ကြိုက်ဈေးနှုန်း သတ်မှတ်ခြင်း</span>
+              <div className="flex items-center gap-2 text-purple-300 font-bold">
+                <ShoppingBag className="w-4 h-4 text-purple-400" />
+                <span>၅။ အဆောင်ပစ္စည်း ဝယ်ယူမှု (ကိုယ်တိုင်စိတ်ကြိုက် ထည့်သွင်းခြင်း)</span>
               </div>
-              <span className="text-xs text-stone-400">
-                အဆောင် စုစုပေါင်း: <strong className="text-purple-300">{formatMMK(amuletsTotal)}</strong>
+            </div>
+
+            {/* Direct Inline Custom Amulet Entry Bar */}
+            <div className="p-3.5 bg-stone-900/90 border border-purple-500/40 rounded-2xl space-y-2.5 shadow-inner">
+              <span className="text-[11px] font-bold text-stone-300 block">
+                + အဆောင်ပစ္စည်း အမည်၊ ဈေးနှုန်းနှင့် အရေအတွက် တိုက်ရိုက်ထည့်ပါ:
               </span>
-            </div>
-
-            {/* Quick Catalog Item Buttons */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs text-stone-400">ကတ်တလောက်မှ အမြန်ထည့်ရန်:</p>
-                <button
-                  type="button"
-                  onClick={() => setShowCustomAmuletForm(!showCustomAmuletForm)}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-semibold transition cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{showCustomAmuletForm ? 'မထည့်တော့ပါ' : '+ စိတ်ကြိုက် အဆောင်အသစ် ထည့်မည်'}</span>
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {amuletsCatalog.map((item) => (
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <div className="sm:col-span-2">
+                  <input
+                    type="text"
+                    placeholder="အဆောင်ပစ္စည်း အမည် ရိုက်ထည့်ပါ..."
+                    value={customAmuletName}
+                    onChange={(e) => setCustomAmuletName(e.target.value)}
+                    className="w-full px-3 py-2 bg-stone-950 border border-stone-700 focus:border-purple-400 rounded-xl text-stone-100 text-xs font-medium"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    placeholder="ဈေးနှုန်း (ကျပ်)..."
+                    value={customAmuletPrice}
+                    onChange={(e) => setCustomAmuletPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-stone-950 border border-stone-700 focus:border-purple-400 rounded-xl text-amber-300 text-xs text-right font-mono font-bold"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="အရေအတွက်"
+                    value={customAmuletQty}
+                    onChange={(e) => setCustomAmuletQty(Math.max(1, Number(e.target.value) || 1))}
+                    className="w-16 px-2 py-2 bg-stone-950 border border-stone-700 focus:border-purple-400 rounded-xl text-stone-100 text-xs text-center font-mono font-bold"
+                  />
                   <button
-                    key={item.id}
                     type="button"
-                    onClick={() => handleAddCatalogAmulet(item)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-200 text-xs transition cursor-pointer hover:border-purple-500"
+                    onClick={handleAddCustomAmulet}
+                    className="flex-1 flex items-center justify-center gap-1 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow cursor-pointer whitespace-nowrap"
                   >
-                    <Plus className="w-3 h-3 text-purple-400" />
-                    <span>{item.name}</span>
-                    <span className="text-purple-300 font-mono">({formatMMK(item.price)})</span>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>ထည့်မည်</span>
                   </button>
-                ))}
+                </div>
               </div>
             </div>
 
-            {/* Custom Amulet Form */}
-            {showCustomAmuletForm && (
-              <div className="p-3.5 rounded-2xl bg-stone-900 border border-purple-500/40 space-y-3 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-purple-300 text-xs flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                    <span>စိတ်ကြိုက် အဆောင်ပစ္စည်း နှင့် ဈေးနှုန်း အသစ်ထည့်သွင်းရန်:</span>
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] text-stone-400 mb-1">ပစ္စည်းအမည် *</label>
-                    <input
-                      type="text"
-                      placeholder="ဥပမာ - မဟူရာ လက်စွပ် အထူး"
-                      value={customAmuletName}
-                      onChange={(e) => setCustomAmuletName(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 text-xs focus:border-purple-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] text-stone-400 mb-1">စိတ်ကြိုက် ဈေးနှုန်း (ကျပ်) *</label>
-                    <input
-                      type="number"
-                      placeholder="35000"
-                      value={customAmuletPrice}
-                      onChange={(e) => setCustomAmuletPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="w-full px-3 py-1.5 rounded-xl bg-stone-950 border border-stone-700 text-purple-300 font-mono text-xs focus:border-purple-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] text-stone-400 mb-1">အရေအတွက်</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        min="1"
-                        value={customAmuletQty}
-                        onChange={(e) => setCustomAmuletQty(Math.max(1, Number(e.target.value) || 1))}
-                        className="w-20 px-2.5 py-1.5 rounded-xl bg-stone-950 border border-stone-700 text-amber-300 font-mono text-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddCustomAmulet}
-                        className="flex-1 px-3 py-1.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-stone-950 font-bold text-xs shadow transition cursor-pointer"
-                      >
-                        + ထည့်မည်
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Selected Amulets List / Cart */}
-            {amulets.length > 0 && (
-              <div className="bg-stone-900 rounded-2xl p-3.5 border border-stone-800 space-y-2">
-                <p className="text-xs text-stone-300 font-medium">ရွေးချယ်ထားသော အဆောင်ပစ္စည်းများ (ဈေးနှုန်း ပြင်နိုင်သည်):</p>
-                <div className="divide-y divide-stone-800">
-                  {amulets.map((item, idx) => (
-                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between py-2 gap-2">
-                      <div className="flex-1">
-                        <span className="font-medium text-stone-200">{item.name}</span>
-                        <span className="text-[11px] text-stone-400 ml-2">({item.category})</span>
+            {/* Selected Amulets List */}
+            {amulets.length > 0 ? (
+              <div className="space-y-2 pt-1">
+                <span className="text-[11px] font-semibold text-purple-300 block">
+                  ဝယ်ယူထားသော အဆောင်ပစ္စည်းများ ({amulets.length} မျိုး):
+                </span>
+                <div className="space-y-1.5">
+                  {amulets.map((a, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-stone-900 border border-stone-800 text-xs"
+                    >
+                      <div className="flex-1 mr-2">
+                        <span className="font-bold text-stone-200">{a.name}</span>
+                        <span className="text-stone-400 text-[11px] ml-2 font-mono">
+                          ({formatMMK(a.price)} × {a.quantity})
+                        </span>
                       </div>
 
-                      <div className="flex items-center gap-2 self-end sm:self-auto">
-                        {/* Unit price edit */}
-                        <div className="flex items-center gap-1">
-                          <span className="text-[11px] text-stone-400">နှုန်း:</span>
-                          <input
-                            type="number"
-                            value={item.price}
-                            onChange={(e) => handleUpdateAmuletItem(idx, { price: Number(e.target.value) || 0 })}
-                            className="w-24 px-2 py-1 text-right bg-stone-950 border border-stone-700 rounded-lg text-xs font-mono text-purple-300"
-                          />
-                        </div>
-
-                        {/* Qty edit */}
-                        <div className="flex items-center border border-stone-700 rounded-lg bg-stone-950">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (item.quantity <= 1) handleRemoveAmulet(idx);
-                              else handleUpdateAmuletItem(idx, { quantity: item.quantity - 1 });
-                            }}
-                            className="px-2 py-0.5 text-stone-400 hover:text-stone-100 cursor-pointer"
-                          >
-                            -
-                          </button>
-                          <span className="px-2 font-mono font-medium text-amber-300 text-xs">{item.quantity}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateAmuletItem(idx, { quantity: item.quantity + 1 })}
-                            className="px-2 py-0.5 text-stone-400 hover:text-stone-100 cursor-pointer"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        {/* Total per item */}
-                        <span className="w-24 text-right font-mono text-purple-300 font-bold text-xs">
-                          {formatMMK(item.price * item.quantity)}
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-amber-300 font-mono">
+                          {formatMMK(a.price * a.quantity)}
                         </span>
-
-                        {/* Delete button */}
                         <button
                           type="button"
                           onClick={() => handleRemoveAmulet(idx)}
-                          className="p-1 text-stone-500 hover:text-rose-400 cursor-pointer"
+                          className="p-1 text-stone-500 hover:text-rose-400 transition cursor-pointer"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
+            ) : (
+              <p className="text-xs text-stone-500 italic p-1">
+                အဆောင်ပစ္စည်း ဝယ်ယူမှု မရှိသေးပါ (ထည့်လိုပါက အပေါ်ရှိ အကွက်တွင် အမည်နှင့် ဈေးနှုန်း ရိုက်ထည့်၍ "ထည့်မည်" ကို နှိပ်ပါ)။
+              </p>
             )}
           </div>
 
-          {/* Section 6: Billing, Total & Payment */}
-          <div className="bg-stone-850 p-4 rounded-2xl border border-amber-500/30 space-y-3.5 bg-gradient-to-r from-stone-850 via-stone-850 to-amber-950/20">
+          {/* Section 6: Payment Details */}
+          <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800 space-y-3.5">
             <div className="flex items-center justify-between border-b border-stone-800 pb-2">
-              <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-                <CreditCard className="w-4 h-4" />
-                <span>၆။ စုစုပေါင်း ကျသင့်ငွေနှင့် ငွေပေးချေမှု (Billing)</span>
+              <div className="flex items-center gap-2 text-amber-400 font-semibold">
+                <CreditCard className="w-4 h-4 text-emerald-400" />
+                <span>၆။ ကျသင့်ငွေနှင့် ငွေပေးချေမှု</span>
               </div>
-              <button
-                type="button"
-                onClick={handleSetPaidFull}
-                className="text-xs px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition cursor-pointer font-semibold"
-              >
-                အပြေအကြေ ရှင်းပြီးအမှတ်အသားပြု
-              </button>
+
+              <div className="text-right">
+                <span className="text-xs text-stone-400 block">စုစုပေါင်း ကျသင့်ငွေ</span>
+                <span className="text-base sm:text-lg font-bold text-emerald-400 font-mono">
+                  {formatMMK(totalAmount)}
+                </span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
-              <div className="bg-stone-900 p-3 rounded-2xl border border-stone-800">
-                <span className="text-xs text-stone-400">စုစုပေါင်း ကျသင့်ငွေ (Total)</span>
-                <p className="text-xl font-bold text-amber-300 font-mono mt-0.5">
-                  {formatMMK(totalAmount)}
-                </p>
-                <div className="text-[10px] text-stone-500 mt-0.5">
-                  (ဗေဒင်ခ + {yatraEnabled ? 'ယတြာ' : 'ယတြာမပါ'} + အဆောင်)
-                </div>
-              </div>
-
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-stone-400 mb-1">ရှင်းပြီးငွေ (Paid Amount)</label>
-                <input
-                  type="number"
-                  value={paidAmount}
-                  onChange={(e) => setPaidAmount(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-emerald-400 font-mono font-bold text-base focus:border-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-stone-400 mb-1">ငွေရှင်း အခြေအနေ</label>
+                <label className="block text-stone-400 mb-1">ငွေပေးချေမှု အခြေအနေ</label>
                 <select
                   value={paymentStatus}
-                  onChange={(e) => setPaymentStatus(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500 cursor-pointer"
+                  onChange={(e) => {
+                    const ps = e.target.value as any;
+                    setPaymentStatus(ps);
+                    if (ps === 'paid') setPaidAmount(totalAmount);
+                    else if (ps === 'unpaid') setPaidAmount(0);
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500 cursor-pointer font-medium"
                 >
-                  <option value="paid">အပြေအကြေ ရှင်းပြီး (Paid)</option>
-                  <option value="partial">တစ်စိတ်တစ်ပိုင်း/စရန် (Partial)</option>
-                  <option value="unpaid">မရှင်းရသေး (Unpaid)</option>
+                  <option value="paid">✅ အပြည့်ရှင်းပြီး (Paid Full)</option>
+                  <option value="partial">⏳ စရန်ငွေပေးချေထား (Partial)</option>
+                  <option value="unpaid">❌ မရှင်းရသေးပါ (Unpaid)</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-stone-400 mb-1">ပေးချေသည့် နည်းလမ်း</label>
+                <label className="block text-stone-400 mb-1">ပေးချေပြီး ငွေပမာဏ (ကျပ်)</label>
+                <input
+                  type="number"
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-amber-300 font-mono font-bold focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-stone-400 mb-1">ငွေပေးချေသည့် နည်းလမ်း</label>
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500 cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500 cursor-pointer"
                 >
                   <option value="kpay">KPay (KBZPay)</option>
-                  <option value="cash">ငွေသား (Cash)</option>
-                  <option value="wave">Wave Money</option>
+                  <option value="wave">WavePay</option>
+                  <option value="cash">လက်ငင်းငွေသား (Cash)</option>
+                  <option value="ayapay">AYAPay</option>
                   <option value="cbbank">CB Pay</option>
-                  <option value="ayapay">AYA Pay</option>
                 </select>
               </div>
             </div>
           </div>
 
           {/* Section 7: Astrological Predictions & Yatra Instructions */}
-          <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800 space-y-3.5">
+          <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800 space-y-3">
             <div className="flex items-center gap-2 text-amber-400 font-semibold border-b border-stone-800 pb-2">
               <FileText className="w-4 h-4" />
-              <span>၇။ ဟောချက်များနှင့် ယတြာညွှန်ကြားချက်များ</span>
+              <span>၇။ ဗေဒင်ဟောချက်များနှင့် ယတြာညွှန်ကြားချက်များ</span>
             </div>
 
             <div>
-              <label className="block text-stone-300 font-medium mb-1">
-                ပေးလိုက်သော ဟောချက်များ / ဟောကိန်း (Predictions Given)
-              </label>
+              <label className="block text-stone-300 font-medium mb-1">ဆရာ့ဟောချက် အပြည့်အစုံ</label>
               <textarea
                 rows={3}
-                placeholder="ဥပမာ - ယခုနှစ်တွင် စီးပွားရေးလုပ်ငန်းချဲ့ထွင်မှု အလွန်ကောင်းမွန်မည်။ စပ်တူရှယ်ယာသတိပြုပါ..."
+                placeholder="ပေးလိုက်သော ကံကြမ္မာဟောချက်များနှင့် အကြံပြုချက်များကို ရေးသားပါ..."
                 value={predictions}
                 onChange={(e) => setPredictions(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500 placeholder-stone-600"
+                className="w-full px-3.5 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:border-amber-500 text-xs sm:text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-stone-300 font-medium mb-1">
-                ညွှန်ကြားလိုက်သော ယတြာနှင့် အစီအရင်များ (Yatra Ritual Instructions)
-              </label>
+              <label className="block text-stone-300 font-medium mb-1">ယတြာနှင့် အစီအရင် ညွှန်ကြားချက်များ</label>
               <textarea
-                rows={3}
-                placeholder="ဥပမာ - တနင်္လာထောင့်တွင် နို့ထမင်း ၉ ပွဲ ကပ်လှူပါ။ နဝင်း ၃ ကြိမ်စာ ဆက်တိုက် ၉ ရက်စီးရမည်..."
+                rows={2}
+                placeholder="ယတြာပြုလုပ်ရမည့် နေ့နံ၊ ပန်း၊ ဆီမီး၊ ပုတီးစိပ်ရမည့် အကြိမ်အရေအတွက် စသည်..."
                 value={yatraInstructions}
                 onChange={(e) => setYatraInstructions(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500 placeholder-stone-600"
-              />
-            </div>
-
-            <div>
-              <label className="block text-stone-300 font-medium mb-1">
-                အထွေထွေ မှတ်ချက် / သတိပြုရန် (General Notes)
-              </label>
-              <input
-                type="text"
-                placeholder="ဥပမာ - ဖောက်သည်ဟောင်း၊ နောက်တစ်ကြိမ် လာရောက်ရန် ချိန်းဆိုထား..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500 placeholder-stone-600"
+                className="w-full px-3.5 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:border-amber-500 text-xs sm:text-sm"
               />
             </div>
           </div>
 
-          {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-800 shrink-0">
+          {/* Modal Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-stone-800">
+            
+            {/* Direct Print & Export Button */}
             <button
               type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 text-xs sm:text-sm font-medium transition cursor-pointer"
+              onClick={handlePrintClick}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-lg transition active:scale-95 cursor-pointer"
             >
-              မလုပ်တော့ပါ (Cancel)
+              <Printer className="w-4 h-4" />
+              <span>🖨️ / 📄 Print & Export (PDF / PNG / ပရင့်)</span>
             </button>
-            <button
-              type="submit"
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs sm:text-sm shadow-lg transition active:scale-95 cursor-pointer"
-            >
-              <Save className="w-4 h-4" />
-              <span>{isEditing ? 'မှတ်တမ်း ပြင်ဆင်သိမ်းဆည်းမည်' : 'ဗေဒင်မှတ်တမ်း သွင်းမည်'}</span>
-            </button>
+
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-2xl bg-stone-800 hover:bg-stone-700 text-stone-300 font-semibold text-xs sm:text-sm transition cursor-pointer"
+              >
+                မလုပ်တော့ပါ (Cancel)
+              </button>
+
+              <button
+                type="submit"
+                className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs sm:text-sm shadow-lg transition active:scale-95 cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>{isEditing ? 'ပြင်ဆင်မှု သိမ်းဆည်းမည်' : 'စာရင်း အတည်ပြု သိမ်းဆည်းမည်'}</span>
+              </button>
+            </div>
           </div>
+
         </form>
+
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { ConsultationRecord } from '../types';
-import { formatMMK, NAWAWIN_OPTIONS, SERVICE_CATEGORIES, BURMESE_DAYS } from '../utils/astrology';
+import { formatMMK, NAWAWIN_OPTIONS, BURMESE_DAYS } from '../utils/astrology';
 
 interface ConsultationDetailModalProps {
   record: ConsultationRecord | null;
@@ -33,7 +33,7 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
 }) => {
   if (!record) return null;
 
-  const serviceName = SERVICE_CATEGORIES.find(s => s.key === record.serviceCategory)?.label || record.serviceCategory;
+  const serviceName = record.serviceCategory || 'ဗေဒင်ဝန်ဆောင်မှု';
   const navawinInfo = NAWAWIN_OPTIONS.find(n => n.key === record.navawinType);
   const dayInfo = BURMESE_DAYS.find(d => d.key === record.birthDayOfWeek);
 

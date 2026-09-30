@@ -46,6 +46,8 @@ import { UserManagementView } from './components/UserManagementView';
 import { PrintReceiptModal } from './components/PrintReceiptModal';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { VersionUpdateModal } from './components/VersionUpdateModal';
+import { ReleaseChangelogPopUpModal } from './components/ReleaseChangelogPopUpModal';
+import { ForcedPWAInstallBanner } from './components/ForcedPWAInstallBanner';
 import { DatabaseQuotaModal } from './components/DatabaseQuotaModal';
 import { CloudSyncModal } from './components/CloudSyncModal';
 import { LoginScreen } from './components/LoginScreen';
@@ -87,6 +89,9 @@ export default function App() {
   const [isNewVersionAvailable, setIsNewVersionAvailable] = useState<boolean>(false);
   const [isCheckingCloud, setIsCheckingCloud] = useState<boolean>(false);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState<boolean>(false);
+  const [isReleaseChangelogModalOpen, setIsReleaseChangelogModalOpen] = useState<boolean>(
+    typeof window !== 'undefined' ? localStorage.getItem('myanmar_astrology_seen_changelog_136') !== 'true' : true
+  );
   const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState<boolean>(false);
   const [isDatabaseQuotaModalOpen, setIsDatabaseQuotaModalOpen] = useState<boolean>(false);
   const [storageQuotaPercentage, setStorageQuotaPercentage] = useState<number>(0);
@@ -640,9 +645,11 @@ export default function App() {
             setEditingRecord(null);
           }}
           onSave={handleSaveConsultation}
+          onDirectPrint={(rec) => setPrintingRecord(rec)}
           initialData={editingRecord}
           amuletsCatalog={amuletsCatalog}
           nextId={generateNextConsultationId(consultations)}
+          allRecords={consultations}
         />
       )}
 
@@ -672,7 +679,22 @@ export default function App() {
         />
       )}
 
-      {/* Modal 4: Version History & Cloud Verification Pop Up */}
+      {/* Modal 4: Release Changelog Celebration Pop Up (Auto / Manual) */}
+      <ReleaseChangelogPopUpModal
+        isOpen={isReleaseChangelogModalOpen}
+        onClose={() => {
+          setIsReleaseChangelogModalOpen(false);
+          try {
+            localStorage.setItem('myanmar_astrology_seen_changelog_136', 'true');
+            setLastSeenChangelogVersion(LOCAL_APP_VERSION);
+          } catch (e) {
+            console.error(e);
+          }
+        }}
+        version={LOCAL_APP_VERSION}
+      />
+
+      {/* Modal 4.1: Version History & Cloud Verification Pop Up */}
       {isVersionModalOpen && (
         <VersionHistoryModal
           isOpen={isVersionModalOpen}
@@ -686,7 +708,7 @@ export default function App() {
         />
       )}
 
-      {/* Modal 4.1: Real-time Version Update Alert Pop Up */}
+      {/* Modal 4.2: Real-time Version Update Alert Pop Up */}
       <VersionUpdateModal
         isOpen={isUpdatePromptModalOpen}
         onClose={() => setIsUpdatePromptModalOpen(false)}
@@ -717,6 +739,9 @@ export default function App() {
           }}
         />
       )}
+
+      {/* Forced PWA Install Prompt Banner at bottom */}
+      <ForcedPWAInstallBanner />
 
       {/* PWA Offline Mode Toast Indicator */}
       <OfflineIndicator />

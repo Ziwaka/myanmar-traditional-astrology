@@ -18,7 +18,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { ConsultationRecord, CustomerSummary } from '../types';
-import { formatMMK, formatFriendlyDate, SERVICE_CATEGORIES, NAWAWIN_OPTIONS } from '../utils/astrology';
+import { formatMMK, NAWAWIN_OPTIONS } from '../utils/astrology';
 
 interface LoyalCustomersViewProps {
   consultations: ConsultationRecord[];
@@ -366,7 +366,7 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
               {/* Chronological Reading List */}
               <div className="space-y-4">
                 {selectedCustomer.records.map((rec, index) => {
-                  const serviceName = SERVICE_CATEGORIES.find(s => s.key === rec.serviceCategory)?.label || rec.serviceCategory;
+                  const serviceName = rec.serviceCategory || 'ဗေဒင်ဝန်ဆောင်မှု';
                   const navawinName = NAWAWIN_OPTIONS.find(n => n.key === rec.navawinType)?.label || rec.navawinType;
 
                   return (
