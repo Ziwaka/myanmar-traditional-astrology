@@ -17,7 +17,7 @@ import {
   Plus
 } from 'lucide-react';
 import { ConsultationRecord, ConsultationStatus } from '../types';
-import { formatMMK, NAWAWIN_OPTIONS } from '../utils/astrology';
+import { formatMMK, formatDateDDMMYYYY, NAWAWIN_OPTIONS } from '../utils/astrology';
 
 interface ConsultationListProps {
   records: ConsultationRecord[];
@@ -291,15 +291,22 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                       {/* ID & Name */}
                       <td className="py-3 px-3">
                         <div className="font-semibold text-stone-100 group-hover:text-amber-300 flex items-center gap-1.5">
-                          <span>{rec.customerName}</span>
+                          <span>{rec.customerName || 'မမေးသူ (အမည်မသိ)'}</span>
                           {rec.age && <span className="text-xs text-stone-400">({rec.age} နှစ်)</span>}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-stone-400">
-                          <span className="font-mono text-amber-400/90">{rec.id}</span>
-                          <span className="flex items-center gap-0.5">
-                            <Phone className="w-2.5 h-2.5 text-stone-500" />
-                            {rec.phone}
-                          </span>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-stone-400 mt-0.5">
+                          <span className="font-mono text-amber-400/90 font-semibold">{rec.id}</span>
+                          {rec.phone && (
+                            <span className="flex items-center gap-0.5">
+                              <Phone className="w-2.5 h-2.5 text-stone-500" />
+                              {rec.phone}
+                            </span>
+                          )}
+                          {rec.socialAccountName && (
+                            <span className="px-1.5 py-0.2 rounded bg-blue-950/80 text-blue-300 border border-blue-800/80 text-[10px] uppercase">
+                              {rec.socialPlatform || 'Social'}: {rec.socialAccountName}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -319,10 +326,10 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                       <td className="py-3 px-3 whitespace-nowrap">
                         <div className="text-stone-200 font-medium flex items-center gap-1">
                           <Clock className="w-3 h-3 text-amber-400" />
-                          <span>{formattedDateTime}</span>
+                          <span>{formatDateDDMMYYYY(rec.readingDateTime)}</span>
                         </div>
                         <div className="text-xs text-stone-500">
-                          ဘိုကင်: {rec.bookingDate}
+                          ဘိုကင်: {formatDateDDMMYYYY(rec.bookingDate)}
                         </div>
                       </td>
 

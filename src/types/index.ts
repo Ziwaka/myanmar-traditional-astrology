@@ -51,8 +51,10 @@ export interface PurchasedAmulet {
 
 export interface ConsultationRecord {
   id: string;                  // ဗေဒင်မေးသူ ID (e.g. BD-001) - Auto generated with edit option
-  customerName: string;        // အမည်
+  customerName: string;        // အမည် (Skipable / Optional)
   phone: string;               // ဖုန်းနံပါတ်
+  socialPlatform?: 'viber' | 'facebook' | 'tiktok' | 'telegram' | 'phone' | 'other'; // Social Account Dropdown
+  socialAccountName?: string;  // Social Account Name / ID
   gender?: 'male' | 'female' | 'other';
   birthDayOfWeek: DayOfWeekBurmese; // နေ့နံ
   birthDate?: string;          // မွေးသက္ကရာဇ် (YYYY-MM-DD or မြန်မာနှစ်)

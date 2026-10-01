@@ -1,21 +1,33 @@
 {
-  "version": "1.3.8",
+  "version": "1.3.9",
   "releaseDate": "2026-09-30",
-  "title": "Direct PDF, PNG & JPEG Export with Full Horoscope Dossier, Yatra, Predictions & Financial Breakdown",
+  "title": "Skipable Name, Social Media Account Fields, Shorthand Day Names & DD / MM / YYYY Date Formatting",
   "isCloudAuthoritative": true,
   "changelog": [
-    "PDF၊ PNG ပုံရိပ်နှင့် JPEG ပုံစံစုံ ထုတ်ယူနိုင်ခြင်း (Multi-Format PDF/PNG/JPEG Export): Print ထုတ်သည့်အခါ ပရင်တာဖြင့်သာမက Direct PDF ဖိုင်ဒေါင်းလုဒ်၊ Viber/Telegram/Messenger တွင် ပေးပို့ရန် အထူးကြည်လင်ပြတ်သားသော PNG ပုံရိပ် နှင့် JPEG ပုံစံများဖြင့် ၁ ချက်နှိပ် ထုတ်ယူနိုင်ခြင်း။",
-    "မေးသူဇာတာ အပြည့်အစုံ ထည့်သွင်းပေးထားမှု (Client Horoscope Dossier): အမည်၊ ID၊ မွေးဖွားသည့် နေ့နံ (ဂြိုဟ်/တိရစ္ဆာန်ရုပ်)၊ မွေးသက္ကရာဇ်၊ အသက်၊ မွေးဖွားချိန်၊ မဟာဘုတ်ခွင်နှင့် ဟောကြားသည့် အချိန် အသေးစိတ်။",
-    "ယတြာအစီအရင်နှင့် ညွှန်ကြားချက်များ (Yatra Rituals & Instructions): ယတြာအမည်၊ ကုန်ကျစရိတ်/အလှူငွေ နှင့် ဆောင်ရွက်ရမည့် အသေးစိတ် ညွှန်ကြားချက်များ။",
-    "ဆရာ့ဟောကိန်း အပြည့်အစုံ (Astrological Predictions): ဆရာ့ထံမှ ပေးလိုက်သော ကံကြမ္မာဟောချက်နှင့် အကြံပြုချက်များ။",
-    "ကျသင့်ငွေစာရင်း အသေးစိတ် (Itemized Financial Breakdown): ဟောခ၊ ယတြာစရိတ်၊ အဆောင်ပစ္စည်းများ၊ စုစုပေါင်း၊ ပေးပြီးငွေ၊ ကျန်ငွေနှင့် ငွေပေးချေသည့် နည်းလမ်း အတိအကျ။"
+    "အမည် မထည့်ဘဲ ကျော်နိုင်ခြင်း (Skipable Name Field): ဗေဒင်မေးသူအမည်ကို မထည့်ဘဲ လွတ်လပ်စွာ ကျော်သွားနိုင်ပါသည်။ မထည့်ပါက 'မမေးသူ (အမည်မသိ)' ဟု အလိုအလျောက် မှတ်သားပေးပါမည်။",
+    "Social Media အကောင့် ထည့်သွင်းရန် အကွက်များ (Social Account Fields): Viber, Facebook, TikTok, Telegram, Phone Call, Other Dropdown နှင့် ဘေးတွင် Social Account Name / ID ရိုက်ထည့်ရန် အကွက်ပါရှိခြင်း။",
+    "မွေးနံ label နှင့် ၁ နွေ၊ ၂ လာ စာသားများ (Shorthand Day Names): 'မွေးနေ့ (နေ့နံ)' အစား 'မွေးနံ' ဟု ပြောင်းလဲပြီး '၁ နွေ', '၂ လာ', '၃ ဂါ', '၄ ဟူး', '၅ တေး', '၆ ကြာ', '၇ နေ', '၈ ရာ' ဟု ပြောင်းလဲထားခြင်း။",
+    "ဟောချက်နှင့် ယတြာ ရိုက်ရန်အကွက်များ ဖြုတ်ခြင်း (Removed Section 7): စာရင်းသွင်းပုံစံမှ Section 7 (ဟောချက်များနှင့် ယတြာညွှန်ကြားချက် ရိုက်သည့် အကွက်ကြီးများ) ကို ဖြုတ်လိုက်ပါပြီ။",
+    "DD / MM / YYYY ရက်စွဲ ပြသမှုစနစ် (DD / MM / YYYY Date Formatting): စနစ်တစ်ခွင်ရှိ ရက်စွဲပြသမှုများ၊ ပရင့်ပြေစာများနှင့် ဇယားများတွင် ရက်စွဲများကို DD / MM / YYYY ပုံစံဖြင့် သပ်ရပ်စွာ ပြသပေးခြင်း။"
   ],
   "history": [
+    {
+      "version": "1.3.9",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀",
+      "title": "Skipable Name, Social Media Account Fields, Shorthand Day Names & DD / MM / YYYY Date Formatting",
+      "badge": "Latest Release",
+      "changelog": [
+        "အမည် မထည့်ဘဲ ကျော်နိုင်ခြင်း (Skipable Name Field)",
+        "Social Media အကောင့် ထည့်သွင်းရန် အကွက်များ (Social Account Fields)",
+        "မွေးနံ label နှင့် ၁ နွေ၊ ၂ လာ စာသားများ (Shorthand Day Names)",
+        "ဟောချက်နှင့် ယတြာ ရိုက်ရန်အကွက်များ ဖြုတ်ခြင်း (Removed Section 7)",
+        "DD / MM / YYYY ရက်စွဲ ပြသမှုစနစ် (DD / MM / YYYY Date Formatting)"
+      ]
+    },
     {
       "version": "1.3.8",
       "releaseDate": "၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀",
       "title": "Direct PDF, PNG & JPEG Export with Full Horoscope Dossier, Yatra, Predictions & Financial Breakdown",
-      "badge": "Latest Release",
       "changelog": [
         "PDF၊ PNG ပုံရိပ်နှင့် JPEG ပုံစံစုံ ထုတ်ယူနိုင်ခြင်း (Multi-Format Export)",
         "မေးသူဇာတာ အပြည့်အစုံ ထည့်သွင်းပေးထားမှု (Client Horoscope Dossier)",
@@ -100,29 +112,6 @@
         "Smart Field-Level Deep Merge (Zero Overwrite)",
         "Multi-Device Workstation Identity (စက်အမည် သတ်မှတ်ခြင်း & Audit Trail)",
         "Unlimited Multi-Device Scale (လူ ၂ ဦးမက စက်ပေါင်းစုံ ပြိုင်တူသုံးစွဲနိုင်ခြင်း)"
-      ]
-    },
-    {
-      "version": "1.3.0",
-      "releaseDate": "၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၂၉",
-      "title": "Google Cloud Firestore Real-time Auto-Sync",
-      "badge": "Major Cloud DB",
-      "changelog": [
-        "Google Cloud Firestore Database ဗဟိုစနစ် တည်ဆောက်ချိတ်ဆက်ခြင်း (dub-height-4wh4c)",
-        "ဖုန်းနှင့် ကွန်ပျူတာ စက် (၂) လုံးကြား Refresh လုပ်စရာမလိုဘဲ စက္ကန့်ပိုင်းအတွင်း ပေါ်လာသော Real-time Auto-Sync",
-        "Database Quota 1 GiB (~၁,၀၀၀,၀၀၀+ မှတ်တမ်း) အထိ အသုံးပြုနိုင်သော Cloud စနစ်",
-        "Navbar နှင့် Sidebar တွင် Real-time Live Sync အချက်ပြခလုတ်နှင့် Cloud Push စနစ် ထည့်သွင်းခြင်း"
-      ]
-    },
-    {
-      "version": "1.2.1",
-      "releaseDate": "၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၂၉",
-      "title": "Cloudflare Pages & Super Admin Authentication",
-      "changelog": [
-        "Super Admin သီးသန့် အကောင့်စနစ် (User Name: Amt / Password: Amt999)",
-        "ကျန်ရှိသော အကောင့်များ ဖျက်ပစ်ပြီး လုံခြုံရေး အဆင့်မြှင့်တင်ခြင်း",
-        "On-demand Drawer Sidebar ပြင်ဆင်ခြင်း",
-        "Cloudflare Pages Static Deployment အတွက် အပြည့်အဝ ပြင်ဆင်ခြင်း"
       ]
     },
     {

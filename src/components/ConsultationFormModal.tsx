@@ -10,20 +10,20 @@ import {
   User, 
   Calendar, 
   Clock, 
-  FileText, 
   CreditCard,
   Wifi,
   WifiOff,
   Flame,
   Tag,
-  CheckCircle2,
   Edit3,
   Search,
   History,
   ChevronDown,
   ChevronUp,
   UserCheck,
-  Printer
+  Printer,
+  Globe,
+  Share2
 } from 'lucide-react';
 import { 
   AmuletCatalogItem, 
@@ -37,9 +37,9 @@ import {
   BURMESE_DAYS, 
   calculateMahabote, 
   formatMMK, 
+  formatDateDDMMYYYY,
   getBurmeseDayFromDate, 
-  MAHABOTE_HOUSES, 
-  NAWAWIN_OPTIONS 
+  MAHABOTE_HOUSES
 } from '../utils/astrology';
 import { 
   loadSavedCustomServices, 
@@ -105,10 +105,19 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   const [id, setId] = useState(initialData?.id || nextId);
   const [isCustomizingId, setIsCustomizingId] = useState(false);
 
-  // Customer info
+  // Customer info - Name is SKIPABLE (optional!)
   const [customerName, setCustomerName] = useState(initialData?.customerName || '');
   const [phone, setPhone] = useState(initialData?.phone || '');
+  
+  // Social Account fields
+  const [socialPlatform, setSocialPlatform] = useState<'viber' | 'facebook' | 'tiktok' | 'telegram' | 'phone' | 'other'>(
+    initialData?.socialPlatform || 'viber'
+  );
+  const [socialAccountName, setSocialAccountName] = useState(initialData?.socialAccountName || '');
+
   const [gender, setGender] = useState<'male' | 'female' | 'other'>(initialData?.gender || 'female');
+  
+  // မွေးနံ (Shorthand: ၁ နွေ, ၂ လာ, ၃ ဂါ, ၄ ဟူး, ၅ တေး, ၆ ကြာ, ၇ နေ, ၈ ရာ)
   const [birthDayOfWeek, setBirthDayOfWeek] = useState<DayOfWeekBurmese>(initialData?.birthDayOfWeek || 'တနင်္ဂနွေ');
   const [birthDate, setBirthDate] = useState(initialData?.birthDate || '');
   const [birthTime, setBirthTime] = useState(initialData?.birthTime || '');
@@ -122,7 +131,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   const [taskDone, setTaskDone] = useState<boolean>(initialData?.taskDone || true);
 
   // Custom Services with Memory
-  const [savedServices, setSavedServices] = useState(loadSavedCustomServices());
+  const [savedServices] = useState(loadSavedCustomServices());
   const [serviceName, setServiceName] = useState<string>(
     initialData?.serviceCategory || 'ဗေဒင်ဟောစာတမ်း'
   );
@@ -131,7 +140,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   );
 
   // Custom Yatra with Memory
-  const [savedYatras, setSavedYatras] = useState(loadSavedCustomYatras());
+  const [savedYatras] = useState(loadSavedCustomYatras());
   const [yatraEnabled, setYatraEnabled] = useState<boolean>(
     initialData?.yatraEnabled !== undefined 
       ? initialData.yatraEnabled 
@@ -144,7 +153,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
       : (initialData?.navawinFee || 30000)
   );
 
-  // Amulets (Pure Custom POS - Zero Presets / Zero Dummy Data)
+  // Pure Custom Amulets POS
   const [amulets, setAmulets] = useState<PurchasedAmulet[]>(initialData?.amulets || []);
   const [customAmuletName, setCustomAmuletName] = useState('');
   const [customAmuletPrice, setCustomAmuletPrice] = useState<number | ''>(15000);
@@ -155,9 +164,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   const [paidAmount, setPaidAmount] = useState<number>(initialData?.paidAmount || 20000);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'kpay' | 'wave' | 'cbbank' | 'ayapay'>(initialData?.paymentMethod || 'kpay');
 
-  // Predictions & Notes
-  const [predictions, setPredictions] = useState(initialData?.predictions || '');
-  const [yatraInstructions, setYatraInstructions] = useState(initialData?.yatraInstructions || '');
+  // Notes
   const [notes, setNotes] = useState(initialData?.notes || '');
 
   // Calculate totals
@@ -196,8 +203,8 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   };
 
   const handleSelectExistingCustomer = (profile: CustomerHistoryProfile) => {
-    setCustomerName(profile.customerName);
-    setPhone(profile.phone);
+    setCustomerName(profile.customerName || '');
+    setPhone(profile.phone || '');
     if (profile.gender) setGender(profile.gender);
     if (profile.birthDayOfWeek) setBirthDayOfWeek(profile.birthDayOfWeek as DayOfWeekBurmese);
     if (profile.birthDate) setBirthDate(profile.birthDate);
@@ -221,7 +228,6 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
     setYatraEnabled(true);
   };
 
-  // Add Custom Amulet Item
   const handleAddCustomAmulet = () => {
     if (!customAmuletName.trim()) {
       alert('အဆောင်ပစ္စည်း အမည် ရိုက်ထည့်ပေးပါ');
@@ -255,8 +261,10 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
 
     return {
       id: id || nextId,
-      customerName: customerName.trim() || 'ဗေဒင်မေးသူ',
+      customerName: customerName.trim() || 'မမေးသူ (အမည်မသိ)',
       phone: phone.trim() || '09-',
+      socialPlatform,
+      socialAccountName: socialAccountName.trim(),
       gender,
       birthDayOfWeek,
       birthDate,
@@ -284,8 +292,8 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
       
       status,
       taskDone: status === 'completed',
-      predictions,
-      yatraInstructions,
+      predictions: initialData?.predictions || '',
+      yatraInstructions: initialData?.yatraInstructions || '',
       notes,
       
       recordedBy: initialData?.recordedBy || 'ကောင်တာ ၁',
@@ -304,10 +312,6 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim()) {
-      alert('ကျေးဇူးပြု၍ ဗေဒင်မေးသူအမည် ထည့်သွင်းပေးပါ။');
-      return;
-    }
 
     const cleanServiceName = serviceName.trim() || 'ဗေဒင်ဝန်ဆောင်မှု';
     const finalYatraName = customYatraName.trim() || (yatraEnabled ? 'ယတြာ အစီအရင်' : '');
@@ -324,10 +328,10 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-stone-900 border border-amber-500/40 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] my-auto">
+      <div className="bg-stone-900 border border-amber-500/40 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] my-auto">
         
         {/* Modal Header */}
-        <div className="bg-stone-850 p-4 sm:p-5 border-b border-stone-800 flex items-center justify-between shrink-0">
+        <div className="bg-stone-850 p-4 border-b border-stone-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow">
               <Sparkles className="w-5 h-5 text-amber-400" />
@@ -335,34 +339,28 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-amber-200">
-                  {isEditing ? 'ဗေဒင်မေးသူ အချက်အလက် ပြင်ဆင်ခြင်း' : 'ဗေဒင်မေးသူ အသစ်စာရင်းသွင်းခြင်း & POS'}
+                  {isEditing ? 'ဗေဒင်မေးသူ အချက်အလက် ပြင်ဆင်ခြင်း' : 'ဗေဒင်မေးသူ အသစ်စာရင်းသွင်းခြင်း'}
                 </h2>
-                
                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                   isOnline 
                     ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50' 
                     : 'bg-rose-950/80 text-rose-300 border-rose-500/50'
                 }`}>
                   {isOnline ? <Wifi className="w-3 h-3 text-emerald-400" /> : <WifiOff className="w-3 h-3 text-rose-400" />}
-                  <span>{isOnline ? 'Online (Cloud Sync)' : 'Offline (စက်တွင်းသိမ်းမည်)'}</span>
+                  <span>{isOnline ? 'Cloud Sync' : 'Offline'}</span>
                 </span>
               </div>
-              <p className="text-[11px] text-stone-400">
-                မေးသူဇာတာ၊ စိတ်ကြိုက်ယတြာ၊ စိတ်ကြိုက်အဆောင် POS နှင့် ဟောကိန်းများ
-              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Direct Print / Export Button in Header */}
             <button
               type="button"
               onClick={handlePrintClick}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg transition active:scale-95 cursor-pointer"
-              title="ပြေစာ/ဟောစာတမ်း ပရင့်ထုတ်ရန် သို့မဟုတ် PDF/PNG သိမ်းဆည်းရန်"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow transition active:scale-95 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>🖨️ Print / PDF / PNG</span>
+              <span>🖨️ Print / PDF</span>
             </button>
 
             <button
@@ -375,15 +373,15 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-4 sm:p-6 space-y-5 text-xs sm:text-sm">
+        <form onSubmit={handleSubmit} className="overflow-y-auto p-4 space-y-4 text-xs sm:text-sm">
           
           {/* Returning Customer Quick Search Box */}
           {!isEditing && (
-            <div className="bg-stone-850 p-3.5 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-stone-850 via-amber-950/20 to-stone-850 space-y-2">
+            <div className="bg-stone-850 p-3 rounded-2xl border border-amber-500/30 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
                   <Search className="w-4 h-4 text-amber-400" />
-                  <span>🔍 Customer အဟောင်း ရှာဖွေရန် (ID၊ ဖုန်း သို့မဟုတ် အမည် ရိုက်ထည့်ပါ):</span>
+                  <span>🔍 Customer အဟောင်း ရှာဖွေရန် (ID၊ ဖုန်း သို့မဟုတ် အမည်):</span>
                 </label>
                 {selectedHistoryProfile && (
                   <button
@@ -401,10 +399,10 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="ဖုန်းနံပါတ် သို့မဟုတ် အမည် သို့မဟုတ် ID ဖြင့် ရိုက်ရှာပါ..."
+                  placeholder="ဖုန်းနံပါတ် သို့မဟုတ် အမည် သို့မဟုတ် ID ဖြင့် ရှာရန်..."
                   value={customerSearchQuery}
                   onChange={(e) => setCustomerSearchQuery(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 placeholder-stone-500 focus:border-amber-400 text-xs sm:text-sm"
+                  className="w-full px-3 py-2 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 placeholder-stone-500 focus:border-amber-400 text-xs"
                 />
 
                 {matchedCustomers.length > 0 && (
@@ -413,12 +411,12 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                       <div
                         key={idx}
                         onClick={() => handleSelectExistingCustomer(cust)}
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-stone-850 hover:bg-amber-950/50 hover:border-amber-500/40 border border-stone-800 cursor-pointer transition text-xs"
+                        className="flex items-center justify-between p-2 rounded-xl bg-stone-850 hover:bg-amber-950/50 hover:border-amber-500/40 border border-stone-800 cursor-pointer transition text-xs"
                       >
                         <div>
-                          <span className="font-bold text-amber-200">{cust.customerName}</span>
+                          <span className="font-bold text-amber-200">{cust.customerName || 'အမည်မသိ'}</span>
                           <span className="text-stone-400 ml-2 font-mono">{cust.phone}</span>
-                          <span className="text-[10px] text-amber-400/80 ml-2">({cust.birthDayOfWeek}နေ့နံ)</span>
+                          <span className="text-[10px] text-amber-400/80 ml-2">({cust.birthDayOfWeek})</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 text-[10px] border border-emerald-800">
@@ -433,31 +431,28 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               </div>
 
               {selectedHistoryProfile && showHistoryDossier && (
-                <div className="mt-3 p-3.5 rounded-2xl bg-stone-900 border border-amber-500/40 space-y-2.5 animate-in slide-in-from-top-2">
-                  <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+                <div className="mt-2 p-3 rounded-2xl bg-stone-900 border border-amber-500/40 space-y-2">
+                  <div className="flex items-center justify-between border-b border-stone-800 pb-1.5">
                     <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
                       <UserCheck className="w-4 h-4 text-emerald-400" />
-                      <span>{selectedHistoryProfile.customerName} ၏ လွန်ခဲ့သော ဗေဒင်မှတ်တမ်း ရာဇဝင်</span>
+                      <span>{selectedHistoryProfile.customerName || 'အမည်မသိ'} ၏ လွန်ခဲ့သော ဗေဒင်မှတ်တမ်း</span>
                     </div>
                     <span className="text-[11px] text-stone-400">
-                      စုစုပေါင်း မေးပြီးငွေ: <strong className="text-emerald-400 font-mono">{formatMMK(selectedHistoryProfile.totalSpent)}</strong>
+                      မေးပြီးငွေ: <strong className="text-emerald-400 font-mono">{formatMMK(selectedHistoryProfile.totalSpent)}</strong>
                     </span>
                   </div>
 
-                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                     {selectedHistoryProfile.allRecords.map((hist, hIdx) => (
-                      <div key={hIdx} className="p-2.5 rounded-xl bg-stone-850 border border-stone-800 text-[11px] space-y-1">
+                      <div key={hIdx} className="p-2 rounded-xl bg-stone-850 border border-stone-800 text-[11px] space-y-0.5">
                         <div className="flex justify-between items-center text-stone-300">
                           <span className="font-mono text-amber-300 font-semibold">{hist.id}</span>
-                          <span className="text-stone-400">{hist.readingDateTime?.slice(0, 10) || hist.bookingDate}</span>
+                          <span className="text-stone-400">{formatDateDDMMYYYY(hist.readingDateTime || hist.bookingDate)}</span>
                           <span className="font-bold text-emerald-400">{formatMMK(hist.totalAmount)}</span>
                         </div>
                         <div className="text-stone-300">
                           <span className="text-stone-400">ဝန်ဆောင်မှု: </span>
                           <span>{hist.serviceCategory}</span>
-                          {hist.yatraName && (
-                            <span className="text-amber-300 ml-2">[{hist.yatraName}]</span>
-                          )}
                         </div>
                       </div>
                     ))}
@@ -467,13 +462,15 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
             </div>
           )}
 
-          {/* Section 1: Customer Profile & Collision-Proof ID */}
-          <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800 space-y-3.5">
-            <div className="bg-stone-900/90 border border-amber-500/30 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          {/* Section 1: Customer Profile (Name Skipable, Social Account Dropdown) */}
+          <div className="bg-stone-850 p-3.5 rounded-2xl border border-stone-800 space-y-3">
+            
+            {/* Auto ID Display & Customizer */}
+            <div className="bg-stone-900/90 border border-amber-500/30 p-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Tag className="w-4 h-4 text-amber-400" />
                 <span className="font-semibold text-amber-300">
-                  ဗေဒင်မေးသူ ID (စက်ပြိုင်တူသုံးသော်လည်း မထပ်ပါ):
+                  ဗေဒင်မေးသူ ID:
                 </span>
                 <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold text-xs sm:text-sm">
                   {id}
@@ -488,12 +485,12 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                       value={id}
                       onChange={(e) => setId(e.target.value)}
                       placeholder="ID ပြင်ရန်..."
-                      className="px-2.5 py-1 bg-stone-950 border border-amber-500/50 rounded-lg text-amber-300 font-mono text-xs focus:outline-none"
+                      className="px-2 py-0.5 bg-stone-950 border border-amber-500/50 rounded-lg text-amber-300 font-mono text-xs focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setIsCustomizingId(false)}
-                      className="px-2 py-1 rounded bg-stone-800 text-stone-300 text-[11px]"
+                      className="px-2 py-0.5 rounded bg-stone-800 text-stone-300 text-[11px]"
                     >
                       ပြီးပါပြီ
                     </button>
@@ -511,16 +508,18 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               </div>
             </div>
 
+            {/* 1. Name (SKIPABLE / Optional!) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-stone-300 font-medium mb-1">ဗေဒင်မေးသူ အမည် *</label>
+                <label className="block text-stone-300 font-medium mb-1">
+                  အမည် <span className="text-stone-500 font-normal text-[11px]">(မထည့်ဘဲ ကျော်နိုင်ပါသည် - Skipable)</span>
+                </label>
                 <input
                   type="text"
-                  placeholder="မမေသူ (သို့) ကိုအောင်ကျော်"
+                  placeholder="မမေသူ (သို့) မထည့်ပါ"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 font-medium focus:border-amber-500"
-                  required
+                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500"
                 />
               </div>
 
@@ -549,30 +548,64 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+            {/* 2. Social Account Dropdown & Account Name Input */}
+            <div className="p-2.5 bg-stone-900/70 border border-stone-800 rounded-xl space-y-1.5">
+              <label className="block text-stone-300 font-medium text-xs flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-blue-400" />
+                <span>Social Account အချက်အလက်</span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <select
+                    value={socialPlatform}
+                    onChange={(e) => setSocialPlatform(e.target.value as any)}
+                    className="w-full px-3 py-1.5 rounded-xl bg-stone-950 border border-stone-700 text-amber-300 font-medium focus:border-amber-400 cursor-pointer text-xs"
+                  >
+                    <option value="viber">📱 Viber</option>
+                    <option value="facebook">📘 Facebook</option>
+                    <option value="tiktok">🎵 TikTok</option>
+                    <option value="telegram">✈️ Telegram</option>
+                    <option value="phone">📞 Phone Call</option>
+                    <option value="other">🌐 အခြား</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <input
+                    type="text"
+                    placeholder="Social Account Name / ID ရိုက်ထည့်ပါ (ဥပမာ- Phyo Phyo / @user123)..."
+                    value={socialAccountName}
+                    onChange={(e) => setSocialAccountName(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 placeholder-stone-500 focus:border-amber-400 text-xs font-medium"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. မွေးနံ (Shorthand: ၁ နွေ, ၂ လာ, ၃ ဂါ, ၄ ဟူး, ၅ တေး, ၆ ကြာ, ၇ နေ, ၈ ရာ) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              <div>
+                <label className="block text-amber-300 font-bold mb-1">မွေးနံ *</label>
+                <select
+                  value={birthDayOfWeek}
+                  onChange={(e) => setBirthDayOfWeek(e.target.value as DayOfWeekBurmese)}
+                  className="w-full px-2.5 py-2 rounded-xl bg-stone-900 border border-amber-500/50 text-amber-300 font-bold focus:border-amber-400 cursor-pointer text-xs sm:text-sm"
+                >
+                  {BURMESE_DAYS.map((d) => (
+                    <option key={d.key} value={d.key}>
+                      {d.shorthand} ({d.planet})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-stone-400 mb-1">မွေးသက္ကရာဇ် (ရက်စွဲ)</label>
                 <input
                   type="date"
                   value={birthDate}
                   onChange={(e) => handleBirthDateChange(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500 text-xs"
+                  className="w-full px-2.5 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500 text-xs"
                 />
-              </div>
-
-              <div>
-                <label className="block text-stone-400 mb-1">မွေးနေ့ (နေ့နံ)</label>
-                <select
-                  value={birthDayOfWeek}
-                  onChange={(e) => setBirthDayOfWeek(e.target.value as DayOfWeekBurmese)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-amber-300 font-medium focus:border-amber-500 cursor-pointer"
-                >
-                  {BURMESE_DAYS.map((d) => (
-                    <option key={d.key} value={d.key}>
-                      {d.label} ({d.animal})
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <div>
@@ -582,7 +615,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                   placeholder="မနက် ၈:၁၅"
                   value={birthTime}
                   onChange={(e) => setBirthTime(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500"
+                  className="w-full px-2.5 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500 text-xs"
                 />
               </div>
 
@@ -591,7 +624,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                 <select
                   value={mahabote || 'အထွန်း'}
                   onChange={(e) => setMahabote(e.target.value as MahaboteHouse)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500 cursor-pointer"
+                  className="w-full px-2.5 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500 cursor-pointer text-xs"
                 >
                   {MAHABOTE_HOUSES.map((m) => (
                     <option key={m.key} value={m.key}>
@@ -604,15 +637,17 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
           </div>
 
           {/* Section 2: Booking, Schedule & Status */}
-          <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800 space-y-3.5">
-            <div className="flex items-center gap-2 text-amber-400 font-semibold border-b border-stone-800 pb-2">
+          <div className="bg-stone-850 p-3.5 rounded-2xl border border-stone-800 space-y-3">
+            <div className="flex items-center gap-2 text-amber-400 font-semibold border-b border-stone-800 pb-1.5">
               <Calendar className="w-4 h-4" />
               <span>၂။ ဘိုကင်ရက်စွဲ၊ ဟောကြားမည့် အချိန်နှင့် လုပ်ငန်းစဉ်အခြေအနေ</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-stone-400 mb-1">ဘိုကင်တင်သည့်နေ့</label>
+                <label className="block text-stone-400 mb-1">
+                  ဘိုကင်တင်သည့်နေ့ <span className="text-amber-300 font-mono text-[11px]">({formatDateDDMMYYYY(bookingDate)})</span>
+                </label>
                 <input
                   type="date"
                   value={bookingDate}
@@ -623,7 +658,9 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-stone-400 mb-1">ဗေဒင်ဟောမည့် နေ့နှင့်အချိန် *</label>
+                <label className="block text-stone-400 mb-1">
+                  ဗေဒင်ဟောမည့် နေ့နှင့်အချိန် <span className="text-amber-300 font-mono text-[11px]">({formatDateDDMMYYYY(readingDateTime)})</span>
+                </label>
                 <input
                   type="datetime-local"
                   value={readingDateTime}
@@ -654,18 +691,18 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
           </div>
 
           {/* Section 3: Purely Custom Service Name & Fee */}
-          <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800 space-y-3.5">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+          <div className="bg-stone-850 p-3.5 rounded-2xl border border-stone-800 space-y-3">
+            <div className="flex items-center justify-between border-b border-stone-800 pb-1.5">
               <div className="flex items-center gap-2 text-amber-400 font-semibold">
                 <Calculator className="w-4 h-4" />
-                <span>၃။ ဗေဒင်ဝန်ဆောင်မှု အမည်နှင့် ဟောခ (ကိုယ်တိုင်စိတ်ကြိုက် ထည့်သွင်းခြင်း)</span>
+                <span>၃။ ဗေဒင်ဝန်ဆောင်မှု အမည်နှင့် ဟောခ (စိတ်ကြိုက်)</span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="bg-stone-900/80 p-3 rounded-xl border border-stone-800 space-y-1.5">
+              <div className="bg-stone-900/80 p-2.5 rounded-xl border border-stone-800 space-y-1">
                 <label className="block text-stone-300 font-medium text-xs">
-                  ဗေဒင်ဝန်ဆောင်မှု အမည် (ရိုက်ထည့်ပါ) *
+                  ဗေဒင်ဝန်ဆောင်မှု အမည် (ရိုက်ထည့်ပါ)
                 </label>
                 <input
                   type="text"
@@ -677,22 +714,22 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                 />
               </div>
 
-              <div className="bg-stone-900/80 p-3 rounded-xl border border-stone-800 flex items-center justify-between">
+              <div className="bg-stone-900/80 p-2.5 rounded-xl border border-stone-800 flex items-center justify-between">
                 <div>
-                  <span className="text-stone-300 font-medium block text-xs">ဗေဒင်ဟောခ (ကျပ်) *</span>
+                  <span className="text-stone-300 font-medium block text-xs">ဗေဒင်ဟောခ (ကျပ်)</span>
                   <span className="text-[10px] text-stone-500">စိတ်ကြိုက် သတ်မှတ်ပါ</span>
                 </div>
                 <input
                   type="number"
                   value={serviceFee}
                   onChange={(e) => setServiceFee(Number(e.target.value))}
-                  className="w-40 px-3 py-1.5 text-right rounded-xl bg-stone-950 border border-amber-500/40 text-amber-300 font-mono font-bold text-base focus:border-amber-400"
+                  className="w-36 px-3 py-1.5 text-right rounded-xl bg-stone-950 border border-amber-500/40 text-amber-300 font-mono font-bold text-base focus:border-amber-400"
                 />
               </div>
             </div>
 
             {savedServices.length > 0 && (
-              <div className="space-y-1 pt-1">
+              <div className="space-y-1 pt-0.5">
                 <span className="text-[11px] text-stone-400 font-medium block">
                   ယခင်ထည့်ထားသော ဝန်ဆောင်မှုများ (၁ ချက်နှိပ်ရွေးရန်):
                 </span>
@@ -717,14 +754,14 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
           </div>
 
           {/* Section 4: Purely Custom Yatra with Memory */}
-          <div className="bg-stone-850 p-4 rounded-2xl border border-amber-500/30 space-y-3.5 bg-gradient-to-br from-stone-850 to-amber-950/20">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+          <div className="bg-stone-850 p-3.5 rounded-2xl border border-amber-500/30 space-y-3 bg-gradient-to-br from-stone-850 to-amber-950/20">
+            <div className="flex items-center justify-between border-b border-stone-800 pb-1.5">
               <div className="flex items-center gap-2 text-amber-400 font-semibold">
                 <Flame className="w-4 h-4 text-amber-400" />
-                <span>၄။ ယတြာ ပြုလုပ်ဆောင်ရွက်မှု (ကိုယ်တိုင်စိတ်ကြိုက် ထည့်သွင်းခြင်း)</span>
+                <span>၄။ ယတြာ ပြုလုပ်ဆောင်ရွက်မှု (စိတ်ကြိုက်)</span>
               </div>
 
-              <label className="flex items-center gap-2 cursor-pointer bg-stone-900 px-3 py-1.5 rounded-xl border border-amber-500/40 hover:bg-stone-800 transition">
+              <label className="flex items-center gap-2 cursor-pointer bg-stone-900 px-3 py-1 rounded-xl border border-amber-500/40 hover:bg-stone-800 transition">
                 <input
                   type="checkbox"
                   checked={yatraEnabled}
@@ -738,25 +775,25 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
             </div>
 
             {yatraEnabled ? (
-              <div className="space-y-3 pt-1">
+              <div className="space-y-2.5 pt-0.5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="bg-stone-900/90 p-3 rounded-xl border border-stone-800 space-y-1.5">
+                  <div className="bg-stone-900/90 p-2.5 rounded-xl border border-stone-800 space-y-1">
                     <label className="block text-stone-300 font-medium text-xs">
-                      ယတြာ အမည် (ရိုက်ထည့်ပါ) *
+                      ယတြာ အမည် (ရိုက်ထည့်ပါ)
                     </label>
                     <input
                       type="text"
-                      placeholder="ဥပမာ - နဝင်းယတြာ၊ စီးပွားလာဘ်ရွှင်ယတြာ၊ ဇာတာပြင်ယတြာ"
+                      placeholder="ဥပမာ - နဝင်းယတြာ၊ စီးပွားလာဘ်ရွှင်ယတြာ"
                       value={customYatraName}
                       onChange={(e) => setCustomYatraName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-stone-950 border border-amber-500/40 text-stone-100 focus:border-amber-400 text-xs sm:text-sm font-medium"
+                      className="w-full px-3 py-2 rounded-xl bg-stone-950 border border-amber-500/40 text-stone-100 focus:border-amber-400 text-xs font-medium"
                       required={yatraEnabled}
                     />
                   </div>
 
-                  <div className="bg-stone-900/90 p-3 rounded-xl border border-stone-800 flex items-center justify-between">
+                  <div className="bg-stone-900/90 p-2.5 rounded-xl border border-stone-800 flex items-center justify-between">
                     <div>
-                      <span className="text-stone-300 font-medium block text-xs">ယတြာ ကုန်ကျငွေ / အလှူငွေ (ကျပ်) *</span>
+                      <span className="text-stone-300 font-medium block text-xs">ယတြာ ကုန်ကျငွေ / အလှူငွေ (ကျပ်)</span>
                       <span className="text-[10px] text-stone-500">စိတ်ကြိုက် သတ်မှတ်ပါ</span>
                     </div>
                     <input
@@ -770,7 +807,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                 </div>
 
                 {savedYatras.length > 0 && (
-                  <div className="space-y-1 pt-1">
+                  <div className="space-y-1 pt-0.5">
                     <span className="text-[11px] text-stone-400 font-medium block">
                       ယခင်ထည့်ထားသော ယတြာများ (၁ ချက်နှိပ်ရွေးရန်):
                     </span>
@@ -794,23 +831,22 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                 )}
               </div>
             ) : (
-              <p className="text-xs text-stone-400 italic bg-stone-900/50 p-3 rounded-xl border border-stone-800">
-                ယတြာ ထည့်သွင်းလိုပါက အပေါ်ရှိ <strong>"✅ ယတြာ ပြုလုပ်မည်"</strong> ကို အမှန်ခြစ်၍ ယတြာအမည်နှင့် စရိတ်အား စိတ်ကြိုက် ရိုက်ထည့်နိုင်ပါသည်။
+              <p className="text-xs text-stone-400 italic bg-stone-900/50 p-2.5 rounded-xl border border-stone-800">
+                ယတြာ ထည့်သွင်းလိုပါက အပေါ်ရှိ <strong>"✅ ယတြာ ပြုလုပ်မည်"</strong> ကို အမှန်ခြစ်ပါ ရိုက်ထည့်နိုင်ပါသည်။
               </p>
             )}
           </div>
 
-          {/* Section 5: PURE CUSTOM AMULETS POS (ZERO PRESETS / ZERO DUMMIES) */}
-          <div className="bg-stone-850 p-4 rounded-2xl border border-purple-500/30 space-y-3.5 bg-gradient-to-br from-stone-850 to-purple-950/20">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+          {/* Section 5: PURE CUSTOM AMULETS POS */}
+          <div className="bg-stone-850 p-3.5 rounded-2xl border border-purple-500/30 space-y-3 bg-gradient-to-br from-stone-850 to-purple-950/20">
+            <div className="flex items-center justify-between border-b border-stone-800 pb-1.5">
               <div className="flex items-center gap-2 text-purple-300 font-bold">
                 <ShoppingBag className="w-4 h-4 text-purple-400" />
-                <span>၅။ အဆောင်ပစ္စည်း ဝယ်ယူမှု (ကိုယ်တိုင်စိတ်ကြိုက် ထည့်သွင်းခြင်း)</span>
+                <span>၅။ အဆောင်ပစ္စည်း ဝယ်ယူမှု (စိတ်ကြိုက်)</span>
               </div>
             </div>
 
-            {/* Direct Inline Custom Amulet Entry Bar */}
-            <div className="p-3.5 bg-stone-900/90 border border-purple-500/40 rounded-2xl space-y-2.5 shadow-inner">
+            <div className="p-3 bg-stone-900/90 border border-purple-500/40 rounded-2xl space-y-2">
               <span className="text-[11px] font-bold text-stone-300 block">
                 + အဆောင်ပစ္စည်း အမည်၊ ဈေးနှုန်းနှင့် အရေအတွက် တိုက်ရိုက်ထည့်ပါ:
               </span>
@@ -818,10 +854,10 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                 <div className="sm:col-span-2">
                   <input
                     type="text"
-                    placeholder="အဆောင်ပစ္စည်း အမည် ရိုက်ထည့်ပါ..."
+                    placeholder="အဆောင်ပစ္စည်း အမည်..."
                     value={customAmuletName}
                     onChange={(e) => setCustomAmuletName(e.target.value)}
-                    className="w-full px-3 py-2 bg-stone-950 border border-stone-700 focus:border-purple-400 rounded-xl text-stone-100 text-xs font-medium"
+                    className="w-full px-3 py-1.5 bg-stone-950 border border-stone-700 focus:border-purple-400 rounded-xl text-stone-100 text-xs font-medium"
                   />
                 </div>
                 <div>
@@ -830,7 +866,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                     placeholder="ဈေးနှုန်း (ကျပ်)..."
                     value={customAmuletPrice}
                     onChange={(e) => setCustomAmuletPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-stone-950 border border-stone-700 focus:border-purple-400 rounded-xl text-amber-300 text-xs text-right font-mono font-bold"
+                    className="w-full px-3 py-1.5 bg-stone-950 border border-stone-700 focus:border-purple-400 rounded-xl text-amber-300 text-xs text-right font-mono font-bold"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -840,12 +876,12 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                     placeholder="အရေအတွက်"
                     value={customAmuletQty}
                     onChange={(e) => setCustomAmuletQty(Math.max(1, Number(e.target.value) || 1))}
-                    className="w-16 px-2 py-2 bg-stone-950 border border-stone-700 focus:border-purple-400 rounded-xl text-stone-100 text-xs text-center font-mono font-bold"
+                    className="w-16 px-2 py-1.5 bg-stone-950 border border-stone-700 focus:border-purple-400 rounded-xl text-stone-100 text-xs text-center font-mono font-bold"
                   />
                   <button
                     type="button"
                     onClick={handleAddCustomAmulet}
-                    className="flex-1 flex items-center justify-center gap-1 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow cursor-pointer whitespace-nowrap"
+                    className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow cursor-pointer whitespace-nowrap"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>ထည့်မည်</span>
@@ -854,17 +890,16 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               </div>
             </div>
 
-            {/* Selected Amulets List */}
             {amulets.length > 0 ? (
-              <div className="space-y-2 pt-1">
+              <div className="space-y-1.5">
                 <span className="text-[11px] font-semibold text-purple-300 block">
                   ဝယ်ယူထားသော အဆောင်ပစ္စည်းများ ({amulets.length} မျိုး):
                 </span>
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   {amulets.map((a, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-stone-900 border border-stone-800 text-xs"
+                      className="flex items-center justify-between p-2 rounded-xl bg-stone-900 border border-stone-800 text-xs"
                     >
                       <div className="flex-1 mr-2">
                         <span className="font-bold text-stone-200">{a.name}</span>
@@ -890,15 +925,15 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-stone-500 italic p-1">
-                အဆောင်ပစ္စည်း ဝယ်ယူမှု မရှိသေးပါ (ထည့်လိုပါက အပေါ်ရှိ အကွက်တွင် အမည်နှင့် ဈေးနှုန်း ရိုက်ထည့်၍ "ထည့်မည်" ကို နှိပ်ပါ)။
+              <p className="text-xs text-stone-500 italic p-0.5">
+                အဆောင်ပစ္စည်း ဝယ်ယူမှု မရှိသေးပါ။
               </p>
             )}
           </div>
 
           {/* Section 6: Payment Details */}
-          <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800 space-y-3.5">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+          <div className="bg-stone-850 p-3.5 rounded-2xl border border-stone-800 space-y-3">
+            <div className="flex items-center justify-between border-b border-stone-800 pb-1.5">
               <div className="flex items-center gap-2 text-amber-400 font-semibold">
                 <CreditCard className="w-4 h-4 text-emerald-400" />
                 <span>၆။ ကျသင့်ငွေနှင့် ငွေပေးချေမှု</span>
@@ -956,68 +991,36 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                 </select>
               </div>
             </div>
-          </div>
-
-          {/* Section 7: Astrological Predictions & Yatra Instructions */}
-          <div className="bg-stone-850 p-4 rounded-2xl border border-stone-800 space-y-3">
-            <div className="flex items-center gap-2 text-amber-400 font-semibold border-b border-stone-800 pb-2">
-              <FileText className="w-4 h-4" />
-              <span>၇။ ဗေဒင်ဟောချက်များနှင့် ယတြာညွှန်ကြားချက်များ</span>
-            </div>
 
             <div>
-              <label className="block text-stone-300 font-medium mb-1">ဆရာ့ဟောချက် အပြည့်အစုံ</label>
-              <textarea
-                rows={3}
-                placeholder="ပေးလိုက်သော ကံကြမ္မာဟောချက်များနှင့် အကြံပြုချက်များကို ရေးသားပါ..."
-                value={predictions}
-                onChange={(e) => setPredictions(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:border-amber-500 text-xs sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-stone-300 font-medium mb-1">ယတြာနှင့် အစီအရင် ညွှန်ကြားချက်များ</label>
-              <textarea
-                rows={2}
-                placeholder="ယတြာပြုလုပ်ရမည့် နေ့နံ၊ ပန်း၊ ဆီမီး၊ ပုတီးစိပ်ရမည့် အကြိမ်အရေအတွက် စသည်..."
-                value={yatraInstructions}
-                onChange={(e) => setYatraInstructions(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:border-amber-500 text-xs sm:text-sm"
+              <label className="block text-stone-400 mb-1">အထွေထွေ မှတ်ချက် (Notes)</label>
+              <input
+                type="text"
+                placeholder="အခြား မှတ်ချက်များ..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full px-3 py-1.5 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500 text-xs"
               />
             </div>
           </div>
 
           {/* Modal Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-stone-800">
-            
-            {/* Direct Print & Export Button */}
+          <div className="flex items-center justify-end gap-3 pt-2 border-t border-stone-800">
             <button
               type="button"
-              onClick={handlePrintClick}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-lg transition active:scale-95 cursor-pointer"
+              onClick={onClose}
+              className="px-4 py-2 rounded-2xl bg-stone-800 hover:bg-stone-700 text-stone-300 font-semibold text-xs sm:text-sm transition cursor-pointer"
             >
-              <Printer className="w-4 h-4" />
-              <span>🖨️ / 📄 Print & Export (PDF / PNG / ပရင့်)</span>
+              မလုပ်တော့ပါ (Cancel)
             </button>
 
-            <div className="flex items-center justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2.5 rounded-2xl bg-stone-800 hover:bg-stone-700 text-stone-300 font-semibold text-xs sm:text-sm transition cursor-pointer"
-              >
-                မလုပ်တော့ပါ (Cancel)
-              </button>
-
-              <button
-                type="submit"
-                className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs sm:text-sm shadow-lg transition active:scale-95 cursor-pointer"
-              >
-                <Save className="w-4 h-4" />
-                <span>{isEditing ? 'ပြင်ဆင်မှု သိမ်းဆည်းမည်' : 'စာရင်း အတည်ပြု သိမ်းဆည်းမည်'}</span>
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="flex items-center gap-2 px-6 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs sm:text-sm shadow-lg transition active:scale-95 cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              <span>{isEditing ? 'ပြင်ဆင်မှု သိမ်းဆည်းမည်' : 'စာရင်း အတည်ပြု သိမ်းဆည်းမည်'}</span>
+            </button>
           </div>
 
         </form>

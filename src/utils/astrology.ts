@@ -1,14 +1,14 @@
 import { DayOfWeekBurmese, MahaboteHouse, NavawinCountType, ExpenseCategory } from '../types';
 
-export const BURMESE_DAYS: { key: DayOfWeekBurmese; label: string; planet: string; number: number; animal: string }[] = [
-  { key: 'တနင်္ဂနွေ', label: 'တနင်္ဂနွေ (Sunday)', planet: 'နေမင်း', number: 1, animal: 'ဂဠုန်' },
-  { key: 'တနင်္လာ', label: 'တနင်္လာ (Monday)', planet: 'လမင်း', number: 2, animal: 'ကျား' },
-  { key: 'အင်္ဂါ', label: 'အင်္ဂါ (Tuesday)', planet: 'အင်္ဂါဂြိုဟ်', number: 3, animal: 'ခြင်္သေ့' },
-  { key: 'ဗုဒ္ဓဟူး', label: 'ဗုဒ္ဓဟူး (Wed AM)', planet: 'ဗုဒ္ဓဟူးဂြိုဟ်', number: 4, animal: 'ဆင်စွယ်စုံ' },
-  { key: 'ရာဟု', label: 'ရာဟု (Wed PM)', planet: 'ရာဟုဂြိုဟ်', number: 8, animal: 'ဟိုင်းဆင်' },
-  { key: 'ကြာသပတေး', label: 'ကြာသပတေး (Thursday)', planet: 'ကြာသပတေးဂြိုဟ်', number: 5, animal: 'ကြွက်' },
-  { key: 'သောကြာ', label: 'သောကြာ (Friday)', planet: 'သောကြာဂြိုဟ်', number: 6, animal: 'ပူး' },
-  { key: 'စနေ', label: 'စနေ (Saturday)', planet: 'စနေဂြိုဟ်', number: 7, animal: 'နဂါး' },
+export const BURMESE_DAYS: { key: DayOfWeekBurmese; shorthand: string; label: string; planet: string; number: number; animal: string }[] = [
+  { key: 'တနင်္ဂနွေ', shorthand: '၁ နွေ', label: '၁ နွေ (Sunday)', planet: 'နေမင်း', number: 1, animal: 'ဂဠုန်' },
+  { key: 'တနင်္လာ', shorthand: '၂ လာ', label: '၂ လာ (Monday)', planet: 'လမင်း', number: 2, animal: 'ကျား' },
+  { key: 'အင်္ဂါ', shorthand: '၃ ဂါ', label: '၃ ဂါ (Tuesday)', planet: 'အင်္ဂါဂြိုဟ်', number: 3, animal: 'ခြင်္သေ့' },
+  { key: 'ဗုဒ္ဓဟူး', shorthand: '၄ ဟူး', label: '၄ ဟူး (Wed AM)', planet: 'ဗုဒ္ဓဟူးဂြိုဟ်', number: 4, animal: 'ဆင်စွယ်စုံ' },
+  { key: 'ကြာသပတေး', shorthand: '၅ တေး', label: '၅ တေး (Thursday)', planet: 'ကြာသပတေးဂြိုဟ်', number: 5, animal: 'ကြွက်' },
+  { key: 'သောကြာ', shorthand: '၆ ကြာ', label: '၆ ကြာ (Friday)', planet: 'သောကြာဂြိုဟ်', number: 6, animal: 'ပူး' },
+  { key: 'စနေ', shorthand: '၇ နေ', label: '၇ နေ (Saturday)', planet: 'စနေဂြိုဟ်', number: 7, animal: 'နဂါး' },
+  { key: 'ရာဟု', shorthand: '၈ ရာ', label: '၈ ရာ (Wed PM)', planet: 'ရာဟုဂြိုဟ်', number: 8, animal: 'ဟိုင်းဆင်' },
 ];
 
 export const MAHABOTE_HOUSES: { key: MahaboteHouse; label: string; meaning: string }[] = [
@@ -47,6 +47,32 @@ export function formatMMK(amount: number | undefined | null): string {
 export function formatNumberEN(amount: number | undefined | null): string {
   if (!amount) return '0';
   return new Intl.NumberFormat('en-US').format(amount);
+}
+
+// Convert Date string to DD / MM / YYYY format
+export function formatDateDDMMYYYY(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const cleanStr = dateStr.trim();
+  
+  // Handles ISO date strings like "2026-09-29T18:49" or "2026-09-29"
+  if (cleanStr.includes('T') || cleanStr.includes(' ')) {
+    const parts = cleanStr.split(/T|\s+/);
+    const datePart = parts[0];
+    const timePart = parts[1] ? parts[1].slice(0, 5) : '';
+    if (datePart.includes('-')) {
+      const [y, m, d] = datePart.split('-');
+      return `${d} / ${m} / ${y}${timePart ? ' (' + timePart + ')' : ''}`;
+    }
+  }
+
+  if (cleanStr.includes('-')) {
+    const [y, m, d] = cleanStr.split('-');
+    if (y && m && d) {
+      return `${d} / ${m} / ${y}`;
+    }
+  }
+
+  return cleanStr;
 }
 
 // Convert English Date to Burmese Day of Week

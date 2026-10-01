@@ -14,7 +14,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { ConsultationRecord } from '../types';
-import { formatMMK, NAWAWIN_OPTIONS, BURMESE_DAYS } from '../utils/astrology';
+import { formatMMK, NAWAWIN_OPTIONS, BURMESE_DAYS, formatDateDDMMYYYY } from '../utils/astrology';
 
 interface ConsultationDetailModalProps {
   record: ConsultationRecord | null;
@@ -52,7 +52,7 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
                 <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
                   {record.id}
                 </span>
-                <h2 className="text-lg font-bold text-stone-100">{record.customerName}</h2>
+                <h2 className="text-lg font-bold text-stone-100">{record.customerName || 'မမေးသူ (အမည်မသိ)'}</h2>
                 {record.taskDone && (
                   <span className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                     <CheckCircle2 className="w-3.5 h-3.5" /> ပြီးစီး
@@ -97,16 +97,22 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
               <span className="font-semibold text-amber-400 flex items-center gap-2">
                 <User className="w-4 h-4" /> မေးသူ ကိုယ်ရေးနှင့် မွေးဇာတာ အချက်အလက်
               </span>
-              <span className="text-stone-400 flex items-center gap-1">
-                <Phone className="w-3.5 h-3.5" /> {record.phone}
+              <span className="text-stone-400 flex items-center gap-2">
+                <Phone className="w-3.5 h-3.5 text-stone-500" />
+                <span>{record.phone || 'ဖုန်းမပါ'}</span>
+                {record.socialAccountName && (
+                  <span className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800 text-xs">
+                    {record.socialPlatform || 'Social'}: {record.socialAccountName}
+                  </span>
+                )}
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-stone-300">
               <div className="bg-stone-900/60 p-2.5 rounded-lg border border-stone-800">
-                <span className="text-stone-500 text-[11px] block">မွေးနေ့နံ:</span>
+                <span className="text-stone-500 text-[11px] block">မွေးနံ:</span>
                 <span className="font-semibold text-amber-300">{record.birthDayOfWeek} ဖွား</span>
-                {dayInfo && <span className="text-xs text-stone-400 block">({dayInfo.animal})</span>}
+                {dayInfo && <span className="text-xs text-stone-400 block">({dayInfo.shorthand})</span>}
               </div>
 
               <div className="bg-stone-900/60 p-2.5 rounded-lg border border-stone-800">
@@ -117,7 +123,7 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
               <div className="bg-stone-900/60 p-2.5 rounded-lg border border-stone-800">
                 <span className="text-stone-500 text-[11px] block">မွေးသက္ကရာဇ် & အသက်:</span>
                 <span className="font-medium text-stone-200">
-                  {record.birthDate || '-'} {record.age ? `(${record.age} နှစ်)` : ''}
+                  {formatDateDDMMYYYY(record.birthDate) || '-'} {record.age ? `(${record.age} နှစ်)` : ''}
                 </span>
               </div>
 
@@ -130,11 +136,11 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="flex items-center gap-2 text-stone-400 text-xs">
                 <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                <span>ဘိုကင်တင်သည့်နေ့: <strong className="text-stone-200">{record.bookingDate}</strong></span>
+                <span>ဘိုကင်တင်သည့်နေ့: <strong className="text-stone-200">{formatDateDDMMYYYY(record.bookingDate)}</strong></span>
               </div>
               <div className="flex items-center gap-2 text-stone-400 text-xs">
                 <Clock className="w-3.5 h-3.5 text-amber-400" />
-                <span>ဗေဒင်ဟောမည့်နေ့နှင့် အချိန်: <strong className="text-amber-300">{record.readingDateTime.replace('T', ' ')}</strong></span>
+                <span>ဗေဒင်ဟောမည့်နေ့နှင့် အချိန်: <strong className="text-amber-300">{formatDateDDMMYYYY(record.readingDateTime)}</strong></span>
               </div>
             </div>
           </div>

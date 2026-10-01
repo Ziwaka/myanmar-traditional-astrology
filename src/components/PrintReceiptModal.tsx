@@ -18,7 +18,7 @@ import {
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { ConsultationRecord } from '../types';
-import { formatMMK, NAWAWIN_OPTIONS, BURMESE_DAYS, MAHABOTE_HOUSES } from '../utils/astrology';
+import { formatMMK, NAWAWIN_OPTIONS, BURMESE_DAYS, MAHABOTE_HOUSES, formatDateDDMMYYYY } from '../utils/astrology';
 
 interface PrintReceiptModalProps {
   record: ConsultationRecord | null;
@@ -263,12 +263,15 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4 text-xs text-stone-800">
                 <div>
                   <span className="text-stone-500 block text-[11px]">ဗေဒင်မေးသူ အမည်:</span>
-                  <strong className="text-stone-950 text-sm">{record.customerName}</strong>
+                  <strong className="text-stone-950 text-sm">{record.customerName || 'မမေးသူ'}</strong>
                 </div>
 
                 <div>
-                  <span className="text-stone-500 block text-[11px]">ဖုန်းနံပါတ်:</span>
-                  <strong className="font-mono text-stone-900">{record.phone || '-'}</strong>
+                  <span className="text-stone-500 block text-[11px]">ဖုန်းနံပါတ် / Social:</span>
+                  <strong className="font-mono text-stone-900">
+                    {record.phone || '-'}
+                    {record.socialAccountName ? ` (${record.socialPlatform || 'Social'}: ${record.socialAccountName})` : ''}
+                  </strong>
                 </div>
 
                 <div>
@@ -277,13 +280,13 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                 </div>
 
                 <div>
-                  <span className="text-stone-500 block text-[11px]">မွေးဖွားသည့် နေ့နံ:</span>
-                  <strong className="text-amber-900">{record.birthDayOfWeek} ဖွား {dayInfo ? `(${dayInfo.animal})` : ''}</strong>
+                  <span className="text-stone-500 block text-[11px]">မွေးနံ:</span>
+                  <strong className="text-amber-900">{record.birthDayOfWeek} ဖွား {dayInfo ? `(${dayInfo.shorthand})` : ''}</strong>
                 </div>
 
                 <div>
                   <span className="text-stone-500 block text-[11px]">မွေးသက္ကရာဇ် & အသက်:</span>
-                  <span>{record.birthDate || '-'} {record.age ? `(အသက် ${record.age} နှစ်)` : ''}</span>
+                  <span>{formatDateDDMMYYYY(record.birthDate) || '-'} {record.age ? `(အသက် ${record.age} နှစ်)` : ''}</span>
                 </div>
 
                 <div>
@@ -298,7 +301,7 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
 
                 <div className="col-span-2">
                   <span className="text-stone-500 block text-[11px]">ဟောကြားသည့် ရက်စွဲနှင့် အချိန်:</span>
-                  <strong className="font-mono">{record.readingDateTime.replace('T', ' ')}</strong>
+                  <strong className="font-mono">{formatDateDDMMYYYY(record.readingDateTime)}</strong>
                 </div>
               </div>
             </div>

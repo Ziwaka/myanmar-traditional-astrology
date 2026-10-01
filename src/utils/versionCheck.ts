@@ -15,23 +15,35 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.3.8';
+export const LOCAL_APP_VERSION = '1.3.9';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 // All historical versions curated in code for immediate offline/online display
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
   {
+    version: '1.3.9',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀',
+    title: 'Skipable Name, Social Media Account Fields, Shorthand Day Names & DD / MM / YYYY Date Formatting',
+    badge: 'Latest Release',
+    changelog: [
+      'အမည် မထည့်ဘဲ ကျော်နိုင်ခြင်း (Skipable Name Field): ဗေဒင်မေးသူအမည်ကို မထည့်ဘဲ လွတ်လပ်စွာ ကျော်သွားနိုင်ပါသည်။ မထည့်ပါက "မမေးသူ (အမည်မသိ)" ဟု အလိုအလျောက် မှတ်သားပေးပါမည်။',
+      'Social Media အကောင့် ထည့်သွင်းရန် အကွက်များ (Social Account Fields): Viber, Facebook, TikTok, Telegram, Phone Call, Other Dropdown နှင့် ဘေးတွင် Social Account Name / ID ရိုက်ထည့်ရန် အကွက်ပါရှိခြင်း။',
+      'မွေးနံ label နှင့် ၁ နွေ၊ ၂ လာ စာသားများ (Shorthand Day Names): "မွေးနေ့ (နေ့နံ)" အစား "မွေးနံ" ဟု ပြောင်းလဲပြီး "၁ နွေ", "၂ လာ", "၃ ဂါ", "၄ ဟူး", "၅ တေး", "၆ ကြာ", "၇ နေ", "၈ ရာ" ဟု ပြောင်းလဲထားခြင်း။',
+      'ဟောချက်နှင့် ယတြာ ရိုက်ရန်အကွက်များ ဖြုတ်ခြင်း (Removed Section 7): စာရင်းသွင်းပုံစံမှ Section 7 (ဟောချက်များနှင့် ယတြာညွှန်ကြားချက် ရိုက်သည့် အကွက်ကြီးများ) ကို ဖြုတ်လိုက်ပါပြီ။',
+      'DD / MM / YYYY ရက်စွဲ ပြသမှုစနစ် (DD / MM / YYYY Date Formatting): စနစ်တစ်ခွင်ရှိ ရက်စွဲပြသမှုများ၊ ပရင့်ပြေစာများနှင့် ဇယားများတွင် ရက်စွဲများကို DD / MM / YYYY ပုံစံဖြင့် သပ်ရပ်စွာ ပြသပေးခြင်း။'
+    ]
+  },
+  {
     version: '1.3.8',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ စက်တင်ဘာ ၃၀',
     title: 'Direct PDF, PNG & JPEG Export with Full Horoscope Dossier, Yatra, Predictions & Financial Breakdown',
-    badge: 'Latest Release',
     changelog: [
-      'PDF၊ PNG ပုံရိပ်နှင့် JPEG ပုံစံစုံ ထုတ်ယူနိုင်ခြင်း (Multi-Format PDF/PNG/JPEG Export): Print ထုတ်သည့်အခါ ပရင်တာဖြင့်သာမက Direct PDF ဖိုင်ဒေါင်းလုဒ်၊ Viber/Telegram/Messenger တွင် ပေးပို့ရန် အထူးကြည်လင်ပြတ်သားသော PNG ပုံရိပ် နှင့် JPEG ပုံစံများဖြင့် ၁ ချက်နှိပ် ထုတ်ယူနိုင်ခြင်း။',
-      'မေးသူဇာတာ အပြည့်အစုံ ထည့်သွင်းပေးထားမှု (Client Horoscope Dossier): အမည်၊ ID၊ မွေးဖွားသည့် နေ့နံ (ဂြိုဟ်/တိရစ္ဆာန်ရုပ်)၊ မွေးသက္ကရာဇ်၊ အသက်၊ မွေးဖွားချိန်၊ မဟာဘုတ်ခွင်နှင့် ဟောကြားသည့် အချိန် အသေးစိတ်။',
-      'ယတြာအစီအရင်နှင့် ညွှန်ကြားချက်များ (Yatra Rituals & Instructions): ယတြာအမည်၊ ကုန်ကျစရိတ်/အလှူငွေ နှင့် ဆောင်ရွက်ရမည့် အသေးစိတ် ညွှန်ကြားချက်များ။',
-      'ဆရာ့ဟောကိန်း အပြည့်အစုံ (Astrological Predictions): ဆရာ့ထံမှ ပေးလိုက်သော ကံကြမ္မာဟောချက်နှင့် အကြံပြုချက်များ။',
-      'ကျသင့်ငွေစာရင်း အသေးစိတ် (Itemized Financial Breakdown): ဟောခ၊ ယတြာစရိတ်၊ အဆောင်ပစ္စည်းများ၊ စုစုပေါင်း၊ ပေးပြီးငွေ၊ ကျန်ငွေနှင့် ငွေပေးချေသည့် နည်းလမ်း အတိအကျ။'
+      'PDF၊ PNG ပုံရိပ်နှင့် JPEG ပုံစံစုံ ထုတ်ယူနိုင်ခြင်း (Multi-Format Export)',
+      'မေးသူဇာတာ အပြည့်အစုံ ထည့်သွင်းပေးထားမှု (Client Horoscope Dossier)',
+      'ယတြာအစီအရင်နှင့် ညွှန်ကြားချက်များ (Yatra Rituals & Instructions)',
+      'ဆရာ့ဟောကိန်း အပြည့်အစုံ (Astrological Predictions)',
+      'ကျသင့်ငွေစာရင်း အသေးစိတ် (Itemized Financial Breakdown)'
     ]
   },
   {
@@ -199,7 +211,6 @@ export function setLastSeenChangelogVersion(version: string): void {
   }
 }
 
-// Compare semantic versions (e.g. "1.3.8" > "1.3.7")
 export function compareVersions(cloudVer: string, localVer: string): number {
   const cParts = cloudVer.split('.').map(n => parseInt(n, 10) || 0);
   const lParts = localVer.split('.').map(n => parseInt(n, 10) || 0);
@@ -208,13 +219,12 @@ export function compareVersions(cloudVer: string, localVer: string): number {
   for (let i = 0; i < maxLen; i++) {
     const c = cParts[i] || 0;
     const l = lParts[i] || 0;
-    if (c > l) return 1;  // Cloud is newer
-    if (c < l) return -1; // Local is newer
+    if (c > l) return 1;
+    if (c < l) return -1;
   }
-  return 0; // Same version
+  return 0;
 }
 
-// Fetch Cloud Authoritative Version from /version.json
 export async function fetchCloudVersion(): Promise<CloudVersionInfo | null> {
   try {
     const res = await fetch(`/version.json?_t=${Date.now()}`, {
