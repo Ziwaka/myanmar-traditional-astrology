@@ -506,6 +506,14 @@ export default function App() {
     saveYatraToCloud(item).catch(e => console.warn('Cloud yatra save error:', e));
   };
 
+  const handleUpdateYatraCatalogItem = (item: YatraCatalogItem) => {
+    const updated = yatraCatalog.map(y => y.id === item.id ? item : y);
+    setYatraCatalog(updated);
+    saveYatraCatalog(updated);
+    refreshDatabaseQuota();
+    saveYatraToCloud(item).catch(e => console.warn('Cloud yatra update error:', e));
+  };
+
   // Delete Yatra from Catalog
   const handleDeleteYatraCatalogItem = (id: string) => {
     const updated = yatraCatalog.filter(y => y.id !== id);
@@ -522,6 +530,14 @@ export default function App() {
     saveAmuletsCatalog(updated);
     refreshDatabaseQuota();
     saveAmuletToCloud(item).catch(e => console.warn('Cloud amulet save error:', e));
+  };
+
+  const handleUpdateAmuletCatalogItem = (item: AmuletCatalogItem) => {
+    const updated = amuletsCatalog.map(a => a.id === item.id ? item : a);
+    setAmuletsCatalog(updated);
+    saveAmuletsCatalog(updated);
+    refreshDatabaseQuota();
+    saveAmuletToCloud(item).catch(e => console.warn('Cloud amulet update error:', e));
   };
 
   // Delete Amulet from Catalog
@@ -769,6 +785,8 @@ export default function App() {
               onDeleteYatraItem={handleDeleteYatraCatalogItem}
               onAddAmuletItem={handleAddCatalogItem}
               onDeleteAmuletItem={handleDeleteCatalogItem}
+              onUpdateYatraItem={handleUpdateYatraCatalogItem}
+              onUpdateAmuletItem={handleUpdateAmuletCatalogItem}
               onToggleAmuletStock={handleToggleStock}
               forcedSubTab="yatra"
             />
@@ -782,6 +800,8 @@ export default function App() {
               onDeleteYatraItem={handleDeleteYatraCatalogItem}
               onAddAmuletItem={handleAddCatalogItem}
               onDeleteAmuletItem={handleDeleteCatalogItem}
+              onUpdateYatraItem={handleUpdateYatraCatalogItem}
+              onUpdateAmuletItem={handleUpdateAmuletCatalogItem}
               onToggleAmuletStock={handleToggleStock}
               forcedSubTab="amulets"
             />

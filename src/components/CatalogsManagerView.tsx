@@ -25,6 +25,8 @@ interface CatalogsManagerViewProps {
   onDeleteYatraItem: (id: string) => void;
   onAddAmuletItem: (item: AmuletCatalogItem) => void;
   onDeleteAmuletItem: (id: string) => void;
+  onUpdateYatraItem?: (item: YatraCatalogItem) => void;
+  onUpdateAmuletItem?: (item: AmuletCatalogItem) => void;
   onToggleAmuletStock?: (id: string) => void;
   initialSubTab?: 'yatra' | 'amulets';
   forcedSubTab?: 'yatra' | 'amulets';
@@ -37,12 +39,15 @@ export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
   onDeleteYatraItem,
   onAddAmuletItem,
   onDeleteAmuletItem,
+  onUpdateYatraItem,
+  onUpdateAmuletItem,
   onToggleAmuletStock,
   initialSubTab,
   forcedSubTab,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'yatra' | 'amulets'>(forcedSubTab || initialSubTab || 'yatra');
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingItem, setEditingItem] = useState<YatraCatalogItem | AmuletCatalogItem | null>(null);
 
   useEffect(() => {
     if (forcedSubTab) {
@@ -64,6 +69,25 @@ export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
   const [amuletCategory, setAmuletCategory] = useState('အဆောင်ပစ္စည်း');
   const [amuletDescription, setAmuletDescription] = useState('');
 
+  // Handle Edit Helpers
+  const handleEditYatra = (item: YatraCatalogItem) => {
+    setEditingItem(item);
+    setYatraName(item.name);
+    setYatraFee(item.defaultFee);
+    setYatraCategory(item.category || 'ယတြာအစီအရင်');
+    setYatraDescription(item.description || '');
+    setIsAddYatraModalOpen(true);
+  };
+
+  const handleEditAmulet = (item: AmuletCatalogItem) => {
+    setEditingItem(item);
+    setAmuletName(item.name);
+    setAmuletPrice(item.price);
+    setAmuletCategory(item.category || 'အဆောင်ပစ္စည်း');
+    setAmuletDescription(item.description || '');
+    setIsAddAmuletModalOpen(true);
+  };
+
   // Handle Add Yatra
   const handleSaveYatra = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,16 +95,32 @@ export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
       alert('ယတြာအမည် ထည့်သွင်းပေးပါ');
       return;
     }
-    const newItem: YatraCatalogItem = {
-      id: `yatra-cat-${Date.now()}`,
-      name: yatraName.trim(),
-      defaultFee: Number(yatraFee) || 0,
-      category: yatraCategory.trim() || 'ယတြာအစီအရင်',
-      description: yatraDescription.trim(),
-      inStock: true,
-    };
-    onAddYatraItem(newItem);
+    
+    if (editingItem) {
+      const updatedItem: YatraCatalogItem = {
+        ...editingItem,
+        name: yatraName.trim(),
+        defaultFee: Number(yatraFee) || 0,
+        category: yatraCategory.trim() || 'ယတြာအစီအရင်',
+        description: yatraDescription.trim(),
+      } as YatraCatalogItem;
+      if (onUpdateYatraItem) {
+        onUpdateYatraItem(updatedItem);
+      }
+    } else {
+      const newItem: YatraCatalogItem = {
+        id: `yatra-cat-${Date.now()}`,
+        name: yatraName.trim(),
+        defaultFee: Number(yatraFee) || 0,
+        category: yatraCategory.trim() || 'ယတြာအစီအရင်',
+        description: yatraDescription.trim(),
+        inStock: true,
+      };
+      onAddYatraItem(newItem);
+    }
+
     setIsAddYatraModalOpen(false);
+    setEditingItem(null);
     setYatraName('');
     setYatraFee(30000);
     setYatraCategory('ယတြာအစီအရင်');
@@ -94,16 +134,32 @@ export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
       alert('အဆောင်ပစ္စည်းအမည် ထည့်သွင်းပေးပါ');
       return;
     }
-    const newItem: AmuletCatalogItem = {
-      id: `amulet-cat-${Date.now()}`,
-      name: amuletName.trim(),
-      category: amuletCategory.trim() || 'အဆောင်ပစ္စည်း',
-      price: Number(amuletPrice) || 0,
-      description: amuletDescription.trim(),
-      inStock: true,
-    };
-    onAddAmuletItem(newItem);
+
+    if (editingItem) {
+      const updatedItem: AmuletCatalogItem = {
+        ...editingItem,
+        name: amuletName.trim(),
+        category: amuletCategory.trim() || 'အဆောင်ပစ္စည်း',
+        price: Number(amuletPrice) || 0,
+        description: amuletDescription.trim(),
+      } as AmuletCatalogItem;
+      if (onUpdateAmuletItem) {
+        onUpdateAmuletItem(updatedItem);
+      }
+    } else {
+      const newItem: AmuletCatalogItem = {
+        id: `amulet-cat-${Date.now()}`,
+        name: amuletName.trim(),
+        category: amuletCategory.trim() || 'အဆောင်ပစ္စည်း',
+        price: Number(amuletPrice) || 0,
+        description: amuletDescription.trim(),
+        inStock: true,
+      };
+      onAddAmuletItem(newItem);
+    }
+
     setIsAddAmuletModalOpen(false);
+    setEditingItem(null);
     setAmuletName('');
     setAmuletPrice(15000);
     setAmuletCategory('အဆောင်ပစ္စည်း');
@@ -227,17 +283,26 @@ export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
                       <span className="px-2 py-0.5 rounded text-[10px] bg-amber-950/80 text-amber-300 border border-amber-800/80 font-medium">
                         {item.category || 'ယတြာအစီအရင်'}
                       </span>
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`"${item.name}" ကို ဖျက်ပစ်ရန် သေချာပါသလား?`)) {
-                            onDeleteYatraItem(item.id);
-                          }
-                        }}
-                        className="text-stone-500 hover:text-rose-400 transition p-1 cursor-pointer"
-                        title="ဖျက်မည်"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleEditYatra(item)}
+                          className="text-stone-500 hover:text-amber-400 transition p-1 cursor-pointer"
+                          title="ပြင်ဆင်မည်"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`"${item.name}" ကို ဖျက်ပစ်ရန် သေချာပါသလား?`)) {
+                              onDeleteYatraItem(item.id);
+                            }
+                          }}
+                          className="text-stone-500 hover:text-rose-400 transition p-1 cursor-pointer"
+                          title="ဖျက်မည်"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     <h3 className="font-bold text-stone-100 text-sm sm:text-base mt-2 group-hover:text-amber-300">
@@ -289,17 +354,26 @@ export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
                       <span className="px-2 py-0.5 rounded text-[10px] bg-purple-950/80 text-purple-300 border border-purple-800/80 font-medium">
                         {item.category || 'အဆောင်ပစ္စည်း'}
                       </span>
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`"${item.name}" ကို ဖျက်ပစ်ရန် သေချာပါသလား?`)) {
-                            onDeleteAmuletItem(item.id);
-                          }
-                        }}
-                        className="text-stone-500 hover:text-rose-400 transition p-1 cursor-pointer"
-                        title="ဖျက်မည်"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleEditAmulet(item)}
+                          className="text-stone-500 hover:text-amber-400 transition p-1 cursor-pointer"
+                          title="ပြင်ဆင်မည်"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`"${item.name}" ကို ဖျက်ပစ်ရန် သေချာပါသလား?`)) {
+                              onDeleteAmuletItem(item.id);
+                            }
+                          }}
+                          className="text-stone-500 hover:text-rose-400 transition p-1 cursor-pointer"
+                          title="ဖျက်မည်"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     <h3 className="font-bold text-stone-100 text-sm sm:text-base mt-2 group-hover:text-purple-300">
@@ -332,11 +406,14 @@ export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
             <div className="bg-stone-850 p-4 border-b border-stone-800 flex items-center justify-between">
               <div className="flex items-center gap-2 text-amber-300 font-bold">
                 <Flame className="w-5 h-5 text-amber-400" />
-                <span>ယတြာ အသစ် ထည့်သွင်းခြင်း</span>
+                <span>{editingItem ? 'ယတြာ အချက်အလက် ပြင်ဆင်ခြင်း' : 'ယတြာ အသစ် ထည့်သွင်းခြင်း'}</span>
               </div>
               <button
-                onClick={() => setIsAddYatraModalOpen(false)}
-                className="p-1 rounded-lg text-stone-400 hover:text-stone-200"
+                onClick={() => {
+                  setIsAddYatraModalOpen(false);
+                  setEditingItem(null);
+                }}
+                className="p-1 rounded-lg text-stone-400 hover:text-stone-200 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -400,16 +477,19 @@ export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-800">
                 <button
                   type="button"
-                  onClick={() => setIsAddYatraModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-stone-800 text-stone-300 font-semibold"
+                  onClick={() => {
+                    setIsAddYatraModalOpen(false);
+                    setEditingItem(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-stone-800 text-stone-300 font-semibold cursor-pointer"
                 >
                   မလုပ်တော့ပါ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold shadow"
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold shadow cursor-pointer"
                 >
-                  ကတ်တလောက်တွင် သိမ်းမည်
+                  {editingItem ? 'ပြင်ဆင်ချက်များ သိမ်းဆည်းမည်' : 'ကတ်တလောက်တွင် သိမ်းမည်'}
                 </button>
               </div>
             </form>
@@ -424,11 +504,14 @@ export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
             <div className="bg-stone-850 p-4 border-b border-stone-800 flex items-center justify-between">
               <div className="flex items-center gap-2 text-purple-300 font-bold">
                 <ShoppingBag className="w-5 h-5 text-purple-400" />
-                <span>အဆောင်ပစ္စည်း အသစ် ထည့်သွင်းခြင်း</span>
+                <span>{editingItem ? 'အဆောင် အချက်အလက် ပြင်ဆင်ခြင်း' : 'အဆောင်ပစ္စည်း အသစ် ထည့်သွင်းခြင်း'}</span>
               </div>
               <button
-                onClick={() => setIsAddAmuletModalOpen(false)}
-                className="p-1 rounded-lg text-stone-400 hover:text-stone-200"
+                onClick={() => {
+                  setIsAddAmuletModalOpen(false);
+                  setEditingItem(null);
+                }}
+                className="p-1 rounded-lg text-stone-400 hover:text-stone-200 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -492,16 +575,19 @@ export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-800">
                 <button
                   type="button"
-                  onClick={() => setIsAddAmuletModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-stone-800 text-stone-300 font-semibold"
+                  onClick={() => {
+                    setIsAddAmuletModalOpen(false);
+                    setEditingItem(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-stone-800 text-stone-300 font-semibold cursor-pointer"
                 >
                   မလုပ်တော့ပါ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow"
+                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow cursor-pointer"
                 >
-                  ကတ်တလောက်တွင် သိမ်းမည်
+                  {editingItem ? 'ပြင်ဆင်ချက်များ သိမ်းဆည်းမည်' : 'ကတ်တလောက်တွင် သိမ်းမည်'}
                 </button>
               </div>
             </form>

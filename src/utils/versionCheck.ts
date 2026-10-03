@@ -15,11 +15,21 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.8.18';
+export const LOCAL_APP_VERSION = '1.8.19';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
+  {
+    version: '1.8.19',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
+    title: 'Catalog Edit Actions for Yatras & Amulets',
+    badge: 'Catalog Edit',
+    changelog: [
+      'ယတြာ ကတ်တလောက်နှင့် အဆောင် ကတ်တလောက်များတွင် သတ်မှတ်ထားသော ပစ္စည်းများအား ပြန်လည်ပြင်ဆင်နိုင်သည့် \'Edit (ပြင်ဆင်ရန်)\' စနစ် အပြည့်အဝ ထည့်သွင်းခြင်း။',
+      'ကတ်တလောက်ကတ်ပြားများတွင် \'Edit Icon\' အသစ်ထည့်သွင်းပေးပြီး၊ ၎င်းအား နှိပ်ပါက ယခင်အချက်အလက်ဟောင်းများကို မူလအတိုင်း ဖြည့်သွင်းပေးထားပြီး ပြင်ဆင်ချက်များကို Cloud နှင့် Local Storage နှစ်ဖက်လုံးတွင် စနစ်တကျ Auto-Sync သိမ်းဆည်းပေးခြင်း။'
+    ]
+  },
   {
     version: '1.8.18',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
@@ -29,18 +39,6 @@ export const ALL_VERSION_HISTORY: VersionRelease[] = [
       'ဘောက်ချာ (Print Receipt) ထိပ်ရှိ မလိုလားအပ်သော စာသားအပိုများအား ဖျက်ထုတ်ပေးခြင်း။',
       'ဘောက်ချာရှိ မေးသူအချက်အလက် (Client Profile) များအား ဖုန်းမျက်နှာပြင်ငယ်များတွင် ဘေးဘက်သို့လိပ်မထွက်စေဘဲ ၁ ခုလျှင် ၁ ကြောင်းစီ သန့်ရှင်းသပ်ရပ်စွာ ပြသပေးခြင်း။',
       'ပင်မစာရင်း ကတ်ပြားများတွင် ဖုန်းနံပါတ် မဖြည့်ထားပါက မလိုလားအပ်သော \'09- (မဖြည့်ရသေး)\' စာသားအား လုံးဝဖျက်သိမ်းကာ ဖုံးကွယ်ပေးခြင်း။'
-    ]
-  },
-  {
-    version: '1.8.17',
-    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'Business Intelligence Data Insight Dashboard & System Guide',
-    badge: 'Business Insights',
-    changelog: [
-      'လစဉ်အစီရင်ခံစာဟောင်းအား အဆင့်မြှင့်တင်ပြီး ပိုမိုပြည့်စုံစုံလင်သော \'Data Insight Dashboard\' သစ်အဖြစ် ပြောင်းလဲတည်ဆောက်ပေးခြင်း။',
-      'လစဉ် ဝင်ငွေ၊ အသုံးစရိတ် နှင့် အသားတင်အမြတ်ငွေ တိုးတက်ပြောင်းလဲမှု လမ်းကြောင်းများကို လှပသော Interactive Trend Lines (Area Charts) များဖြင့် ဆွဲပြပေးခြင်း။',
-      'မေးမြန်းသူတစ်ဦးချင်းစီ၏ ပျမ်းမျှဉာဏ်ပူဇော်ခ၊ အသုံးစရိတ်ကျန်းမာမှုအချိုးနှင့် အဆောင်ရောင်းအားအချိုးများအပေါ် မူတည်ပြီး စနစ်မှ အလိုအလျောက် စီးပွားရေးအကြံပြုချက်များပေးသည့် \'Smart Business Suggestion Analysis\' ထည့်သွင်းခြင်း။',
-      'စနစ်တစ်ခုလုံး၏ Features များနှင့် အသေးစိတ်သုံးစွဲပုံတစ်ဆင့်ချင်းစီကို ရှင်းပြပေးထားသော \'စနစ်လမ်းညွှန် & Features (System Guide)\' Tab အသစ် ထည့်သွင်းပေးခြင်း။'
     ]
   }
 ];
