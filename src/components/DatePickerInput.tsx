@@ -49,13 +49,13 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
         {/* Visible Display Box showing DD / MM / YYYY */}
         <div
           onClick={handleOpenPicker}
-          className="w-full px-3.5 py-3 rounded-xl bg-stone-900 border border-stone-700 hover:border-amber-500 text-stone-100 flex items-center justify-between cursor-pointer transition shadow-inner"
+          className="w-full px-3 sm:px-3.5 py-2.5 sm:py-3 rounded-xl bg-stone-900 border border-stone-700 hover:border-amber-500 text-stone-100 flex items-center justify-between gap-2 cursor-pointer transition shadow-inner"
         >
-          <span className={`text-base font-mono ${formattedDisplay ? 'text-amber-300 font-bold' : 'text-stone-500 text-sm'}`}>
+          <span className={`text-sm sm:text-base font-mono whitespace-nowrap truncate ${formattedDisplay ? 'text-amber-300 font-bold' : 'text-stone-500'}`}>
             {formattedDisplay || placeholder}
           </span>
-          <div className="flex items-center gap-1.5 text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/30 shrink-0">
-            <CalendarIcon className="w-4 h-4" />
+          <div className="flex items-center gap-1 sm:gap-1.5 text-amber-400 bg-amber-500/10 px-2 sm:px-2.5 py-1 rounded-lg border border-amber-500/30 shrink-0">
+            <CalendarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="text-xs font-semibold">ပြက္ခဒိန်</span>
           </div>
         </div>

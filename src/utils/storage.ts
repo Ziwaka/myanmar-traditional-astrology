@@ -1,9 +1,10 @@
-import { AmuletCatalogItem, YatraCatalogItem, ConsultationRecord, ExpenseRecord, ExpenseCategoryConfig } from '../types';
+import { AmuletCatalogItem, YatraCatalogItem, ConsultationRecord, ExpenseRecord, ExpenseCategoryConfig, ExtraIncomeRecord } from '../types';
 import { getDeviceId } from './deviceProfile';
 
 const STORAGE_KEYS = {
   CONSULTATIONS: 'myanmar_astrology_consultations_v2_clean',
   EXPENSES: 'myanmar_astrology_expenses_v2_clean',
+  EXTRA_INCOMES: 'myanmar_astrology_extra_incomes_v1',
   EXPENSE_CATEGORIES: 'myanmar_astrology_expense_categories_v1',
   AMULETS: 'myanmar_astrology_amulets_v2',
   YATRA_CATALOG: 'myanmar_astrology_yatra_catalog_v1',
@@ -105,6 +106,28 @@ export function saveExpenses(records: ExpenseRecord[]): void {
     localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(records));
   } catch (e) {
     console.error('Error saving expenses to storage', e);
+  }
+}
+
+export function loadExtraIncomes(): ExtraIncomeRecord[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.EXTRA_INCOMES);
+    if (!raw) {
+      saveExtraIncomes([]);
+      return [];
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading extra incomes from storage', e);
+    return [];
+  }
+}
+
+export function saveExtraIncomes(records: ExtraIncomeRecord[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.EXTRA_INCOMES, JSON.stringify(records));
+  } catch (e) {
+    console.error('Error saving extra incomes to storage', e);
   }
 }
 

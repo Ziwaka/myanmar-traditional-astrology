@@ -15,27 +15,34 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.6.1';
+export const LOCAL_APP_VERSION = '1.7.2';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
   {
-    version: '1.6.1',
+    version: '1.7.2',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂',
-    title: 'Mobile Safe Area Inset & Dynamic Island / Notch Display Fix',
-    badge: 'UI Optimization',
+    title: 'Account-Specific Expense Deduction (Cash / KPay / Wave / Banking)',
+    badge: 'Account Tracking',
     changelog: [
-      'iPhone Dynamic Island / Notch / Android Status Bar အောက်သို့ Modal Popup များ မရောက်ရှိစေရန် Safe Area Padding (pt-safe) ဖြင့် ချိန်ညှိပြင်ဆင်ပေးခြင်း။',
-      'ဗေဒင်မေးသူ အချက်အလက် စာရင်းသွင်း/ပြင်ဆင်သည့် Form ၏ Header ခလုတ်များအား ဖုန်းမျက်နှာပြင်တွင် သပ်ရပ်စွာ မြင်သာအောင် ပြုပြင်ခြင်း။'
+      'အသုံးစရိတ် ထည့်သွင်းရာတွင် ငွေထုတ်ယူသုံးစွဲသည့် အကောင့် (Cash / KPay / Wave / Banking) အလိုက် တိကျစွာ ရွေးချယ်နိုင်ပြီး၊ သက်ဆိုင်ရာ အကောင့် Balance ထဲမှ သီးသန့် အလိုအလျောက် နုတ်ယူတွက်ချက်ပေးခြင်း။'
     ]
   },
   {
-    version: '1.6.0',
+    version: '1.7.1',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂',
-    title: 'Smart Notification Center & Timed Multi-Interval Appointment Reminders',
+    title: 'Zero Horizontal Scroll & Responsive Clean Wrap Grid Layout',
     changelog: [
-      'Notification Center ထည့်သွင်းခြင်းနှင့် နာရီဝက်၊ ၁၅ မိနစ်၊ ၅ မိနစ်၊ အချိန်တည့်တည့် သတိပေးချက်များ ထည့်သွင်းခြင်း။'
+      'အသုံးစရိတ် စီမံခန့်ခွဲမှု Tab Menu များအား ဘေးတိုက် Scroll မလိုစေဘဲ မျက်နှာပြင်ပေါ်တွင် အပြည့်မြင်ရသော Responsive Grid ဖြင့် ပြင်ဆင်ခြင်း။'
+    ]
+  },
+  {
+    version: '1.7.0',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂',
+    title: 'Daily Cash Flow & Auto-Linked Consultation Income Balance Sheet',
+    changelog: [
+      'ဗေဒင်ဟောစာရင်းမှ ဝင်ငွေ အလိုအလျောက် ချိတ်ဆက်မှု၊ ထပ်တိုးဝင်ငွေ၊ အသုံးစရိတ်နှင့် တရက်တာ Balance ရှင်းတမ်း။'
     ]
   }
 ];

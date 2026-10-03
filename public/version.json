@@ -1,20 +1,19 @@
 {
-  "version": "1.6.1",
+  "version": "1.7.2",
   "releaseDate": "2026-10-02",
-  "title": "Mobile Safe Area Inset & Dynamic Island / Notch Display Fix",
+  "title": "Account-Specific Expense Deduction (Cash / KPay / Wave / Banking)",
   "isCloudAuthoritative": true,
   "changelog": [
-    "iPhone Dynamic Island / Notch / Android Status Bar အောက်သို့ Modal Popup များ မရောက်ရှိစေရန် Safe Area Padding (pt-safe) ဖြင့် ချိန်ညှိပြင်ဆင်ပေးခြင်း။",
-    "ဗေဒင်မေးသူ အချက်အလက် စာရင်းသွင်း/ပြင်ဆင်သည့် Form ၏ Header ခလုတ်များအား ဖုန်းမျက်နှာပြင်တွင် သပ်ရပ်စွာ မြင်သာအောင် ပြုပြင်ခြင်း။"
+    "အသုံးစရိတ် ထည့်သွင်းရာတွင် ငွေထုတ်ယူသုံးစွဲသည့် အကောင့် (Cash / KPay / Wave / Banking) အလိုက် တိကျစွာ ရွေးချယ်နိုင်ပြီး၊ သက်ဆိုင်ရာ အကောင့် Balance ထဲမှ သီးသန့် အလိုအလျောက် နုတ်ယူတွက်ချက်ပေးခြင်း။"
   ],
   "history": [
     {
-      "version": "1.6.1",
+      "version": "1.7.2",
       "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂",
-      "title": "Mobile Safe Area Inset & Dynamic Island / Notch Display Fix",
-      "badge": "UI Optimization",
+      "title": "Account-Specific Expense Deduction",
+      "badge": "Account Tracking",
       "changelog": [
-        "Mobile Safe Area Padding (iPhone Dynamic Island / Notch Fix)"
+        "ငွေထုတ်သုံးသည့် အကောင့် (Cash / KPay / Wave / Banking) အလိုက် Balance တိကျစွာ လျော့နည်းတွက်ချက်မှု"
       ]
     }
   ]

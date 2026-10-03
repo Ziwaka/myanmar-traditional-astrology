@@ -15,34 +15,59 @@ import {
   Edit2,
   CheckCircle2,
   PieChart,
-  ChevronDown
+  ChevronDown,
+  TrendingUp,
+  TrendingDown,
+  Scale,
+  Sparkles,
+  ArrowUpRight,
+  ArrowDownRight,
+  Printer,
+  Coins,
+  CreditCard,
+  Building2,
+  Check,
+  User,
+  Phone
 } from 'lucide-react';
 import { DatePickerInput } from './DatePickerInput';
-import { ExpenseRecord, ExpenseCategoryConfig } from '../types';
+import { ExpenseRecord, ExpenseCategoryConfig, ConsultationRecord, ExtraIncomeRecord } from '../types';
 import { formatMMK, formatDateDDMMYYYY } from '../utils/astrology';
-import { loadExpenseCategories, saveExpenseCategories, DEFAULT_EXPENSE_CATEGORIES } from '../utils/storage';
-import { saveExpenseCategoryToCloud, deleteExpenseCategoryFromCloud } from '../utils/firebase';
+import { 
+  loadExpenseCategories, 
+  saveExpenseCategories, 
+  DEFAULT_EXPENSE_CATEGORIES,
+  loadExtraIncomes,
+  saveExtraIncomes
+} from '../utils/storage';
+import { saveExpenseCategoryToCloud } from '../utils/firebase';
 
 interface ExpensesViewProps {
   expenses: ExpenseRecord[];
+  consultations?: ConsultationRecord[];
   onAddExpense: (expense: ExpenseRecord) => void;
   onDeleteExpense: (id: string) => void;
 }
 
 export const ExpensesView: React.FC<ExpensesViewProps> = ({
   expenses,
+  consultations = [],
   onAddExpense,
   onDeleteExpense,
 }) => {
-  // Navigation View Tab State: 'ledger' | 'categories' | 'analytics'
-  const [activeTab, setActiveTab] = useState<'ledger' | 'categories' | 'analytics'>('ledger');
+  // Navigation View Tab State: 'daily_balance' | 'ledger' | 'extra_incomes' | 'categories' | 'analytics'
+  const [activeTab, setActiveTab] = useState<'daily_balance' | 'ledger' | 'extra_incomes' | 'categories' | 'analytics'>('daily_balance');
 
   // Load persistent Category Configs
   const [categories, setCategories] = useState<ExpenseCategoryConfig[]>([]);
+  // Extra Incomes State
+  const [extraIncomes, setExtraIncomes] = useState<ExtraIncomeRecord[]>([]);
 
   useEffect(() => {
-    const loaded = loadExpenseCategories();
-    setCategories(loaded);
+    const loadedCats = loadExpenseCategories();
+    setCategories(loadedCats);
+    const loadedIncomes = loadExtraIncomes();
+    setExtraIncomes(loadedIncomes);
   }, []);
 
   const handleUpdateCategories = (newCats: ExpenseCategoryConfig[]) => {
@@ -50,24 +75,56 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     saveExpenseCategories(newCats);
   };
 
-  // Search & Filters
+  const handleAddExtraIncome = (record: ExtraIncomeRecord) => {
+    const updated = [record, ...extraIncomes];
+    setExtraIncomes(updated);
+    saveExtraIncomes(updated);
+  };
+
+  const handleDeleteExtraIncome = (id: string) => {
+    if (confirm('ဤထပ်တိုးဝင်ငွေမှတ်တမ်းကို ဖျက်ရန် သေချာပါသလား?')) {
+      const updated = extraIncomes.filter(i => i.id !== id);
+      setExtraIncomes(updated);
+      saveExtraIncomes(updated);
+    }
+  };
+
+  // Selected Date for Daily Balance Tab
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const [selectedDailyDate, setSelectedDailyDate] = useState<string>(todayStr);
+
+  // Search & Filters for Ledger
   const [searchTerm, setSearchTerm] = useState('');
   const [mainCategoryFilter, setMainCategoryFilter] = useState<string>('all');
   const [subCategoryFilter, setSubCategoryFilter] = useState<string>('all');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  
+  // Modals state
+  const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false);
+  const [isAddIncomeModalOpen, setIsAddIncomeModalOpen] = useState(false);
+  const [isPrintDailyReportOpen, setIsPrintDailyReportOpen] = useState(false);
+  const [dailyFilterMode, setDailyFilterMode] = useState<'all' | 'incomes' | 'expenses'>('all');
 
   // New Expense Form State
-  const todayStr = new Date().toISOString().slice(0, 10);
   const [title, setTitle] = useState('');
   const [selectedMainCategory, setSelectedMainCategory] = useState<string>('');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('');
   const [customSubCategoryInput, setCustomSubCategoryInput] = useState('');
   const [amount, setAmount] = useState<number | ''>('');
   const [date, setDate] = useState(todayStr);
+  const [expensePaymentMethod, setExpensePaymentMethod] = useState<'cash' | 'kpay' | 'wave' | 'cbbank' | 'ayapay'>('cash');
   const [note, setNote] = useState('');
   const [receiptNumber, setReceiptNumber] = useState('');
 
-  // When selectedMainCategory changes, auto-default selectedSubCategory to first available sub-category or empty
+  // New Extra Income Form State
+  const [incomeTitle, setIncomeTitle] = useState('');
+  const [incomeCategory, setIncomeCategory] = useState<string>('အလှူငွေ / ကန်တော့ငွေ');
+  const [incomeAmount, setIncomeAmount] = useState<number | ''>('');
+  const [incomeDate, setIncomeDate] = useState(todayStr);
+  const [incomePaymentMethod, setIncomePaymentMethod] = useState<'cash' | 'kpay' | 'wave' | 'cbbank' | 'ayapay'>('kpay');
+  const [incomeNote, setIncomeNote] = useState('');
+
+  // When selectedMainCategory changes, auto-default selectedSubCategory
   useEffect(() => {
     if (selectedMainCategory) {
       const match = categories.find(c => c.name === selectedMainCategory);
@@ -79,27 +136,174 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     }
   }, [selectedMainCategory, categories]);
 
-  // Set default main category when opening modal if empty
+  // Set default main category when opening expense modal
   useEffect(() => {
-    if (isAddModalOpen && categories.length > 0 && !selectedMainCategory) {
+    if (isAddExpenseModalOpen && categories.length > 0 && !selectedMainCategory) {
       setSelectedMainCategory(categories[0].name);
     }
-  }, [isAddModalOpen, categories, selectedMainCategory]);
+  }, [isAddExpenseModalOpen, categories, selectedMainCategory]);
 
-  // Available Sub-Categories for selected Main Category in form
   const availableSubCategories = useMemo(() => {
     const match = categories.find(c => c.name === selectedMainCategory);
     return match ? match.subCategories : [];
   }, [categories, selectedMainCategory]);
 
-  // Available Sub-Categories for current Main Category filter
   const filterSubCategories = useMemo(() => {
     if (mainCategoryFilter === 'all') return [];
     const match = categories.find(c => c.name === mainCategoryFilter);
     return match ? match.subCategories : [];
   }, [categories, mainCategoryFilter]);
 
-  // Filtered expenses
+  // ==========================================
+  // DAILY BALANCE CALCULATIONS (AUTO-LINKED)
+  // ==========================================
+  const dailyConsultations = useMemo(() => {
+    return consultations.filter(c => {
+      const datePart = (c.readingDateTime || c.bookingDate || '').slice(0, 10);
+      return datePart === selectedDailyDate;
+    });
+  }, [consultations, selectedDailyDate]);
+
+  const dailyConsultationIncome = useMemo(() => {
+    return dailyConsultations.reduce((sum, c) => {
+      const amt = c.paidAmount !== undefined ? c.paidAmount : (c.totalAmount || 0);
+      return sum + amt;
+    }, 0);
+  }, [dailyConsultations]);
+
+  const dailyExtraIncomes = useMemo(() => {
+    return extraIncomes.filter(i => i.date === selectedDailyDate);
+  }, [extraIncomes, selectedDailyDate]);
+
+  const dailyExtraIncomeTotal = useMemo(() => {
+    return dailyExtraIncomes.reduce((sum, i) => sum + (i.amount || 0), 0);
+  }, [dailyExtraIncomes]);
+
+  const dailyTotalIncome = useMemo(() => {
+    return dailyConsultationIncome + dailyExtraIncomeTotal;
+  }, [dailyConsultationIncome, dailyExtraIncomeTotal]);
+
+  const dailyExpenses = useMemo(() => {
+    return expenses.filter(e => e.date === selectedDailyDate);
+  }, [expenses, selectedDailyDate]);
+
+  const dailyTotalExpense = useMemo(() => {
+    return dailyExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  }, [dailyExpenses]);
+
+  const dailyNetBalance = useMemo(() => {
+    return dailyTotalIncome - dailyTotalExpense;
+  }, [dailyTotalIncome, dailyTotalExpense]);
+
+  // Payment Method Breakdown for the Selected Date
+  const paymentBreakdown = useMemo(() => {
+    const methods = [
+      { key: 'cash', label: 'Cash (လက်ငင်းငွေသား)', icon: <Coins className="w-4 h-4 text-amber-400" /> },
+      { key: 'kpay', label: 'KBZPay (KPay)', icon: <CreditCard className="w-4 h-4 text-blue-400" /> },
+      { key: 'wave', label: 'WavePay (Wave)', icon: <CreditCard className="w-4 h-4 text-yellow-400" /> },
+      { key: 'cbbank', label: 'CB Bank / AYA / Banking', icon: <Building2 className="w-4 h-4 text-emerald-400" /> },
+    ];
+
+    return methods.map(m => {
+      // Inflow from consultations
+      const cInflow = dailyConsultations
+        .filter(c => (c.paymentMethod || 'kpay') === m.key || (m.key === 'cbbank' && c.paymentMethod === 'ayapay'))
+        .reduce((sum, c) => sum + (c.paidAmount !== undefined ? c.paidAmount : (c.totalAmount || 0)), 0);
+
+      // Inflow from extra incomes
+      const eInflow = dailyExtraIncomes
+        .filter(i => (i.paymentMethod || 'cash') === m.key || (m.key === 'cbbank' && i.paymentMethod === 'ayapay'))
+        .reduce((sum, i) => sum + (i.amount || 0), 0);
+
+      const totalIn = cInflow + eInflow;
+
+      // Expense outflow: deduct directly from selected payment method (defaults to cash)
+      const totalOut = dailyExpenses
+        .filter(e => {
+          const pm = e.paymentMethod || 'cash';
+          if (m.key === 'cbbank') {
+            return pm === 'cbbank' || pm === 'ayapay';
+          }
+          return pm === m.key;
+        })
+        .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+      return {
+        key: m.key,
+        label: m.label,
+        icon: m.icon,
+        inflow: totalIn,
+        outflow: totalOut,
+        net: totalIn - totalOut,
+      };
+    });
+  }, [dailyConsultations, dailyExtraIncomes, dailyExpenses]);
+
+  // Combined Chronological Stream of Day's Transactions
+  const combinedDailyTransactions = useMemo(() => {
+    const list: {
+      id: string;
+      type: 'consultation_income' | 'extra_income' | 'expense';
+      title: string;
+      category: string;
+      amount: number;
+      paymentMethod?: string;
+      timeOrId?: string;
+      note?: string;
+    }[] = [];
+
+    // Add Consultations
+    dailyConsultations.forEach(c => {
+      list.push({
+        id: c.id,
+        type: 'consultation_income',
+        title: `${c.customerName || 'အမည်မဖော်ပြထားသူ'} (${c.serviceCategory || 'ဗေဒင်'})`,
+        category: 'ဗေဒင်ဟောစာတမ်း / ယတြာ / အဆောင်',
+        amount: c.paidAmount !== undefined ? c.paidAmount : (c.totalAmount || 0),
+        paymentMethod: c.paymentMethod || 'kpay',
+        timeOrId: c.id,
+        note: c.phone,
+      });
+    });
+
+    // Add Extra Incomes
+    dailyExtraIncomes.forEach(i => {
+      list.push({
+        id: i.id,
+        type: 'extra_income',
+        title: i.title,
+        category: i.category,
+        amount: i.amount,
+        paymentMethod: i.paymentMethod || 'cash',
+        timeOrId: 'ထပ်တိုးဝင်ငွေ',
+        note: i.note,
+      });
+    });
+
+    // Add Expenses
+    dailyExpenses.forEach(e => {
+      list.push({
+        id: e.id,
+        type: 'expense',
+        title: e.title,
+        category: `${e.category}${e.subCategory ? ` • ${e.subCategory}` : ''}`,
+        amount: e.amount,
+        paymentMethod: e.paymentMethod || 'cash',
+        timeOrId: e.receiptNumber || e.id,
+        note: e.note,
+      });
+    });
+
+    if (dailyFilterMode === 'incomes') {
+      return list.filter(t => t.type !== 'expense');
+    }
+    if (dailyFilterMode === 'expenses') {
+      return list.filter(t => t.type === 'expense');
+    }
+    return list;
+  }, [dailyConsultations, dailyExtraIncomes, dailyExpenses, dailyFilterMode]);
+
+  // Filtered expenses for Ledger
   const filteredExpenses = useMemo(() => {
     return expenses.filter((e) => {
       const matchesSearch =
@@ -116,8 +320,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     });
   }, [expenses, searchTerm, mainCategoryFilter, subCategoryFilter]);
 
-  // Overall total
-  const totalAmount = useMemo(() => {
+  const totalLedgerExpenses = useMemo(() => {
     return filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
   }, [filteredExpenses]);
 
@@ -165,7 +368,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       ? customSubCategoryInput.trim() 
       : selectedSubCategory;
 
-    // If custom sub-category was typed, automatically add it to the category config!
+    // If custom sub-category was typed, automatically add it to the category config
     if (customSubCategoryInput.trim() && selectedMainCategory) {
       const updatedCats = categories.map(c => {
         if (c.name === selectedMainCategory) {
@@ -188,13 +391,14 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       subCategory: finalSubCat || 'အထွေထွေ',
       amount: Number(amount),
       date: date || todayStr,
-      note: note.trim(),
+      paymentMethod: expensePaymentMethod,
+      note: note.trim() || undefined,
       receiptNumber: receiptNumber.trim() || undefined,
       createdAt: new Date().toISOString(),
     };
 
     onAddExpense(newExpense);
-    setIsAddModalOpen(false);
+    setIsAddExpenseModalOpen(false);
 
     // Reset Form
     setTitle('');
@@ -204,7 +408,35 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     setCustomSubCategoryInput('');
   };
 
-  // Category Configuration Modal State (New Category Form & New Sub Category Forms)
+  // Save Extra Income
+  const handleSaveExtraIncome = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!incomeTitle.trim() || !incomeAmount || Number(incomeAmount) <= 0) {
+      alert('ဝင်ငွေခေါင်းစဉ်နှင့် ငွေပမာဏ မှန်ကန်စွာ ထည့်သွင်းပေးပါ။');
+      return;
+    }
+
+    const newIncome: ExtraIncomeRecord = {
+      id: `INC-${Date.now().toString().slice(-6)}`,
+      title: incomeTitle.trim(),
+      category: incomeCategory || 'အထွေထွေဝင်ငွေ',
+      amount: Number(incomeAmount),
+      date: incomeDate || todayStr,
+      paymentMethod: incomePaymentMethod,
+      note: incomeNote.trim() || undefined,
+      createdAt: new Date().toISOString(),
+    };
+
+    handleAddExtraIncome(newIncome);
+    setIsAddIncomeModalOpen(false);
+
+    // Reset Form
+    setIncomeTitle('');
+    setIncomeAmount('');
+    setIncomeNote('');
+  };
+
+  // Category Configuration Modal State
   const [newCatName, setNewCatName] = useState('');
   const [newCatColor, setNewCatColor] = useState('#f59e0b');
   const [addingSubForCatId, setAddingSubForCatId] = useState<string | null>(null);
@@ -251,16 +483,18 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     });
 
     handleUpdateCategories(updated);
-    const cat = updated.find(c => c.id === catId);
-    if (cat) saveExpenseCategoryToCloud(cat);
-
     setNewSubCatInput('');
     setAddingSubForCatId(null);
   };
 
-  const handleDeleteSubCategory = (catId: string, subName: string) => {
-    if (!window.confirm(`"${subName}" Sub-Category ကို ဖျက်ရန် သေချာပါသလား?`)) return;
+  const handleDeleteCategory = (catId: string) => {
+    if (confirm('ဤ Category ကို ဖျက်ရန် သေချာပါသလား?')) {
+      const updated = categories.filter(c => c.id !== catId);
+      handleUpdateCategories(updated);
+    }
+  };
 
+  const handleDeleteSubCategory = (catId: string, subName: string) => {
     const updated = categories.map(c => {
       if (c.id === catId) {
         return {
@@ -270,119 +504,453 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       }
       return c;
     });
-
     handleUpdateCategories(updated);
-    const cat = updated.find(c => c.id === catId);
-    if (cat) saveExpenseCategoryToCloud(cat);
-  };
-
-  const handleDeleteMainCategory = (catId: string, catName: string) => {
-    if (!window.confirm(`"${catName}" Category တစ်ခုလုံးကို ဖျက်ရန် သေချာပါသလား?`)) return;
-
-    const updated = categories.filter(c => c.id !== catId);
-    handleUpdateCategories(updated);
-    deleteExpenseCategoryFromCloud(catId);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200">
       
-      {/* Header Banner */}
-      <div className="bg-stone-850 p-6 rounded-2xl border border-stone-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-rose-500/20 text-rose-300 border border-rose-500/30">
-            <Wallet className="w-6 h-6 text-rose-400" />
-          </div>
+      {/* Header & Tabs Navigation */}
+      <div className="bg-stone-850 p-3 sm:p-4 rounded-3xl border border-stone-800 shadow-md">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-rose-200">
-                အသုံးစရိတ် စီမံခန့်ခွဲမှု စနစ် (Expense Manager)
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Pre-set Category Manager
-              </span>
-            </div>
+            <h2 className="text-lg sm:text-xl font-bold text-amber-200 flex items-center gap-2">
+              <Scale className="w-6 h-6 text-amber-400" />
+              <span>အသုံးစရိတ်နှင့် ငွေစီးဆင်းမှု စီမံခန့်ခွဲရေး (Finance & Balance)</span>
+            </h2>
             <p className="text-xs text-stone-400 mt-0.5">
-              Category နှင့် Sub-Category များကို ကြိုတင် Set ပြုလုပ်၍ စနစ်တကျ စရိတ်စာရင်းများ သွင်းယူနိုင်ပါသည်
+              ဗေဒင်ဝင်ငွေနှင့် အလိုအလျောက် ချိတ်ဆက်တွက်ချက်မှု၊ ထပ်တိုးဝင်ငွေ၊ အသုံးစရိတ်နှင့် တရက်တာ Balance
             </p>
+          </div>
+
+          {/* Quick Action Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                setIncomeDate(selectedDailyDate);
+                setIsAddIncomeModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition active:scale-95 cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-emerald-400" />
+              <span>+ အခြားဝင်ငွေ</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setDate(selectedDailyDate);
+                setIsAddExpenseModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold shadow-md transition active:scale-95 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ စရိတ်အသစ်</span>
+            </button>
           </div>
         </div>
 
-        {/* Tab Navigation Buttons & Add Button */}
-        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
-          <div className="flex items-center gap-1 bg-stone-900 p-1 rounded-xl border border-stone-800 text-xs">
-            <button
-              onClick={() => setActiveTab('ledger')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
-                activeTab === 'ledger'
-                  ? 'bg-rose-600 text-white font-bold shadow'
-                  : 'text-stone-400 hover:text-stone-200'
-              }`}
-            >
-              စရိတ်စာရင်းများ
-            </button>
-            <button
-              onClick={() => setActiveTab('categories')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'categories'
-                  ? 'bg-amber-500 text-stone-950 font-bold shadow'
-                  : 'text-stone-400 hover:text-amber-300'
-              }`}
-            >
-              <Settings className="w-3.5 h-3.5" />
-              <span>Category Setup ({categories.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('analytics')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'analytics'
-                  ? 'bg-purple-600 text-white font-bold shadow'
-                  : 'text-stone-400 hover:text-purple-300'
-              }`}
-            >
-              <PieChart className="w-3.5 h-3.5" />
-              <span>သုံးသပ်ချက်</span>
-            </button>
-          </div>
+        {/* Tab Navigation Menu - Responsive Grid / Wrap (NO HORIZONTAL SCROLL) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mt-3 pt-3 border-t border-stone-800/80 text-xs">
+          
+          <button
+            onClick={() => setActiveTab('daily_balance')}
+            className={`flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-xl font-bold transition text-center cursor-pointer ${
+              activeTab === 'daily_balance'
+                ? 'bg-amber-500 text-stone-950 shadow-md font-extrabold ring-2 ring-amber-400/50'
+                : 'bg-stone-900 text-stone-300 hover:bg-stone-800 border border-stone-800'
+            }`}
+          >
+            <Scale className="w-3.5 h-3.5 shrink-0" />
+            <span className="leading-tight">တရက်တာ Balance</span>
+          </button>
 
           <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs sm:text-sm shadow-lg transition active:scale-95 cursor-pointer whitespace-nowrap"
+            onClick={() => setActiveTab('ledger')}
+            className={`flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-xl font-bold transition text-center cursor-pointer ${
+              activeTab === 'ledger'
+                ? 'bg-rose-500 text-stone-950 shadow-md font-extrabold ring-2 ring-rose-400/50'
+                : 'bg-stone-900 text-stone-300 hover:bg-stone-800 border border-stone-800'
+            }`}
           >
-            <Plus className="w-4 h-4" />
-            <span>+ အသုံးစရိတ် အသစ်</span>
+            <FileText className="w-3.5 h-3.5 shrink-0" />
+            <span className="leading-tight">အသုံးစရိတ် စာရင်း ({expenses.length})</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('extra_incomes')}
+            className={`flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-xl font-bold transition text-center cursor-pointer ${
+              activeTab === 'extra_incomes'
+                ? 'bg-emerald-500 text-stone-950 shadow-md font-extrabold ring-2 ring-emerald-400/50'
+                : 'bg-stone-900 text-stone-300 hover:bg-stone-800 border border-stone-800'
+            }`}
+          >
+            <Coins className="w-3.5 h-3.5 shrink-0" />
+            <span className="leading-tight">အခြားဝင်ငွေများ ({extraIncomes.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-xl font-bold transition text-center cursor-pointer ${
+              activeTab === 'analytics'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 ring-1 ring-amber-400'
+                : 'bg-stone-900 text-stone-300 hover:bg-stone-800 border border-stone-800'
+            }`}
+          >
+            <PieChart className="w-3.5 h-3.5 shrink-0" />
+            <span className="leading-tight">စရိတ် သုံးသပ်ချက်</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('categories')}
+            className={`col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-xl font-bold transition text-center cursor-pointer ${
+              activeTab === 'categories'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 ring-1 ring-amber-400'
+                : 'bg-stone-900 text-stone-300 hover:bg-stone-800 border border-stone-800'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5 shrink-0" />
+            <span className="leading-tight">စရိတ် အမျိုးအစားများ</span>
+          </button>
+
         </div>
       </div>
 
-      {/* TAB 1: EXPENSES LEDGER VIEW */}
-      {activeTab === 'ledger' && (
-        <>
-          {/* Control Bar: Search & Filter & Total Sum */}
-          <div className="bg-stone-850 p-4 rounded-xl border border-stone-800 flex flex-col lg:flex-row items-center justify-between gap-3 shadow">
+      {/* ========================================== */}
+      {/* TAB 1: DAILY BALANCE & CASH FLOW (PRIMARY) */}
+      {/* ========================================== */}
+      {activeTab === 'daily_balance' && (
+        <div className="space-y-4">
+          
+          {/* Date Selector & Print Toolbar (Single Clean Line & Responsive) */}
+          <div className="bg-stone-850 p-3 sm:p-4 rounded-2xl border border-stone-800 space-y-3 shadow-inner">
             
-            <div className="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto flex-1">
-              <div className="relative w-full sm:w-64">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                <input
-                  type="text"
-                  placeholder="ခေါင်းစဉ်၊ အမျိုးအစား၊ ပြေစာအမှတ်ဖြင့် ရှာရန်..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:outline-none focus:border-rose-500"
+            {/* Quick Date Pills */}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-xs text-stone-300 font-bold flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>စစ်ဆေးလိုသည့် နေ့စွဲ:</span>
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDailyDate(todayStr)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    selectedDailyDate === todayStr
+                      ? 'bg-amber-500 text-stone-950 font-extrabold shadow ring-2 ring-amber-400/50'
+                      : 'bg-stone-900 text-stone-300 hover:bg-stone-800 border border-stone-800'
+                  }`}
+                >
+                  🌟 ယနေ့
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedDailyDate(yesterdayStr)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    selectedDailyDate === yesterdayStr
+                      ? 'bg-amber-500 text-stone-950 font-extrabold shadow ring-2 ring-amber-400/50'
+                      : 'bg-stone-900 text-stone-300 hover:bg-stone-800 border border-stone-800'
+                  }`}
+                >
+                  ⬅️ မနေ့က
+                </button>
+              </div>
+            </div>
+
+            {/* Date Picker Input & Print Voucher Action - 1 Full Row */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <DatePickerInput
+                  label=""
+                  value={selectedDailyDate}
+                  onChange={(d) => setSelectedDailyDate(d)}
                 />
               </div>
 
-              {/* Main Category Filter Dropdown */}
+              <button
+                type="button"
+                onClick={() => setIsPrintDailyReportOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 text-xs font-extrabold transition cursor-pointer shadow active:scale-95 shrink-0"
+                title="တရက်တာ ရှင်းတမ်း Print ထုတ်ရန်"
+              >
+                <Printer className="w-4 h-4 text-stone-950" />
+                <span>Print ရှင်းတမ်း</span>
+              </button>
+            </div>
+
+          </div>
+
+          {/* Top 3 Metric Hero Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+            
+            {/* 1. Daily Total Income */}
+            <div className="bg-gradient-to-br from-emerald-950/40 via-stone-900 to-stone-900 border border-emerald-500/30 p-4 sm:p-5 rounded-3xl shadow-lg relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5 uppercase tracking-wider">
+                  <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                  <span>တရက်တာ စုစုပေါင်း ဝင်ငွေ</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  Inflow
+                </span>
+              </div>
+
+              <div className="mt-2 text-2xl sm:text-3xl font-black text-emerald-300 font-mono">
+                {formatMMK(dailyTotalIncome)}
+              </div>
+
+              <div className="mt-2 text-[11px] text-stone-400 space-y-0.5 border-t border-emerald-500/20 pt-2">
+                <div className="flex justify-between">
+                  <span>🔮 ဗေဒင် + ယတြာ + အဆောင် ({dailyConsultations.length} ဦး):</span>
+                  <strong className="text-stone-200 font-mono">{formatMMK(dailyConsultationIncome)}</strong>
+                </div>
+                {dailyExtraIncomeTotal > 0 && (
+                  <div className="flex justify-between">
+                    <span>➕ အခြားထပ်တိုး ဝင်ငွေ ({dailyExtraIncomes.length} ခု):</span>
+                    <strong className="text-emerald-400 font-mono">{formatMMK(dailyExtraIncomeTotal)}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 2. Daily Total Expenses */}
+            <div className="bg-gradient-to-br from-rose-950/40 via-stone-900 to-stone-900 border border-rose-500/30 p-4 sm:p-5 rounded-3xl shadow-lg relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-rose-300 flex items-center gap-1.5 uppercase tracking-wider">
+                  <ArrowDownRight className="w-4 h-4 text-rose-400" />
+                  <span>တရက်တာ စုစုပေါင်း အသုံးစရိတ်</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                  Outflow ({dailyExpenses.length} ခု)
+                </span>
+              </div>
+
+              <div className="mt-2 text-2xl sm:text-3xl font-black text-rose-300 font-mono">
+                {formatMMK(dailyTotalExpense)}
+              </div>
+
+              <div className="mt-2 text-[11px] text-stone-400 space-y-0.5 border-t border-rose-500/20 pt-2 flex justify-between">
+                <span>ကုန်ကျခဲ့သော စရိတ်ခေါင်းစဉ်များ:</span>
+                <strong className="text-rose-300">{dailyExpenses.length > 0 ? `${dailyExpenses.length} မျိုး` : 'မရှိသေးပါ'}</strong>
+              </div>
+            </div>
+
+            {/* 3. Daily Net Balance */}
+            <div className={`p-4 sm:p-5 rounded-3xl border shadow-lg relative overflow-hidden ${
+              dailyNetBalance >= 0
+                ? 'bg-gradient-to-br from-amber-950/40 via-stone-900 to-emerald-950/30 border-amber-500/50'
+                : 'bg-gradient-to-br from-rose-950/60 via-stone-900 to-stone-900 border-rose-500/60'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                  <Scale className="w-4 h-4 text-amber-400" />
+                  <span>တရက်တာ အသားတင် Balance</span>
+                </span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                  dailyNetBalance >= 0
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                }`}>
+                  {dailyNetBalance >= 0 ? '✨ လက်ကျန်ငွေပို' : '⚠️ စရိတ်ပိုငွေလို'}
+                </span>
+              </div>
+
+              <div className={`mt-2 text-2xl sm:text-3xl font-black font-mono ${
+                dailyNetBalance >= 0 ? 'text-amber-300' : 'text-rose-400'
+              }`}>
+                {dailyNetBalance < 0 ? `- ${formatMMK(Math.abs(dailyNetBalance))}` : formatMMK(dailyNetBalance)}
+              </div>
+
+              <div className="mt-2 text-[11px] text-stone-400 border-t border-stone-800 pt-2 flex justify-between">
+                <span>(ဝင်ငွေ − အသုံးစရိတ်):</span>
+                <span className={`font-bold ${dailyNetBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {dailyNetBalance >= 0 ? 'အသားတင် အမြတ်/လက်ကျန်' : 'အသုံးစရိတ် ပိုလျှံနေပါသည်'}
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Payment Method Balances Grid */}
+          <div className="bg-stone-850 p-4 rounded-3xl border border-stone-800 space-y-3">
+            <h3 className="text-xs sm:text-sm font-bold text-stone-200 flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-amber-400" />
+              <span>ငွေပေးချေမှု နည်းလမ်းအလိုက် တရက်တာ ဝင်/ထွက်/လက်ကျန် စာရင်း</span>
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              {paymentBreakdown.map((pb) => (
+                <div key={pb.key} className="p-3 bg-stone-900/90 rounded-2xl border border-stone-800 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-bold text-stone-300">
+                    <span className="flex items-center gap-1.5">{pb.icon} {pb.label}</span>
+                  </div>
+
+                  <div className="text-[11px] text-stone-400 space-y-1">
+                    <div className="flex justify-between">
+                      <span>ဝင်ငွေ (In):</span>
+                      <span className="text-emerald-400 font-mono font-semibold">+{formatMMK(pb.inflow)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>စရိတ် (Out):</span>
+                      <span className="text-rose-400 font-mono font-semibold">-{formatMMK(pb.outflow)}</span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-stone-800/80 pt-1.5 flex justify-between items-center text-xs">
+                    <span className="text-stone-400 font-medium">လက်ကျန်:</span>
+                    <strong className={`font-mono font-bold ${pb.net >= 0 ? 'text-amber-300' : 'text-rose-400'}`}>
+                      {pb.net < 0 ? `- ${formatMMK(Math.abs(pb.net))}` : formatMMK(pb.net)}
+                    </strong>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Combined Daily Transactions Stream */}
+          <div className="bg-stone-850 p-4 rounded-3xl border border-stone-800 space-y-3">
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-800 pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-stone-100 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-amber-400" />
+                  <span>{formatDateDDMMYYYY(selectedDailyDate)} ၏ ဝင်/ထွက် စာရင်းအားလုံး ({combinedDailyTransactions.length} ခု)</span>
+                </h3>
+                <span className="text-xs text-stone-400">ဗေဒင်ဟောစာရင်းမှ အလိုအလျောက် သွင်းယူထားသော ဝင်ငွေ၊ ထပ်တိုးဝင်ငွေနှင့် စရိတ်များ</span>
+              </div>
+
+              {/* Filter: All / Incomes / Expenses - Wraps cleanly on mobile */}
+              <div className="flex flex-wrap items-center gap-1 bg-stone-900 p-1 rounded-xl border border-stone-800 text-xs">
+                <button
+                  onClick={() => setDailyFilterMode('all')}
+                  className={`px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer text-center ${
+                    dailyFilterMode === 'all' ? 'bg-amber-500 text-stone-950 font-extrabold' : 'text-stone-400 hover:text-stone-200'
+                  }`}
+                >
+                  အားလုံး ({dailyConsultations.length + dailyExtraIncomes.length + dailyExpenses.length})
+                </button>
+                <button
+                  onClick={() => setDailyFilterMode('incomes')}
+                  className={`px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer text-center ${
+                    dailyFilterMode === 'incomes' ? 'bg-emerald-500 text-stone-950 font-extrabold' : 'text-stone-400 hover:text-stone-200'
+                  }`}
+                >
+                  🟢 ဝင်ငွေသာ ({dailyConsultations.length + dailyExtraIncomes.length})
+                </button>
+                <button
+                  onClick={() => setDailyFilterMode('expenses')}
+                  className={`px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer text-center ${
+                    dailyFilterMode === 'expenses' ? 'bg-rose-500 text-stone-950 font-extrabold' : 'text-stone-400 hover:text-stone-200'
+                  }`}
+                >
+                  🔴 စရိတ်သာ ({dailyExpenses.length})
+                </button>
+              </div>
+            </div>
+
+            {combinedDailyTransactions.length === 0 ? (
+              <div className="py-12 text-center text-stone-400 space-y-2">
+                <Scale className="w-12 h-12 mx-auto text-stone-600" />
+                <p className="font-semibold text-sm">ဤနေ့ရက်အတွက် ဝင်ငွေ/အသုံးစရိတ် မှတ်တမ်း မရှိသေးပါ</p>
+                <p className="text-xs text-stone-500">ဗေဒင်စာရင်းသွင်းခြင်း၊ ဝင်ငွေ သို့မဟုတ် စရိတ်အသစ် ထည့်သွင်းနိုင်ပါသည်</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {combinedDailyTransactions.map((item, idx) => {
+                  const isIncome = item.type !== 'expense';
+                  return (
+                    <div
+                      key={idx}
+                      className={`p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 ${
+                        isIncome
+                          ? 'bg-emerald-950/20 border-emerald-500/30 hover:bg-emerald-950/30'
+                          : 'bg-rose-950/20 border-rose-500/30 hover:bg-rose-950/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`p-2 rounded-xl shrink-0 ${
+                          isIncome ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                        }`}>
+                          {isIncome ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-xs sm:text-sm text-stone-100 truncate">
+                              {item.title}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              item.type === 'consultation_income'
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                : item.type === 'extra_income'
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                            }`}>
+                              {item.category}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-[11px] text-stone-400 mt-0.5">
+                            {item.paymentMethod && <span>Payment: <strong className="text-stone-300 uppercase">{item.paymentMethod}</strong></span>}
+                            {item.timeOrId && <span>• ID/Ref: {item.timeOrId}</span>}
+                            {item.note && <span>• {item.note}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className={`font-mono font-black text-sm sm:text-base ${
+                          isIncome ? 'text-emerald-400' : 'text-rose-400'
+                        }`}>
+                          {isIncome ? `+${formatMMK(item.amount)}` : `-${formatMMK(item.amount)}`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+          </div>
+
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* TAB 2: EXPENSE LEDGER (ALL EXPENSES)       */}
+      {/* ========================================== */}
+      {activeTab === 'ledger' && (
+        <div className="space-y-4">
+          
+          {/* Filters Bar */}
+          <div className="bg-stone-850 p-4 rounded-3xl border border-stone-800 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md">
+            
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="စရိတ်အမည်၊ အမျိုးအစား၊ ပြေစာအမှတ် သို့မဟုတ် မှတ်ချက်ဖြင့် ရှာရန်..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ fontSize: '16px' }}
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:outline-none focus:border-rose-500 text-xs sm:text-sm"
+              />
+            </div>
+
+            {/* Main Category Filter */}
+            <div className="flex items-center gap-2">
               <select
                 value={mainCategoryFilter}
                 onChange={(e) => {
                   setMainCategoryFilter(e.target.value);
                   setSubCategoryFilter('all');
                 }}
-                className="w-full sm:w-auto px-3 py-2 text-xs rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-rose-500 cursor-pointer"
+                className="px-3 py-2.5 rounded-2xl bg-stone-900 border border-stone-700 text-stone-200 text-xs font-semibold focus:outline-none cursor-pointer"
               >
-                <option value="all">Main Category (အားလုံး)</option>
+                <option value="all">📂 Main Category အားလုံး</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.name}>
                     {c.name}
@@ -390,14 +958,14 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 ))}
               </select>
 
-              {/* Sub Category Filter Dropdown */}
-              {filterSubCategories.length > 0 && (
+              {/* Sub-Category Filter if main category selected */}
+              {mainCategoryFilter !== 'all' && filterSubCategories.length > 0 && (
                 <select
                   value={subCategoryFilter}
                   onChange={(e) => setSubCategoryFilter(e.target.value)}
-                  className="w-full sm:w-auto px-3 py-2 text-xs rounded-xl bg-stone-900 border border-stone-700 text-amber-300 focus:border-amber-500 cursor-pointer"
+                  className="px-3 py-2.5 rounded-2xl bg-stone-900 border border-stone-700 text-amber-300 text-xs font-semibold focus:outline-none cursor-pointer"
                 >
-                  <option value="all">Sub-Category (အားလုံး)</option>
+                  <option value="all">📁 Sub Category အားလုံး</option>
                   {filterSubCategories.map((s, idx) => (
                     <option key={idx} value={s}>
                       {s}
@@ -407,308 +975,325 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               )}
             </div>
 
-            {/* Total Expense Display Box */}
-            <div className="flex items-center gap-3 bg-stone-900 px-4 py-2 rounded-xl border border-stone-800 self-end lg:self-auto shrink-0">
-              <span className="text-xs text-stone-400 font-medium">စုစုပေါင်း အသုံးစရိတ်:</span>
-              <span className="text-base sm:text-lg font-bold font-mono text-rose-400">
-                {formatMMK(totalAmount)}
+          </div>
+
+          {/* Ledger Table / List */}
+          <div className="bg-stone-850 rounded-3xl border border-stone-800 overflow-hidden shadow-md">
+            
+            <div className="p-4 bg-stone-900/60 border-b border-stone-800 flex items-center justify-between">
+              <span className="text-xs font-bold text-stone-400">
+                ရှာဖွေတွေ့ရှိသည့် စရိတ်: <strong className="text-stone-200">{filteredExpenses.length}</strong> ခု
+              </span>
+              <span className="text-xs font-bold text-rose-400 font-mono">
+                စုစုပေါင်း ကျသင့်ငွေ: {formatMMK(totalLedgerExpenses)}
               </span>
             </div>
 
-          </div>
-
-          {/* Expenses List / Table */}
-          <div className="bg-stone-850 rounded-2xl border border-stone-800 shadow-xl overflow-hidden">
             {filteredExpenses.length === 0 ? (
-              <div className="p-12 text-center text-stone-400 space-y-2">
-                <Wallet className="w-12 h-12 mx-auto text-stone-600 stroke-[1.5]" />
-                <p className="text-sm font-medium text-stone-300">အသုံးစရိတ် မှတ်တမ်း မရှိသေးပါ။</p>
-                <p className="text-xs text-stone-500">
-                  "+ အသုံးစရိတ် အသစ်" ခလုတ်ကို နှိပ်၍ အသုံးစရိတ် စာရင်းသွင်းနိုင်ပါသည်။
-                </p>
+              <div className="py-16 text-center text-stone-400 space-y-2">
+                <Wallet className="w-12 h-12 mx-auto text-stone-600" />
+                <p className="font-semibold text-sm">အသုံးစရိတ် စာရင်း မရှိသေးပါ</p>
+                <p className="text-xs text-stone-500">"+ စရိတ်အသစ်" ခလုတ်ကို နှိပ်၍ ထည့်သွင်းနိုင်ပါသည်</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs sm:text-sm text-stone-300">
-                  <thead className="bg-stone-900 border-b border-stone-800 text-amber-200 uppercase text-[11px] tracking-wider">
-                    <tr>
-                      <th className="px-4 py-3">ရက်စွဲ</th>
-                      <th className="px-4 py-3">စရိတ်ခေါင်းစဉ်</th>
-                      <th className="px-4 py-3">Category / Sub-Category</th>
-                      <th className="px-4 py-3">ပြေစာနံပါတ် / မှတ်ချက်</th>
-                      <th className="px-4 py-3 text-right">ကျသင့်ငွေ</th>
-                      <th className="px-4 py-3 text-center">လုပ်ဆောင်ချက်</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-800/60">
-                    {filteredExpenses.map((exp) => (
-                      <tr key={exp.id} className="hover:bg-stone-800/40 transition">
-                        <td className="px-4 py-3 text-stone-400 font-mono text-xs whitespace-nowrap">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-stone-500" />
-                            <span>{formatDateDDMMYYYY(exp.date)}</span>
+              <div className="divide-y divide-stone-800">
+                {filteredExpenses.map((expense) => (
+                  <div key={expense.id} className="p-4 hover:bg-stone-800/40 transition flex items-center justify-between gap-3">
+                    
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-bold text-sm text-stone-100 truncate">{expense.title}</h4>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                          {expense.category}
+                        </span>
+                        {expense.subCategory && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-800 text-stone-300 border border-stone-700">
+                            {expense.subCategory}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 font-semibold text-stone-100">
-                          {exp.title}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                              {exp.category}
-                            </span>
-                            {exp.subCategory && (
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                {exp.subCategory}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-stone-400 text-xs">
-                          {exp.receiptNumber && (
-                            <span className="font-mono text-stone-300 mr-2">#{exp.receiptNumber}</span>
-                          )}
-                          <span>{exp.note || '-'}</span>
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono font-bold text-rose-300 text-sm whitespace-nowrap">
-                          {formatMMK(exp.amount)}
-                        </td>
-                        <td className="px-4 py-3 text-center whitespace-nowrap">
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`"${exp.title}" အသုံးစရိတ် စာရင်းကို ဖျက်ရန် သေချာပါသလား?`)) {
-                                onDeleteExpense(exp.id);
-                              }
-                            }}
-                            className="p-1.5 rounded-lg text-stone-400 hover:text-rose-400 hover:bg-stone-800 transition cursor-pointer"
-                            title="ဖျက်မည်"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </>
-      )}
+                        )}
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-800 text-amber-300 border border-stone-700 uppercase">
+                          {expense.paymentMethod || 'cash'}
+                        </span>
+                      </div>
 
-      {/* TAB 2: PRE-SET CATEGORY & SUB-CATEGORY SETUP MANAGER */}
-      {activeTab === 'categories' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          
-          {/* Add Main Category Form */}
-          <div className="bg-stone-850 p-5 rounded-2xl border border-stone-800 shadow-xl space-y-4">
-            <h3 className="font-bold text-stone-100 text-base flex items-center gap-2 border-b border-stone-800 pb-3">
-              <FolderPlus className="w-5 h-5 text-amber-400" />
-              <span>Main Category (အဓိက စရိတ်အမျိုးအစား အသစ်ထည့်ရန်)</span>
-            </h3>
-
-            <form onSubmit={handleAddMainCategory} className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-xs text-stone-300 font-semibold block">Category အမည်:</label>
-                <input
-                  type="text"
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  placeholder="ဥပမာ- နည်းပညာနှင့် ဖုန်းဘေလ်စရိတ်"
-                  style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-3 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 font-medium focus:outline-none focus:border-amber-500 shadow-inner"
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="space-y-1 flex-1">
-                  <label className="text-xs text-stone-400 font-semibold block">Badge အရောင်:</label>
-                  <input
-                    type="color"
-                    value={newCatColor}
-                    onChange={(e) => setNewCatColor(e.target.value)}
-                    className="w-full h-10 p-1 rounded-xl bg-stone-900 border border-stone-700 cursor-pointer"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm shadow-md transition active:scale-95 cursor-pointer shrink-0 mt-5"
-                >
-                  + Category ထည့်မည်
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Configured Categories List with Sub-Categories */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {categories.map((cat) => (
-              <div key={cat.id} className="bg-stone-850 p-5 rounded-2xl border border-stone-800 shadow-xl space-y-4">
-                
-                {/* Category Header */}
-                <div className="flex items-center justify-between border-b border-stone-800 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      style={{ backgroundColor: cat.color || '#f59e0b' }}
-                      className="w-3.5 h-3.5 rounded-full inline-block shrink-0 shadow-sm"
-                    />
-                    <h4 className="font-bold text-stone-100 text-base">
-                      {cat.name}
-                    </h4>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMainCategory(cat.id, cat.name)}
-                    className="p-1.5 rounded-lg text-stone-400 hover:text-rose-400 hover:bg-stone-800 transition cursor-pointer"
-                    title="Category ဖျက်မည်"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Sub-Categories List */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-amber-300 font-semibold">
-                      Sub-Categories (အမျိုးအစားခွဲများ):
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAddingSubForCatId(cat.id);
-                        setNewSubCatInput('');
-                      }}
-                      className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      + Sub-Category ထည့်မည်
-                    </button>
-                  </div>
-
-                  {addingSubForCatId === cat.id && (
-                    <div className="p-2.5 bg-stone-900 rounded-xl border border-amber-500/50 space-y-2">
-                      <input
-                        type="text"
-                        autoFocus
-                        value={newSubCatInput}
-                        onChange={(e) => setNewSubCatInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddSubCategory(cat.id);
-                          }
-                        }}
-                        placeholder="Sub-category အမည် ရိုက်ထည့်ပါ..."
-                        style={{ fontSize: '16px' }}
-                        className="w-full px-3 py-2 text-sm rounded-lg bg-stone-950 border border-stone-700 text-stone-100 focus:outline-none focus:border-amber-500"
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setAddingSubForCatId(null)}
-                          className="px-3 py-1 bg-stone-800 text-stone-300 rounded-lg text-xs font-semibold"
-                        >
-                          မလုပ်တော့ပါ
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleAddSubCategory(cat.id)}
-                          className="px-3 py-1 bg-amber-500 text-stone-950 rounded-lg text-xs font-bold"
-                        >
-                          သိမ်းမည်
-                        </button>
+                      <div className="flex items-center gap-3 text-xs text-stone-400">
+                        <span className="flex items-center gap-1 font-mono">
+                          <Calendar className="w-3.5 h-3.5 text-stone-500" />
+                          {formatDateDDMMYYYY(expense.date)}
+                        </span>
+                        {expense.receiptNumber && <span>• ပြေစာ: {expense.receiptNumber}</span>}
+                        {expense.note && <span>• {expense.note}</span>}
                       </div>
                     </div>
-                  )}
 
-                  <div className="space-y-1.5 pt-1">
-                    {cat.subCategories.map((sub, sIdx) => (
-                      <div
-                        key={sIdx}
-                        className="flex items-center justify-between px-3 py-2 rounded-xl bg-stone-900 border border-stone-800 text-xs text-stone-200"
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="font-mono font-black text-sm sm:text-base text-rose-400">
+                        -{formatMMK(expense.amount)}
+                      </span>
+
+                      <button
+                        onClick={() => onDeleteExpense(expense.id)}
+                        className="p-2 rounded-xl text-stone-500 hover:text-rose-400 hover:bg-stone-800 transition cursor-pointer"
+                        title="ဖျက်မည်"
                       >
-                        <span className="font-semibold">{sub}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteSubCategory(cat.id, sub)}
-                          className="text-stone-500 hover:text-rose-400 transition cursor-pointer p-1"
-                          title="Sub-category ဖျက်မည်"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
 
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+
           </div>
+
         </div>
       )}
 
-      {/* TAB 3: CATEGORY ANALYTICS VIEW */}
-      {activeTab === 'analytics' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          <div className="bg-stone-850 p-5 rounded-2xl border border-stone-800 shadow-xl space-y-4">
-            <h3 className="font-bold text-stone-100 text-base flex items-center gap-2 border-b border-stone-800 pb-3">
-              <PieChart className="w-5 h-5 text-purple-400" />
-              <span>အသုံးစရိတ် အမျိုးအစားအလိုက် ခွဲခြမ်းစိတ်ဖြာချက် (Category Analytics)</span>
-            </h3>
+      {/* ========================================== */}
+      {/* TAB 3: EXTRA INCOMES                       */}
+      {/* ========================================== */}
+      {activeTab === 'extra_incomes' && (
+        <div className="space-y-4">
+          
+          <div className="bg-stone-850 p-4 rounded-3xl border border-stone-800 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
+                <Coins className="w-4 h-4" />
+                <span>အခြား ထပ်တိုး ဝင်ငွေများ (Extra & Custom Incomes)</span>
+              </h3>
+              <p className="text-xs text-stone-400 mt-0.5">
+                အလှူငွေ/ကန်တော့ငွေ၊ စာအုပ်နှင့် ပစ္စည်းအရောင်း၊ သင်တန်းကြေး စသည့် ဗေဒင်ပြင်ပ ဝင်ငွေများ
+              </p>
+            </div>
 
-            {categoryAnalytics.length === 0 ? (
-              <p className="text-center text-stone-500 text-xs py-8">အသုံးစရိတ် မှတ်တမ်း မရှိသေးပါ။</p>
+            <button
+              onClick={() => setIsAddIncomeModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition active:scale-95 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ ဝင်ငွေအသစ် ထည့်မည်</span>
+            </button>
+          </div>
+
+          <div className="bg-stone-850 rounded-3xl border border-stone-800 overflow-hidden shadow-md">
+            {extraIncomes.length === 0 ? (
+              <div className="py-16 text-center text-stone-400 space-y-2">
+                <Coins className="w-12 h-12 mx-auto text-stone-600" />
+                <p className="font-semibold text-sm">ထပ်တိုး ဝင်ငွေမှတ်တမ်း မရှိသေးပါ</p>
+                <p className="text-xs text-stone-500">အလှူငွေ သို့မဟုတ် အခြားဝင်ငွေများအား ဤနေရာတွင် ထည့်သွင်းမှတ်တမ်းတင်နိုင်ပါသည်</p>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                {categoryAnalytics.map((item) => (
-                  <div key={item.catName} className="bg-stone-900 p-4 rounded-xl border border-stone-800 space-y-3">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-rose-300 text-sm">{item.catName}</span>
-                      <span className="font-mono font-bold text-rose-400 text-sm">{formatMMK(item.total)}</span>
-                    </div>
-
-                    <div className="w-full h-2 bg-stone-800 rounded-full overflow-hidden">
-                      <div
-                        style={{ width: `${item.percentage}%` }}
-                        className="h-full bg-rose-500 rounded-full"
-                      />
-                    </div>
-
-                    <div className="text-[11px] text-stone-400 flex justify-between">
-                      <span>မှတ်တမ်း {item.count} ခု</span>
-                      <span>စုစုပေါင်း၏ {item.percentage}%</span>
-                    </div>
-
-                    {/* Sub-categories breakdown */}
-                    {item.subBreakdown.length > 0 && (
-                      <div className="pt-2 border-t border-stone-800/80 space-y-1.5 text-xs">
-                        <span className="text-[11px] text-stone-400 font-semibold block">Sub-Category ခွဲခြမ်းစိတ်ဖြာချက်:</span>
-                        {item.subBreakdown.map((sub) => (
-                          <div key={sub.subName} className="flex justify-between items-center text-[11px]">
-                            <span className="text-stone-300">• {sub.subName}</span>
-                            <span className="font-mono text-amber-300 font-semibold">
-                              {formatMMK(sub.subTotal)} ({sub.subPercentage}%)
-                            </span>
-                          </div>
-                        ))}
+              <div className="divide-y divide-stone-800">
+                {extraIncomes.map((item) => (
+                  <div key={item.id} className="p-4 hover:bg-stone-800/40 transition flex items-center justify-between gap-3">
+                    
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-bold text-sm text-stone-100 truncate">{item.title}</h4>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          {item.category}
+                        </span>
+                        {item.paymentMethod && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-800 text-stone-300 border border-stone-700 uppercase">
+                            {item.paymentMethod}
+                          </span>
+                        )}
                       </div>
-                    )}
+
+                      <div className="flex items-center gap-3 text-xs text-stone-400">
+                        <span className="flex items-center gap-1 font-mono">
+                          <Calendar className="w-3.5 h-3.5 text-stone-500" />
+                          {formatDateDDMMYYYY(item.date)}
+                        </span>
+                        {item.note && <span>• {item.note}</span>}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="font-mono font-black text-sm sm:text-base text-emerald-400">
+                        +{formatMMK(item.amount)}
+                      </span>
+
+                      <button
+                        onClick={() => handleDeleteExtraIncome(item.id)}
+                        className="p-2 rounded-xl text-stone-500 hover:text-rose-400 hover:bg-stone-800 transition cursor-pointer"
+                        title="ဖျက်မည်"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
                   </div>
                 ))}
               </div>
             )}
           </div>
+
         </div>
       )}
 
-      {/* NEW EXPENSE ADD MODAL */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-stone-900 border border-stone-750 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-200">
+      {/* ========================================== */}
+      {/* TAB 4: ANALYTICS & CHARTS                  */}
+      {/* ========================================== */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-4">
+          <div className="bg-stone-850 p-4 rounded-3xl border border-stone-800 space-y-4 shadow-md">
+            <h3 className="text-sm font-bold text-amber-300 flex items-center gap-2">
+              <PieChart className="w-4 h-4" />
+              <span>Category အလိုက် အသုံးစရိတ် ခွဲခြမ်းစိတ်ဖြာမှု</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {categoryAnalytics.map((cat, idx) => (
+                <div key={idx} className="p-4 rounded-2xl bg-stone-900 border border-stone-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-stone-100">{cat.catName}</span>
+                    <span className="font-mono font-bold text-rose-400">{formatMMK(cat.total)}</span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full h-2 bg-stone-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-rose-500 rounded-full transition-all"
+                      style={{ width: `${cat.percentage}%` }}
+                    />
+                  </div>
+
+                  <div className="flex justify-between text-[11px] text-stone-400">
+                    <span>အရေအတွက်: {cat.count} ခု</span>
+                    <span>ရာခိုင်နှုန်း: {cat.percentage}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* TAB 5: CATEGORIES SETTINGS                 */}
+      {/* ========================================== */}
+      {activeTab === 'categories' && (
+        <div className="space-y-4">
+          
+          {/* Add Category Card */}
+          <div className="bg-stone-850 p-4 rounded-3xl border border-stone-800 shadow-md">
+            <h3 className="text-sm font-bold text-stone-200 mb-3 flex items-center gap-2">
+              <FolderPlus className="w-4 h-4 text-amber-400" />
+              <span>Main Category အသစ် ထည့်သွင်းရန်</span>
+            </h3>
+
+            <form onSubmit={handleAddMainCategory} className="flex flex-col sm:flex-row gap-2.5">
+              <input
+                type="text"
+                required
+                placeholder="Category အမည် (ဥပမာ- သာသနာရေးစရိတ်)..."
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                style={{ fontSize: '16px' }}
+                className="flex-1 px-3.5 py-2.5 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 text-xs focus:border-amber-500"
+              />
+
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition active:scale-95 cursor-pointer"
+              >
+                + Category ထည့်မည်
+              </button>
+            </form>
+          </div>
+
+          {/* Categories List */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {categories.map((cat) => (
+              <div key={cat.id} className="p-4 bg-stone-850 rounded-2xl border border-stone-800 space-y-3">
+                <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+                  <span className="font-bold text-sm text-amber-300">{cat.name}</span>
+                  <button
+                    onClick={() => handleDeleteCategory(cat.id)}
+                    className="p-1 rounded text-stone-500 hover:text-rose-400 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-1.5">
+                  <span className="text-[11px] text-stone-400 block font-semibold">Sub-Categories:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {cat.subCategories.map((sub, sIdx) => (
+                      <span
+                        key={sIdx}
+                        className="px-2 py-0.5 rounded-lg bg-stone-900 border border-stone-700 text-stone-300 text-[11px] flex items-center gap-1"
+                      >
+                        <span>{sub}</span>
+                        <button
+                          onClick={() => handleDeleteSubCategory(cat.id, sub)}
+                          className="hover:text-rose-400"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {addingSubForCatId === cat.id ? (
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <input
+                      type="text"
+                      placeholder="Sub Category အသစ်..."
+                      value={newSubCatInput}
+                      onChange={(e) => setNewSubCatInput(e.target.value)}
+                      style={{ fontSize: '16px' }}
+                      className="flex-1 px-2.5 py-1 rounded-lg bg-stone-900 border border-stone-700 text-stone-100 text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddSubCategory(cat.id)}
+                      className="px-2.5 py-1 bg-amber-500 text-stone-950 font-bold text-xs rounded-lg"
+                    >
+                      ထည့်
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAddingSubForCatId(null)}
+                      className="p-1 text-stone-400"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setAddingSubForCatId(cat.id)}
+                    className="text-xs text-amber-400 hover:underline flex items-center gap-1 pt-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> + Sub Category ထပ်ထည့်ရန်
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* MODAL 1: ADD NEW EXPENSE                   */}
+      {/* ========================================== */}
+      {isAddExpenseModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+          style={{
+            paddingTop: 'max(env(safe-area-inset-top, 2.75rem), 2.75rem)',
+            paddingBottom: 'max(env(safe-area-inset-bottom, 1.25rem), 1.25rem)',
+          }}
+        >
+          <div className="bg-stone-900 border border-stone-750 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-150 max-h-[calc(100dvh-5.5rem)] sm:max-h-[90vh] flex flex-col">
             
-            <div className="flex items-center justify-between px-6 py-4 bg-stone-950 border-b border-stone-800">
-              <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-stone-950 border-b border-stone-800 shrink-0">
+              <div className="flex items-center gap-2">
                 <div className="p-2 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30">
                   <Wallet className="w-5 h-5 text-rose-400" />
                 </div>
@@ -717,18 +1302,18 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </h3>
               </div>
               <button
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={() => setIsAddExpenseModalOpen(false)}
                 className="p-1.5 rounded-xl text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveExpense} className="p-5 sm:p-6 space-y-4">
+            <form onSubmit={handleSaveExpense} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 text-xs sm:text-sm">
               
-              {/* Item 1: Expense Title */}
+              {/* Expense Title */}
               <div className="space-y-1">
-                <label className="block text-sm font-bold text-stone-300">
+                <label className="block text-xs font-bold text-stone-300">
                   စရိတ် ခေါင်းစဉ်/အမည် <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -738,32 +1323,20 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-stone-700 text-stone-100 font-medium focus:outline-none focus:border-rose-500 shadow-inner"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-850 border border-stone-700 text-stone-100 font-medium focus:border-rose-500"
                 />
               </div>
 
-              {/* Item 2: Main Category Dropdown */}
+              {/* Main Category */}
               <div className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-bold text-rose-300">
-                    Main Category <span className="text-rose-400">*</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAddModalOpen(false);
-                      setActiveTab('categories');
-                    }}
-                    className="text-xs text-amber-400 hover:underline flex items-center gap-1 font-semibold"
-                  >
-                    <Settings className="w-3.5 h-3.5" /> Setup ပြုလုပ်ရန်
-                  </button>
-                </div>
+                <label className="text-xs font-bold text-rose-300 block">
+                  Main Category <span className="text-rose-400">*</span>
+                </label>
                 <select
                   value={selectedMainCategory}
                   onChange={(e) => setSelectedMainCategory(e.target.value)}
                   style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-rose-500/50 text-rose-200 font-semibold focus:outline-none cursor-pointer shadow-inner"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-850 border border-rose-500/50 text-rose-200 font-semibold focus:border-rose-400 cursor-pointer"
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.name}>
@@ -773,16 +1346,16 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </select>
               </div>
 
-              {/* Item 3: Sub-Category Dropdown */}
+              {/* Sub-Category */}
               <div className="space-y-1">
-                <label className="block text-sm font-bold text-amber-300">
+                <label className="block text-xs font-bold text-amber-300">
                   Sub-Category (အမျိုးအစားခွဲ)
                 </label>
                 <select
                   value={selectedSubCategory}
                   onChange={(e) => setSelectedSubCategory(e.target.value)}
                   style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-amber-500/50 text-amber-200 font-semibold focus:outline-none cursor-pointer shadow-inner"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-850 border border-amber-500/50 text-amber-200 font-semibold focus:border-amber-400 cursor-pointer"
                 >
                   {availableSubCategories.map((s, idx) => (
                     <option key={idx} value={s}>
@@ -793,26 +1366,9 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </select>
               </div>
 
-              {/* Optional Custom Sub-Category text input */}
-              {(!selectedSubCategory || selectedSubCategory === '') && (
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-stone-400">
-                    စိတ်ကြိုက် Sub-Category အမည်ရိုက်ထည့်ပါ:
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="ဥပမာ- ရပ်ကွက် သန့်ရှင်းရေးစရိတ်"
-                    value={customSubCategoryInput}
-                    onChange={(e) => setCustomSubCategoryInput(e.target.value)}
-                    style={{ fontSize: '16px' }}
-                    className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-stone-700 text-stone-100 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-              )}
-
-              {/* Item 4: Amount */}
+              {/* Amount */}
               <div className="space-y-1">
-                <label className="block text-sm font-bold text-stone-300">
+                <label className="block text-xs font-bold text-stone-300">
                   ကျသင့် ငွေပမာဏ (ကျပ်) <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -823,11 +1379,11 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                   value={amount}
                   onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-stone-700 text-rose-300 font-mono font-bold focus:outline-none focus:border-rose-500 shadow-inner"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-850 border border-stone-700 text-rose-300 font-mono font-bold focus:border-rose-500"
                 />
               </div>
 
-              {/* Item 5: Date Calendar Picker */}
+              {/* Date */}
               <DatePickerInput
                 label="ရက်စွဲ"
                 required
@@ -835,22 +1391,29 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 onChange={(newVal) => setDate(newVal)}
               />
 
-              {/* Item 6: Receipt Number */}
+              {/* Payment Method / Paid From */}
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-stone-400">
-                  ပြေစာအမှတ် (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. REC-102"
-                  value={receiptNumber}
-                  onChange={(e) => setReceiptNumber(e.target.value)}
+                <div className="flex justify-between items-center">
+                  <label className="block text-xs font-bold text-amber-300">
+                    ငွေထုတ်ယူသုံးစွဲသည့် အကောင့် (Paid From) <span className="text-rose-400">*</span>
+                  </label>
+                  <span className="text-[10px] text-stone-400">ရွေးချယ်သည့် အကောင့်ထဲမှ လျော့ပါမည်</span>
+                </div>
+                <select
+                  value={expensePaymentMethod}
+                  onChange={(e) => setExpensePaymentMethod(e.target.value as any)}
                   style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-stone-700 text-stone-200 focus:outline-none"
-                />
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-850 border border-amber-500/40 text-amber-200 font-semibold focus:border-amber-400 cursor-pointer shadow-inner"
+                >
+                  <option value="cash">💵 လက်ငင်းငွေသား (Cash အိတ်ထဲမှ လျော့မည်)</option>
+                  <option value="kpay">📱 KBZPay (KPay အကောင့်ထဲမှ လျော့မည်)</option>
+                  <option value="wave">🌊 Wave Money (Wave အကောင့်ထဲမှ လျော့မည်)</option>
+                  <option value="cbbank">🏦 CB Bank / Banking (ဘဏ်အကောင့်ထဲမှ လျော့မည်)</option>
+                  <option value="ayapay">💳 AYA Pay (AYA အကောင့်ထဲမှ လျော့မည်)</option>
+                </select>
               </div>
 
-              {/* Item 7: Note */}
+              {/* Note */}
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-stone-400">
                   မှတ်ချက် (Optional)
@@ -861,21 +1424,21 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-stone-700 text-stone-200 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-850 border border-stone-700 text-stone-200"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-800">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-stone-800">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-5 py-3 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-300 font-bold text-xs transition cursor-pointer"
+                  onClick={() => setIsAddExpenseModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-stone-800 text-stone-300 font-bold text-xs cursor-pointer"
                 >
                   မလုပ်တော့ပါ
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm transition shadow-lg active:scale-95 cursor-pointer flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition shadow-lg active:scale-95 cursor-pointer flex items-center gap-1.5"
                 >
                   <Save className="w-4 h-4" />
                   <span>စရိတ်စာရင်း သိမ်းမည်</span>
@@ -883,6 +1446,225 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* MODAL 2: ADD EXTRA INCOME                  */}
+      {/* ========================================== */}
+      {isAddIncomeModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+          style={{
+            paddingTop: 'max(env(safe-area-inset-top, 2.75rem), 2.75rem)',
+            paddingBottom: 'max(env(safe-area-inset-bottom, 1.25rem), 1.25rem)',
+          }}
+        >
+          <div className="bg-stone-900 border border-emerald-500/40 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-150 max-h-[calc(100dvh-5.5rem)] sm:max-h-[90vh] flex flex-col">
+            
+            <div className="flex items-center justify-between px-5 py-3.5 bg-stone-950 border-b border-stone-800 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <Coins className="w-5 h-5 text-emerald-400" />
+                </div>
+                <h3 className="font-bold text-stone-100 text-base">
+                  အခြား ထပ်တိုးဝင်ငွေ ထည့်သွင်းမည်
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsAddIncomeModalOpen(false)}
+                className="p-1.5 rounded-xl text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveExtraIncome} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 text-xs sm:text-sm">
+              
+              {/* Income Title */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-stone-300">
+                  ဝင်ငွေ ခေါင်းစဉ်/အကြောင်းအရာ <span className="text-emerald-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="ဥပမာ- ဖောက်သည်မှ ကန်တော့ငွေ၊ စာအုပ်ရောင်းရငွေ"
+                  value={incomeTitle}
+                  onChange={(e) => setIncomeTitle(e.target.value)}
+                  style={{ fontSize: '16px' }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-850 border border-stone-700 text-stone-100 font-medium focus:border-emerald-500"
+                />
+              </div>
+
+              {/* Income Category */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-emerald-300 block">
+                  ဝင်ငွေ အမျိုးအစား
+                </label>
+                <select
+                  value={incomeCategory}
+                  onChange={(e) => setIncomeCategory(e.target.value)}
+                  style={{ fontSize: '16px' }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-850 border border-emerald-500/50 text-emerald-200 font-semibold focus:border-emerald-400 cursor-pointer"
+                >
+                  <option value="အလှူငွေ / ကန်တော့ငွေ">🙏 အလှူငွေ / ကန်တော့ငွေ</option>
+                  <option value="စာအုပ် / ပစ္စည်းအရောင်း">📚 စာအုပ် / ပစ္စည်းအရောင်း</option>
+                  <option value="သင်တန်းကြေး">🎓 ဗေဒင်သင်တန်းကြေး</option>
+                  <option value="အထွေထွေဝင်ငွေ">✨ အထွေထွေ ဝင်ငွေ</option>
+                </select>
+              </div>
+
+              {/* Amount */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-stone-300">
+                  ရရှိသည့် ငွေပမာဏ (ကျပ်) <span className="text-emerald-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  placeholder="ကျပ်"
+                  value={incomeAmount}
+                  onChange={(e) => setIncomeAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                  style={{ fontSize: '16px' }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-850 border border-stone-700 text-emerald-300 font-mono font-bold focus:border-emerald-500"
+                />
+              </div>
+
+              {/* Date */}
+              <DatePickerInput
+                label="ရက်စွဲ"
+                required
+                value={incomeDate}
+                onChange={(newVal) => setIncomeDate(newVal)}
+              />
+
+              {/* Payment Method */}
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-stone-300">
+                  လက်ခံရရှိသည့် နည်းလမ်း:
+                </label>
+                <select
+                  value={incomePaymentMethod}
+                  onChange={(e) => setIncomePaymentMethod(e.target.value as any)}
+                  style={{ fontSize: '16px' }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-850 border border-stone-700 text-stone-100 font-medium focus:border-emerald-400 cursor-pointer"
+                >
+                  <option value="cash">💵 လက်ငင်းငွေသား (Cash)</option>
+                  <option value="kpay">📱 KBZPay (KPay)</option>
+                  <option value="wave">🌊 Wave Money</option>
+                  <option value="cbbank">🏦 CB Bank / Banking</option>
+                  <option value="ayapay">💳 AYA Pay</option>
+                </select>
+              </div>
+
+              {/* Note */}
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-stone-400">
+                  မှတ်ချက် (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="အထွေထွေ မှတ်ချက်..."
+                  value={incomeNote}
+                  onChange={(e) => setIncomeNote(e.target.value)}
+                  style={{ fontSize: '16px' }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-850 border border-stone-700 text-stone-200"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAddIncomeModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-stone-800 text-stone-300 font-bold text-xs cursor-pointer"
+                >
+                  မလုပ်တော့ပါ
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-lg active:scale-95 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>ဝင်ငွေ သိမ်းမည်</span>
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* MODAL 3: PRINT DAILY REPORT                */}
+      {/* ========================================== */}
+      {isPrintDailyReportOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+          style={{
+            paddingTop: 'max(env(safe-area-inset-top, 2.75rem), 2.75rem)',
+            paddingBottom: 'max(env(safe-area-inset-bottom, 1.25rem), 1.25rem)',
+          }}
+        >
+          <div className="bg-white text-stone-900 rounded-2xl w-full max-w-xl shadow-2xl p-6 my-auto max-h-[calc(100dvh-5.5rem)] sm:max-h-[90vh] overflow-y-auto">
+            
+            <div className="text-center border-b-2 border-stone-800 pb-3 mb-4">
+              <h2 className="text-lg font-black text-stone-900">တရက်တာ ဝင်ငွေ၊ အသုံးစရိတ်နှင့် Balance ရှင်းတမ်း</h2>
+              <p className="text-xs text-stone-600 font-bold mt-0.5">ရက်စွဲ: {formatDateDDMMYYYY(selectedDailyDate)}</p>
+            </div>
+
+            {/* Summary Box */}
+            <div className="grid grid-cols-3 gap-2 text-center p-3 bg-stone-100 rounded-xl mb-4 border border-stone-300 text-xs">
+              <div>
+                <span className="text-stone-500 block">စုစုပေါင်း ဝင်ငွေ</span>
+                <strong className="text-emerald-700 font-mono text-sm">{formatMMK(dailyTotalIncome)}</strong>
+              </div>
+              <div>
+                <span className="text-stone-500 block">စုစုပေါင်း စရိတ်</span>
+                <strong className="text-rose-700 font-mono text-sm">{formatMMK(dailyTotalExpense)}</strong>
+              </div>
+              <div>
+                <span className="text-stone-500 block">အသားတင် Balance</span>
+                <strong className={`font-mono text-sm ${dailyNetBalance >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
+                  {dailyNetBalance < 0 ? `- ${formatMMK(Math.abs(dailyNetBalance))}` : formatMMK(dailyNetBalance)}
+                </strong>
+              </div>
+            </div>
+
+            {/* Details Table */}
+            <div className="space-y-1.5 text-xs mb-6">
+              <span className="font-bold block text-stone-800 border-b pb-1">စာရင်း အသေးစိတ်:</span>
+              {combinedDailyTransactions.map((t, idx) => (
+                <div key={idx} className="flex justify-between py-1 border-b border-stone-200">
+                  <div>
+                    <span className="font-semibold">{t.title}</span>
+                    <span className="text-stone-500 text-[10px] block">({t.category})</span>
+                  </div>
+                  <strong className={`font-mono ${t.type !== 'expense' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                    {t.type !== 'expense' ? `+${formatMMK(t.amount)}` : `-${formatMMK(t.amount)}`}
+                  </strong>
+                </div>
+              ))}
+            </div>
+
+            {/* Print Action & Close */}
+            <div className="flex justify-end gap-2 border-t pt-3">
+              <button
+                onClick={() => setIsPrintDailyReportOpen(false)}
+                className="px-4 py-2 bg-stone-200 hover:bg-stone-300 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                ပိတ်မည်
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-5 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow"
+              >
+                <Printer className="w-4 h-4" />
+                <span>ပရင့် ထုတ်မည် (Print)</span>
+              </button>
+            </div>
 
           </div>
         </div>

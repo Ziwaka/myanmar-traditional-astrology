@@ -160,8 +160,21 @@ export interface ExpenseRecord {
   subCategory?: string; // Sub category
   amount: number;
   date: string; // YYYY-MM-DD
+  paymentMethod?: 'cash' | 'kpay' | 'wave' | 'cbbank' | 'ayapay';
   note?: string;
   receiptNumber?: string;
+  recordedBy?: string;
+  createdAt: string;
+}
+
+export interface ExtraIncomeRecord {
+  id: string;
+  title: string;
+  category: string; // ဥပမာ - 'အလှူငွေ/ကန်တော့ငွေ', 'စာအုပ်/ပစ္စည်းအရောင်း', 'သင်တန်းကြေး', 'အထွေထွေဝင်ငွေ'
+  amount: number;
+  date: string; // YYYY-MM-DD
+  paymentMethod?: 'cash' | 'kpay' | 'wave' | 'cbbank' | 'ayapay';
+  note?: string;
   recordedBy?: string;
   createdAt: string;
 }

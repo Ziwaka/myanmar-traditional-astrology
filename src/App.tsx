@@ -709,6 +709,7 @@ export default function App() {
           {activeTab === 'expenses' && (
             <ExpensesView
               expenses={expenses}
+              consultations={consultations}
               onAddExpense={handleAddExpense}
               onDeleteExpense={handleDeleteExpense}
             />
