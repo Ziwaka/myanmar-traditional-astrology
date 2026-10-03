@@ -14,10 +14,19 @@ import {
   Check,
   Save,
   Lock,
-  GitMerge
+  GitMerge,
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 import { uploadAllLocalToCloud } from '../utils/firebase';
 import { getDeviceId, getDeviceName, saveDeviceName } from '../utils/deviceProfile';
+import { 
+  getLastCloudSyncTime, 
+  recordCloudSyncTime, 
+  formatLastSyncRelative, 
+  isCloudSyncOverdue, 
+  getCloudSyncElapsedHours 
+} from '../utils/cloudSyncReminder';
 
 interface CloudSyncModalProps {
   isOpen: boolean;
@@ -44,6 +53,10 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
   const [isSavedName, setIsSavedName] = useState(false);
   const deviceId = getDeviceId();
 
+  const [lastSyncTime, setLastSyncTime] = useState<number | null>(getLastCloudSyncTime());
+  const isOverdue = isCloudSyncOverdue();
+  const elapsedHours = Math.floor(getCloudSyncElapsedHours());
+
   if (!isOpen) return null;
 
   const handleSaveDeviceName = (e: React.FormEvent) => {
@@ -58,6 +71,8 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
     setSyncResult(null);
     try {
       const res = await uploadAllLocalToCloud();
+      recordCloudSyncTime();
+      setLastSyncTime(Date.now());
       setSyncResult(`အောင်မြင်ပါသည်! ဗေဒင်မှတ်တမ်း (${res.uploadedConsultations}) ခုနှင့် အသုံးစရိတ် (${res.uploadedExpenses}) ခုကို Google Cloud Database သို့ တင်ပို့လိုက်ပါပြီ။ စက်အားလုံးတွင် ချက်ချင်း အလိုအလျောက် ပေါ်လာပါမည်။`);
       if (onSyncComplete) onSyncComplete();
     } catch (e) {
@@ -221,20 +236,40 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
             </div>
           )}
 
-          {/* Push local to cloud button */}
-          <div className="p-4 rounded-2xl bg-stone-850/60 border border-stone-800 space-y-2.5">
+          {/* Push local to cloud button & Sync Timing Status */}
+          <div className="p-4 rounded-2xl bg-stone-850/60 border border-stone-800 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-200">
-                စက်ထဲရှိ စာရင်းများကို Cloud သို့ အားလုံး ပို့တင်ရန်
+                စက်ထဲရှိ စာရင်းများကို Cloud သို့ အားလုံး ပို့တင်ရန် (Manual Sync)
               </span>
               <span className="text-[11px] font-mono text-stone-400">
                 မှတ်တမ်း {totalConsultations} ခု
               </span>
             </div>
+
+            {/* Last Sync Status Box */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-stone-900 border border-stone-800 text-xs">
+              <div className="flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-stone-400" />
+                <span className="text-stone-400">နောက်ဆုံး Sync:</span>
+                <span className="font-semibold text-stone-200">{formatLastSyncRelative(lastSyncTime)}</span>
+              </div>
+              {isOverdue ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-rose-400" />
+                  ၄၈ နာရီကျော် (Sync လိုအပ်)
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  နောက်ဆုံးရ (Up-to-date)
+                </span>
+              )}
+            </div>
+
             <button
               onClick={handlePushAll}
               disabled={isSyncing || !isOnline}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-stone-800 text-white font-bold text-xs transition cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-stone-800 text-white font-bold text-xs transition cursor-pointer shadow-lg active:scale-98"
             >
               <UploadCloud className={`w-4 h-4 ${isSyncing ? 'animate-bounce' : ''}`} />
               <span>{isSyncing ? 'Cloud သို့ ပို့တင်နေပါသည်...' : 'လက်ရှိစာရင်း အားလုံး Cloud သို့ Sync လုပ်မည်'}</span>

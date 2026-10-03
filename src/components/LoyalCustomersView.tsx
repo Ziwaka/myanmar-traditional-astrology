@@ -18,7 +18,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { ConsultationRecord, CustomerSummary } from '../types';
-import { formatMMK, NAWAWIN_OPTIONS } from '../utils/astrology';
+import { formatMMK, formatDateDDMMYYYY } from '../utils/astrology';
 
 interface LoyalCustomersViewProps {
   consultations: ConsultationRecord[];
@@ -92,11 +92,14 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
     return summaries;
   }, [consultations]);
 
-  // Filtered summaries by search
+  // Filtered summaries by search (Name, Phone, Customer ID, Consultation ID)
   const filteredCustomers = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    if (!q) return customerSummaries;
     return customerSummaries.filter((c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.phone.includes(searchTerm)
+      c.name.toLowerCase().includes(q) ||
+      c.phone.includes(q) ||
+      c.records.some(r => r.id.toLowerCase().includes(q) || (r.customerId && r.customerId.toLowerCase().includes(q)))
     );
   }, [customerSummaries, searchTerm]);
 
@@ -160,7 +163,7 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
           <input
             type="text"
-            placeholder="ဖောက်သည်အမည်၊ ဖုန်းနံပါတ်ဖြင့် ရှာရန်..."
+            placeholder="အမည်၊ ဖုန်းနံပါတ်၊ Customer ID ဖြင့် ရှာရန်..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-lg bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-500"
@@ -323,7 +326,7 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
                   <span className="text-lg font-bold text-amber-300">{selectedCustomer.visitCount} ကြိမ်</span>
                 </div>
                 <div>
-                  <span className="text-stone-400 block text-xs">နဝင်းယတြာ စုစုပေါင်း</span>
+                  <span className="text-stone-400 block text-xs">ယတြာ စုစုပေါင်း</span>
                   <span className="text-lg font-bold text-purple-300">{selectedCustomer.navawinTotalCount} ကြိမ်</span>
                 </div>
                 <div>
@@ -332,7 +335,7 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
                 </div>
                 <div>
                   <span className="text-stone-400 block text-xs">နောက်ဆုံးလာသည့်ရက်</span>
-                  <span className="text-xs font-medium text-stone-300 mt-1 block">{selectedCustomer.lastVisitDate}</span>
+                  <span className="text-xs font-medium text-stone-300 mt-1 block">{formatDateDDMMYYYY(selectedCustomer.lastVisitDate)}</span>
                 </div>
               </div>
 
@@ -365,9 +368,9 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
 
               {/* Chronological Reading List */}
               <div className="space-y-4">
-                {selectedCustomer.records.map((rec, index) => {
+                {selectedCustomer.records.map((rec) => {
                   const serviceName = rec.serviceCategory || 'ဗေဒင်ဝန်ဆောင်မှု';
-                  const navawinName = NAWAWIN_OPTIONS.find(n => n.key === rec.navawinType)?.label || rec.navawinType;
+                  const yatraTitle = rec.yatraName || (rec.yatraEnabled ? 'ယတြာ အစီအရင်' : '');
 
                   return (
                     <div
@@ -379,17 +382,17 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-amber-400 text-xs font-semibold">{rec.id}</span>
                           <span className="font-bold text-stone-100">{serviceName}</span>
-                          {rec.navawinType !== 'none' && (
+                          {yatraTitle && (
                             <span className="px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                              {navawinName}
+                              {yatraTitle}
                             </span>
                           )}
                         </div>
 
                         <div className="flex items-center gap-3 text-xs text-stone-400">
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-amber-400" />
-                            {rec.readingDateTime.replace('T', ' ')}
+                            <Calendar className="w-3.5 h-3.5 text-stone-500" />
+                            <span>{formatDateDDMMYYYY(rec.readingDateTime || rec.bookingDate)}</span>
                           </span>
                           <span className="font-mono font-bold text-emerald-400">
                             {formatMMK(rec.totalAmount)}

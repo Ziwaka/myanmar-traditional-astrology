@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   AmuletCatalogItem, 
+  YatraCatalogItem,
   ConsultationRecord, 
   DayOfWeekBurmese, 
   ExpenseRecord, 
@@ -13,6 +14,8 @@ import {
   saveExpenses, 
   loadAmuletsCatalog, 
   saveAmuletsCatalog, 
+  loadYatraCatalog,
+  saveYatraCatalog,
   generateNextConsultationId, 
   clearAllData 
 } from './utils/storage';
@@ -41,8 +44,10 @@ import { ConsultationDetailModal } from './components/ConsultationDetailModal';
 import { MonthlyReportView } from './components/MonthlyReportView';
 import { LoyalCustomersView } from './components/LoyalCustomersView';
 import { ExpensesView } from './components/ExpensesView';
-import { AmuletsCatalogView } from './components/AmuletsCatalogView';
+import { CatalogsManagerView } from './components/CatalogsManagerView';
 import { UserManagementView } from './components/UserManagementView';
+import { SyncMonitorDashboard } from './components/SyncMonitorDashboard';
+import { QuotaMonitorDashboard } from './components/QuotaMonitorDashboard';
 import { PrintReceiptModal } from './components/PrintReceiptModal';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { VersionUpdateModal } from './components/VersionUpdateModal';
@@ -50,14 +55,21 @@ import { ReleaseChangelogPopUpModal } from './components/ReleaseChangelogPopUpMo
 import { ForcedPWAInstallBanner } from './components/ForcedPWAInstallBanner';
 import { DatabaseQuotaModal } from './components/DatabaseQuotaModal';
 import { CloudSyncModal } from './components/CloudSyncModal';
+import { CloudSyncReminderBanner } from './components/CloudSyncReminderBanner';
 import { LoginScreen } from './components/LoginScreen';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { getDatabaseQuotaReport } from './utils/databaseQuota';
+import { 
+  shouldShowSyncReminderBanner, 
+  isCloudSyncOverdue, 
+  recordCloudSyncTime 
+} from './utils/cloudSyncReminder';
 import { 
   testFirestoreConnection,
   subscribeToConsultations, 
   subscribeToExpenses, 
   subscribeToAmulets, 
+  subscribeToExpenseCategories,
   saveConsultationToCloud, 
   deleteConsultationFromCloud, 
   saveExpenseToCloud, 
@@ -66,6 +78,7 @@ import {
   deleteAmuletFromCloud,
   seedOrMigrateLocalToCloud
 } from './utils/firebase';
+import { loadExpenseCategories, saveExpenseCategories } from './utils/storage';
 import { getDeviceId, getDeviceName } from './utils/deviceProfile';
 
 export default function App() {
@@ -78,6 +91,7 @@ export default function App() {
   const [consultations, setConsultations] = useState<ConsultationRecord[]>([]);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [amuletsCatalog, setAmuletsCatalog] = useState<AmuletCatalogItem[]>([]);
+  const [yatraCatalog, setYatraCatalog] = useState<YatraCatalogItem[]>([]);
 
   // Navigation & Layout (Sidebar is on-demand only)
   const [activeTab, setActiveTab] = useState<ActiveTab>('consultations');
@@ -96,13 +110,15 @@ export default function App() {
   const [isDatabaseQuotaModalOpen, setIsDatabaseQuotaModalOpen] = useState<boolean>(false);
   const [storageQuotaPercentage, setStorageQuotaPercentage] = useState<number>(0);
   const [storageQuotaUsedFormatted, setStorageQuotaUsedFormatted] = useState<string>('0 B');
+  const [showSyncReminderBanner, setShowSyncReminderBanner] = useState<boolean>(false);
 
-  // Refresh Database Quota metrics
+  // Refresh Database Quota metrics & Cloud Sync reminder state
   const refreshDatabaseQuota = useCallback(async () => {
     try {
       const q = await getDatabaseQuotaReport();
       setStorageQuotaPercentage(q.usedPercentage);
       setStorageQuotaUsedFormatted(q.formattedUsed);
+      setShowSyncReminderBanner(shouldShowSyncReminderBanner(loadConsultations().length > 0 || loadExpenses().length > 0));
     } catch (e) {
       console.warn('Could not load quota report', e);
     }
@@ -146,9 +162,11 @@ export default function App() {
     const localC = loadConsultations();
     const localE = loadExpenses();
     const localA = loadAmuletsCatalog();
+    const localY = loadYatraCatalog();
     setConsultations(localC);
     setExpenses(localE);
     setAmuletsCatalog(localA);
+    setYatraCatalog(localY);
 
     // Check if user has seen changelog for this current version release
     const lastSeenVer = getLastSeenChangelogVersion();
@@ -193,6 +211,12 @@ export default function App() {
       }
     });
 
+    const unsubExpenseCategories = subscribeToExpenseCategories((cloudCategories) => {
+      if (cloudCategories && cloudCategories.length > 0) {
+        saveExpenseCategories(cloudCategories);
+      }
+    });
+
     // Continuous Version Polling every 30 seconds
     const versionInterval = setInterval(() => {
       checkCloudVersion(true);
@@ -222,6 +246,7 @@ export default function App() {
       unsubConsultations();
       unsubExpenses();
       unsubAmulets();
+      unsubExpenseCategories();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibility);
@@ -370,6 +395,22 @@ export default function App() {
     saveExpenses(updated);
     refreshDatabaseQuota();
     deleteExpenseFromCloud(id).catch(e => console.warn('Cloud expense delete error:', e));
+  };
+
+  // Add Yatra to Catalog
+  const handleAddYatraCatalogItem = (item: YatraCatalogItem) => {
+    const updated = [...yatraCatalog, item];
+    setYatraCatalog(updated);
+    saveYatraCatalog(updated);
+    refreshDatabaseQuota();
+  };
+
+  // Delete Yatra from Catalog
+  const handleDeleteYatraCatalogItem = (id: string) => {
+    const updated = yatraCatalog.filter(y => y.id !== id);
+    setYatraCatalog(updated);
+    saveYatraCatalog(updated);
+    refreshDatabaseQuota();
   };
 
   // Add Amulet to Catalog
@@ -566,7 +607,17 @@ export default function App() {
           cloudVersion={cloudInfo?.version || LOCAL_APP_VERSION}
           isNewVersionAvailable={isNewVersionAvailable}
           storageQuotaPercentage={storageQuotaPercentage}
+          isCloudSyncOverdue={isCloudSyncOverdue()}
         />
+
+        {/* 48-Hour Overdue Cloud Sync Reminder Banner */}
+        {showSyncReminderBanner && (
+          <CloudSyncReminderBanner
+            onOpenSyncModal={() => setIsCloudSyncModalOpen(true)}
+            onDismiss={() => setShowSyncReminderBanner(false)}
+            totalLocalRecords={consultations.length + expenses.length}
+          />
+        )}
 
         {/* Main Tab Views */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-x-hidden">
@@ -612,11 +663,14 @@ export default function App() {
           )}
 
           {activeTab === 'amulets' && (
-            <AmuletsCatalogView
-              catalog={amuletsCatalog}
-              onAddCatalogItem={handleAddCatalogItem}
-              onDeleteCatalogItem={handleDeleteCatalogItem}
-              onToggleStock={handleToggleStock}
+            <CatalogsManagerView
+              yatraCatalog={yatraCatalog}
+              amuletCatalog={amuletsCatalog}
+              onAddYatraItem={handleAddYatraCatalogItem}
+              onDeleteYatraItem={handleDeleteYatraCatalogItem}
+              onAddAmuletItem={handleAddCatalogItem}
+              onDeleteAmuletItem={handleDeleteCatalogItem}
+              onToggleAmuletStock={handleToggleStock}
             />
           )}
 
@@ -625,6 +679,31 @@ export default function App() {
               currentUser={currentUser}
               onUserChanged={() => {
                 setCurrentUser(getCurrentUser());
+              }}
+            />
+          )}
+
+          {activeTab === 'sync_monitor' && (
+            <SyncMonitorDashboard
+              consultations={consultations}
+              expenses={expenses}
+              amulets={amuletsCatalog}
+              onRefreshLocalData={() => {
+                setConsultations(loadConsultations());
+                setExpenses(loadExpenses());
+                setAmuletsCatalog(loadAmuletsCatalog());
+                refreshDatabaseQuota();
+              }}
+            />
+          )}
+
+          {activeTab === 'quota_monitor' && (
+            <QuotaMonitorDashboard
+              onDataImported={() => {
+                setConsultations(loadConsultations());
+                setExpenses(loadExpenses());
+                setAmuletsCatalog(loadAmuletsCatalog());
+                refreshDatabaseQuota();
               }}
             />
           )}
@@ -648,6 +727,7 @@ export default function App() {
           onDirectPrint={(rec) => setPrintingRecord(rec)}
           initialData={editingRecord}
           amuletsCatalog={amuletsCatalog}
+          yatraCatalog={yatraCatalog}
           nextId={generateNextConsultationId(consultations)}
           allRecords={consultations}
         />
@@ -657,6 +737,7 @@ export default function App() {
       {selectedRecord && (
         <ConsultationDetailModal
           record={selectedRecord}
+          allRecords={consultations}
           onClose={() => setSelectedRecord(null)}
           onEdit={(rec) => {
             setSelectedRecord(null);
@@ -668,6 +749,7 @@ export default function App() {
             setPrintingRecord(rec);
           }}
           onToggleTaskDone={handleToggleTaskDone}
+          onSelectRecord={(rec) => setSelectedRecord(rec)}
         />
       )}
 

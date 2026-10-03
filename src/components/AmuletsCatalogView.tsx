@@ -172,50 +172,52 @@ export const AmuletsCatalogView: React.FC<AmuletsCatalogViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-3 text-xs sm:text-sm">
-              <div>
-                <label className="block text-stone-300 mb-1">ပစ္စည်းအမည် *</label>
+            <form onSubmit={handleSave} className="space-y-4 text-xs sm:text-sm">
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-stone-300">ပစ္စည်းအမည် <span className="text-rose-400">*</span></label>
                 <input
                   type="text"
                   placeholder="ဥပမာ - မဟာလာဘံ အင်းပြား"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-stone-850 border border-stone-700 text-stone-100 focus:border-purple-500"
+                  style={{ fontSize: '16px' }}
+                  className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-stone-700 text-stone-100 focus:border-purple-500 shadow-inner"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-stone-300 mb-1">အမျိုးအစား</label>
-                  <input
-                    type="text"
-                    placeholder="ကျောက်မျက်/အင်း/ကန်တော့ပွဲ"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-stone-850 border border-stone-700 text-stone-100 focus:border-purple-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-stone-300 mb-1">သတ်မှတ်ဈေးနှုန်း (ကျပ်) *</label>
-                  <input
-                    type="number"
-                    placeholder="25000"
-                    value={price}
-                    onChange={(e) => setPrice(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg bg-stone-850 border border-stone-700 text-purple-300 font-mono font-bold focus:border-purple-500"
-                    required
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-stone-300">အမျိုးအစား</label>
+                <input
+                  type="text"
+                  placeholder="ကျောက်မျက်/အင်း/ကန်တော့ပွဲ"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  style={{ fontSize: '16px' }}
+                  className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-stone-700 text-stone-100 focus:border-purple-500 shadow-inner"
+                />
               </div>
 
-              <div>
-                <label className="block text-stone-300 mb-1">သင့်တော်သည့် နေ့နံ</label>
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-stone-300">သတ်မှတ်ဈေးနှုန်း (ကျပ်) <span className="text-rose-400">*</span></label>
+                <input
+                  type="number"
+                  placeholder="25000"
+                  value={price}
+                  onChange={(e) => setPrice(Number(e.target.value))}
+                  style={{ fontSize: '16px' }}
+                  className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-stone-700 text-purple-300 font-mono font-bold focus:border-purple-500 shadow-inner"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-stone-300">သင့်တော်သည့် နေ့နံ</label>
                 <select
                   value={suggestedDay}
                   onChange={(e) => setSuggestedDay(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-lg bg-stone-850 border border-stone-700 text-stone-200 focus:border-purple-500 cursor-pointer"
+                  style={{ fontSize: '16px' }}
+                  className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-stone-700 text-stone-200 focus:border-purple-500 cursor-pointer shadow-inner"
                 >
                   <option value="အားလုံး">အားလုံးနှင့် သင့်တော်သည်</option>
                   {BURMESE_DAYS.map(d => (
@@ -224,14 +226,15 @@ export const AmuletsCatalogView: React.FC<AmuletsCatalogViewProps> = ({
                 </select>
               </div>
 
-              <div>
-                <label className="block text-stone-300 mb-1">အသေးစိတ် ဖော်ပြချက်</label>
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-stone-300">အသေးစိတ် ဖော်ပြချက်</label>
                 <textarea
                   rows={2}
                   placeholder="အစွမ်းသတ္တိ၊ အသုံးပြုပုံ..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-stone-850 border border-stone-700 text-stone-200 focus:border-purple-500"
+                  style={{ fontSize: '16px' }}
+                  className="w-full px-3.5 py-3 rounded-xl bg-stone-850 border border-stone-700 text-stone-200 focus:border-purple-500 shadow-inner"
                 />
               </div>
 

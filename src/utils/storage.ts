@@ -1,13 +1,54 @@
-import { AmuletCatalogItem, ConsultationRecord, ExpenseRecord } from '../types';
+import { AmuletCatalogItem, YatraCatalogItem, ConsultationRecord, ExpenseRecord, ExpenseCategoryConfig } from '../types';
 import { getDeviceId } from './deviceProfile';
 
 const STORAGE_KEYS = {
   CONSULTATIONS: 'myanmar_astrology_consultations_v2_clean',
   EXPENSES: 'myanmar_astrology_expenses_v2_clean',
+  EXPENSE_CATEGORIES: 'myanmar_astrology_expense_categories_v1',
   AMULETS: 'myanmar_astrology_amulets_v2',
+  YATRA_CATALOG: 'myanmar_astrology_yatra_catalog_v1',
   CUSTOM_SERVICES: 'myanmar_astrology_custom_services_history_v1',
   CUSTOM_YATRAS: 'myanmar_astrology_custom_yatras_history_v1',
 };
+
+export const DEFAULT_EXPENSE_CATEGORIES: ExpenseCategoryConfig[] = [
+  {
+    id: 'cat_yatra',
+    name: 'ယတြာနှင့် ပစ္စည်းဝယ်ယူစရိတ်',
+    subCategories: ['ပန်း/သီးနှံ/ဖယောင်းတိုင်', 'ယတြာအိုး/အလံ/စာရွက်', 'အဆောင်ပစ္စည်း/ကတ်တလောက်', 'ဓာတ်ရုပ်/ရုပ်ပွားတော်'],
+    color: '#f59e0b',
+  },
+  {
+    id: 'cat_rent',
+    name: 'ဆိုင်/ဓမ္မာရုံ/အခန်း စရိတ်',
+    subCategories: ['အခန်းငှားခ', 'လျှပ်စစ်မီးခ/ရေဖိုး', 'အင်တာနက်/ဖုန်းဘေလ်', 'ပြင်ဆင်စရိတ်'],
+    color: '#3b82f6',
+  },
+  {
+    id: 'cat_staff',
+    name: 'ဝန်ထမ်းနှင့် အကူစရိတ်',
+    subCategories: ['ဝန်ထမ်းလစာ/နေ့တွက်', 'မုန့်ဖိုး/ဧည့်ခံစရိတ်', 'ခရီးစရိတ်/ကားခ'],
+    color: '#10b981',
+  },
+  {
+    id: 'cat_hospitality',
+    name: 'ဧည့်ခံနှင့် မီးဖိုချောင်စရိတ်',
+    subCategories: ['လက်ဖက်/ရေနွေး/မုန့်', 'ဧည့်သည်ဧည့်ခံစရိတ်', 'သောက်ရေသန့်/အဖျော်ယမကာ'],
+    color: '#a855f7',
+  },
+  {
+    id: 'cat_donation',
+    name: 'အလှူဒါန်းနှင့် သာသနာရေး',
+    subCategories: ['ဘုရားပန်း/ဆီမီး/ဆွမ်း', 'ကျောင်းတိုက်အလှူ', 'သံဃာဒါန/ယတြာအလှူ'],
+    color: '#ec4899',
+  },
+  {
+    id: 'cat_general',
+    name: 'အထွေထွေ အသုံးစရိတ်',
+    subCategories: ['ရုံးသုံး/စာရေးကိရိယာ', 'အထွေထွေ'],
+    color: '#f43f5e',
+  },
+];
 
 export interface SavedCustomService {
   id: string;
@@ -67,6 +108,29 @@ export function saveExpenses(records: ExpenseRecord[]): void {
   }
 }
 
+export function loadExpenseCategories(): ExpenseCategoryConfig[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.EXPENSE_CATEGORIES);
+    if (!raw) {
+      saveExpenseCategories(DEFAULT_EXPENSE_CATEGORIES);
+      return DEFAULT_EXPENSE_CATEGORIES;
+    }
+    const parsed = JSON.parse(raw);
+    return parsed.length > 0 ? parsed : DEFAULT_EXPENSE_CATEGORIES;
+  } catch (e) {
+    console.error('Error loading expense categories from storage', e);
+    return DEFAULT_EXPENSE_CATEGORIES;
+  }
+}
+
+export function saveExpenseCategories(categories: ExpenseCategoryConfig[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.EXPENSE_CATEGORIES, JSON.stringify(categories));
+  } catch (e) {
+    console.error('Error saving expense categories to storage', e);
+  }
+}
+
 export function loadAmuletsCatalog(): AmuletCatalogItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.AMULETS);
@@ -86,6 +150,28 @@ export function saveAmuletsCatalog(items: AmuletCatalogItem[]): void {
     localStorage.setItem(STORAGE_KEYS.AMULETS, JSON.stringify(items));
   } catch (e) {
     console.error('Error saving amulets to storage', e);
+  }
+}
+
+export function loadYatraCatalog(): YatraCatalogItem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.YATRA_CATALOG);
+    if (!raw) {
+      saveYatraCatalog([]);
+      return [];
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading yatra catalog from storage', e);
+    return [];
+  }
+}
+
+export function saveYatraCatalog(items: YatraCatalogItem[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.YATRA_CATALOG, JSON.stringify(items));
+  } catch (e) {
+    console.error('Error saving yatra catalog to storage', e);
   }
 }
 
@@ -225,13 +311,21 @@ export function searchCustomerHistoryProfiles(query: string, records: Consultati
   if (!query || !query.trim()) return [];
   const q = query.trim().toLowerCase();
 
-  // Group records by unique customer phone or name
+  // Group records by unique customer phone, customerId or name
   const map = new Map<string, ConsultationRecord[]>();
 
   for (const rec of records) {
-    const key = (rec.phone && rec.phone.replace(/[^0-9]/g, '').length >= 6)
-      ? `phone:${rec.phone.replace(/[^0-9]/g, '')}`
-      : `name:${rec.customerName.trim().toLowerCase()}`;
+    const cleanPhone = rec.phone ? rec.phone.replace(/[^0-9]/g, '') : '';
+    const cleanCustId = rec.customerId ? rec.customerId.trim().toLowerCase() : '';
+    
+    let key = '';
+    if (cleanPhone && cleanPhone.length >= 6) {
+      key = `phone:${cleanPhone}`;
+    } else if (cleanCustId) {
+      key = `cust:${cleanCustId}`;
+    } else {
+      key = `name:${rec.customerName.trim().toLowerCase()}`;
+    }
 
     if (!map.has(key)) {
       map.set(key, []);
@@ -248,7 +342,10 @@ export function searchCustomerHistoryProfiles(query: string, records: Consultati
 
     const matchesName = latest.customerName.toLowerCase().includes(q);
     const matchesPhone = latest.phone.includes(q);
-    const matchesId = customerRecords.some(r => r.id.toLowerCase().includes(q));
+    const matchesId = customerRecords.some(r => 
+      r.id.toLowerCase().includes(q) || 
+      (r.customerId && r.customerId.toLowerCase().includes(q))
+    );
 
     if (matchesName || matchesPhone || matchesId) {
       const totalSpent = customerRecords.reduce((sum, r) => sum + (r.paidAmount || r.totalAmount || 0), 0);

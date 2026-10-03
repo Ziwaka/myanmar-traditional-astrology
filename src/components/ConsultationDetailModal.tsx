@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   X, 
   Printer, 
@@ -11,31 +11,85 @@ import {
   Phone, 
   FileText, 
   Calendar,
-  CreditCard
+  CreditCard,
+  History,
+  ExternalLink
 } from 'lucide-react';
 import { ConsultationRecord } from '../types';
-import { formatMMK, NAWAWIN_OPTIONS, BURMESE_DAYS, formatDateDDMMYYYY } from '../utils/astrology';
+import { formatMMK, BURMESE_DAYS, formatDateDDMMYYYY } from '../utils/astrology';
 
 interface ConsultationDetailModalProps {
   record: ConsultationRecord | null;
+  allRecords?: ConsultationRecord[];
   onClose: () => void;
   onEdit: (record: ConsultationRecord) => void;
   onPrint: (record: ConsultationRecord) => void;
   onToggleTaskDone: (id: string) => void;
+  onSelectRecord?: (record: ConsultationRecord) => void;
 }
 
 export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = ({
   record,
+  allRecords = [],
   onClose,
   onEdit,
   onPrint,
   onToggleTaskDone,
+  onSelectRecord,
 }) => {
   if (!record) return null;
 
   const serviceName = record.serviceCategory || 'ဗေဒင်ဝန်ဆောင်မှု';
-  const navawinInfo = NAWAWIN_OPTIONS.find(n => n.key === record.navawinType);
   const dayInfo = BURMESE_DAYS.find(d => d.key === record.birthDayOfWeek);
+
+  // Look up previous appointments by phone number AND/OR customer ID
+  const previousAppointments = useMemo(() => {
+    if (!allRecords || allRecords.length === 0 || !record) return [];
+    const cleanPhone = (record.phone || '').replace(/[^0-9]/g, '');
+    const cleanCustomerId = (record.customerId || '').trim().toLowerCase();
+    const cleanRecordId = (record.id || '').trim().toLowerCase();
+
+    return allRecords
+      .filter((r) => {
+        if (r.id === record.id) return false;
+
+        // 1. Match by Phone Number (if at least 5 digits)
+        const rCleanPhone = (r.phone || '').replace(/[^0-9]/g, '');
+        if (cleanPhone && cleanPhone.length >= 5 && rCleanPhone === cleanPhone) {
+          return true;
+        }
+
+        // 2. Match by Customer ID
+        const rCleanCustId = (r.customerId || '').trim().toLowerCase();
+        if (cleanCustomerId && rCleanCustId && cleanCustomerId === rCleanCustId) {
+          return true;
+        }
+
+        // 3. Match Customer ID with Consultation ID
+        if (cleanCustomerId && r.id.toLowerCase() === cleanCustomerId) {
+          return true;
+        }
+        if (cleanRecordId && rCleanCustId === cleanRecordId) {
+          return true;
+        }
+
+        // 4. Fallback: Match by exact Customer Name + BirthDay (when phone & customerId are absent)
+        if (!cleanPhone && !cleanCustomerId && record.customerName && r.customerName) {
+          if (record.customerName.trim().toLowerCase() === r.customerName.trim().toLowerCase()) {
+            if (record.birthDayOfWeek === r.birthDayOfWeek) {
+              return true;
+            }
+          }
+        }
+
+        return false;
+      })
+      .sort((a, b) => new Date(b.readingDateTime || b.bookingDate).getTime() - new Date(a.readingDateTime || a.bookingDate).getTime());
+  }, [allRecords, record]);
+
+  const totalPreviousSpent = useMemo(() => {
+    return previousAppointments.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+  }, [previousAppointments]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
@@ -122,9 +176,14 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
 
               <div className="bg-stone-900/60 p-2.5 rounded-lg border border-stone-800">
                 <span className="text-stone-500 text-[11px] block">မွေးသက္ကရာဇ် & အသက်:</span>
-                <span className="font-medium text-stone-200">
+                <span className="font-medium text-stone-200 block">
                   {formatDateDDMMYYYY(record.birthDate) || '-'} {record.age ? `(${record.age} နှစ်)` : ''}
                 </span>
+                {record.myanmarBirthDate && (
+                  <span className="text-xs text-amber-300 font-semibold block mt-1">
+                    {record.myanmarBirthDate}
+                  </span>
+                )}
               </div>
 
               <div className="bg-stone-900/60 p-2.5 rounded-lg border border-stone-800">
@@ -156,15 +215,15 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
           </div>
 
           {/* Yatra Instructions */}
-          {(record.yatraEnabled || record.navawinType !== 'none' || record.yatraInstructions) && (
+          {(record.yatraEnabled || record.navawinType !== 'none' || record.yatraInstructions || record.yatraName) && (
             <div className="bg-stone-850 p-4 rounded-xl border border-amber-500/30 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-amber-300 flex items-center gap-2">
                   <Sparkles className="w-4 h-4" /> ညွှန်ကြားခဲ့သော ယတြာနှင့် အစီအရင်
                 </span>
-                {(record.yatraName || record.navawinType !== 'none') && (
+                {(record.yatraName || record.yatraEnabled || record.navawinType !== 'none') && (
                   <span className="px-2.5 py-0.5 rounded text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold">
-                    {record.yatraName || navawinInfo?.label || 'ယတြာ'}
+                    {record.yatraName || 'ယတြာ အစီအရင်'}
                   </span>
                 )}
               </div>
@@ -221,7 +280,7 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
               </div>
               {((record.yatraFee && record.yatraFee > 0) || (record.navawinFee && record.navawinFee > 0)) && (
                 <div className="flex justify-between">
-                  <span>{record.yatraName || navawinInfo?.label || 'ယတြာ'}:</span>
+                  <span>{record.yatraName || 'ယတြာ အစီအရင်'}:</span>
                   <span className="font-mono text-amber-300">{formatMMK(record.yatraFee || record.navawinFee)}</span>
                 </div>
               )}
@@ -249,6 +308,88 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Customer Previous Appointments History (Based on Phone / Customer ID) */}
+          <div className="bg-stone-850 p-4 rounded-xl border border-stone-800 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-stone-800 pb-2">
+              <span className="font-semibold text-amber-400 flex items-center gap-2">
+                <History className="w-4 h-4 text-amber-400" />
+                <span>ဖုန်းနံပါတ် / Customer ID အလိုက် ယခင် မေးမြန်းမှုရာဇဝင် (Previous Consultations)</span>
+              </span>
+              {previousAppointments.length > 0 && (
+                <div className="flex items-center gap-3 text-xs text-stone-400">
+                  <span>ယခင်လာရောက်မှု: <strong className="text-amber-300">{previousAppointments.length} ကြိမ်</strong></span>
+                  <span>•</span>
+                  <span>စုစုပေါင်း ပေးချေငွေ: <strong className="text-emerald-400 font-mono">{formatMMK(totalPreviousSpent)}</strong></span>
+                </div>
+              )}
+            </div>
+
+            {previousAppointments.length === 0 ? (
+              <div className="p-3 rounded-lg bg-stone-900/60 border border-stone-800 text-stone-400 text-xs flex items-center gap-2">
+                <User className="w-4 h-4 text-stone-500 shrink-0" />
+                <span>
+                  {record.phone ? `ဖုန်းနံပါတ် (${record.phone})` : (record.customerId ? `Customer ID (${record.customerId})` : `မေးသူအမည်`)} ဖြင့် ယခင် လာရောက်မေးမြန်းထားသော မှတ်တမ်း မရှိသေးပါ (ပထမဆုံးအကြိမ် ဧည့်သည်)။
+                </span>
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                {previousAppointments.map((prev) => {
+                  const prevService = prev.serviceCategory || 'ဗေဒင်ဝန်ဆောင်မှု';
+                  const prevYatra = prev.yatraName || (prev.yatraEnabled ? 'ယတြာ အစီအရင်' : '');
+
+                  return (
+                    <div
+                      key={prev.id}
+                      className="bg-stone-900/80 p-3 rounded-xl border border-stone-800 hover:border-amber-500/40 transition flex flex-col gap-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            {prev.id}
+                          </span>
+                          <span className="font-semibold text-stone-200 text-xs">{prevService}</span>
+                          {prevYatra && (
+                            <span className="px-1.5 py-0.5 rounded text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                              {prevYatra}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-stone-400 flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 text-stone-500" />
+                            {formatDateDDMMYYYY(prev.readingDateTime || prev.bookingDate)}
+                          </span>
+                          {onSelectRecord && (
+                            <button
+                              type="button"
+                              onClick={() => onSelectRecord(prev)}
+                              className="text-[11px] px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 flex items-center gap-1 transition cursor-pointer"
+                              title="ဤမှတ်တမ်းအား အသေးစိတ်ကြည့်ရန်"
+                            >
+                              <span>ကြည့်မည်</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Brief info: predictions or yatra notes */}
+                      <div className="flex items-center justify-between text-[11px] text-stone-400 pt-1 border-t border-stone-800/60">
+                        <div className="truncate max-w-[280px] sm:max-w-md text-stone-400">
+                          {prev.predictions ? `ဟောချက်: ${prev.predictions}` : (prev.notes ? `မှတ်ချက်: ${prev.notes}` : 'အသေးစိတ်မှတ်တမ်း ရှိသည်')}
+                        </div>
+                        <div className="font-mono font-bold text-emerald-400 shrink-0">
+                          {formatMMK(prev.totalAmount)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Notes */}

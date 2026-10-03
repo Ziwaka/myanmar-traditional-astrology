@@ -14,10 +14,24 @@ import {
   CheckCircle2, 
   ChevronLeft, 
   ChevronRight,
-  PieChart
+  PieChart,
+  LineChart as LineChartIcon,
+  BarChart3
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from 'recharts';
 import { ConsultationRecord, ExpenseRecord } from '../types';
-import { formatMMK, NAWAWIN_OPTIONS, EXPENSE_CATEGORIES } from '../utils/astrology';
+import { formatMMK } from '../utils/astrology';
 
 interface MonthlyReportViewProps {
   consultations: ConsultationRecord[];
@@ -28,6 +42,8 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
   consultations,
   expenses,
 }) => {
+  const [trendMetricView, setTrendMetricView] = useState<'all' | 'income' | 'profit' | 'expense'>('all');
+
   // Extract all distinct year-months from both datasets
   const availableMonths = useMemo(() => {
     const set = new Set<string>();
@@ -65,17 +81,13 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
     const readingsCount = currentMonthConsultations.length;
     const completedReadings = currentMonthConsultations.filter(c => c.taskDone || c.status === 'completed').length;
 
-    // 2. Navawin count (နဝင်း ဘယ်နှယောက်)
-    const navawinRecords = currentMonthConsultations.filter(c => c.navawinType !== 'none');
-    const navawinClientsCount = navawinRecords.length;
-    const navawin1Count = currentMonthConsultations.filter(c => c.navawinType === '1_time').length;
-    const navawin2Count = currentMonthConsultations.filter(c => c.navawinType === '2_times').length;
-    const navawin3Count = currentMonthConsultations.filter(c => c.navawinType === '3_times').length;
-    const navawinSpecialCount = currentMonthConsultations.filter(c => c.navawinType === 'special').length;
+    // 2. Yatra count (ယတြာ ဆောင်ရွက်သူများ)
+    const yatraRecords = currentMonthConsultations.filter(c => c.yatraEnabled || c.yatraName || (c.yatraFee && c.yatraFee > 0) || (c.navawinType && c.navawinType !== 'none'));
+    const yatraClientsCount = yatraRecords.length;
 
     // 3. Revenues
     const serviceRevenue = currentMonthConsultations.reduce((sum, c) => sum + (c.serviceFee || 0), 0);
-    const navawinRevenue = currentMonthConsultations.reduce((sum, c) => sum + (c.navawinFee || 0), 0);
+    const yatraRevenue = currentMonthConsultations.reduce((sum, c) => sum + (c.yatraFee || c.navawinFee || 0), 0);
     const amuletsRevenue = currentMonthConsultations.reduce((sum, c) => sum + (c.amuletsTotal || 0), 0);
     const totalIncome = currentMonthConsultations.reduce((sum, c) => sum + (c.totalAmount || 0), 0);
     const collectedIncome = currentMonthConsultations.reduce((sum, c) => sum + (c.paidAmount || 0), 0);
@@ -91,13 +103,9 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
     return {
       readingsCount,
       completedReadings,
-      navawinClientsCount,
-      navawin1Count,
-      navawin2Count,
-      navawin3Count,
-      navawinSpecialCount,
+      yatraClientsCount,
       serviceRevenue,
-      navawinRevenue,
+      yatraRevenue,
       amuletsRevenue,
       totalIncome,
       collectedIncome,
@@ -107,6 +115,73 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
       profitMargin,
     };
   }, [currentMonthConsultations, currentMonthExpenses]);
+
+  // Generate 12-Month Financial Trend Data Series for Recharts
+  const last12MonthsTrend = useMemo(() => {
+    const data: {
+      key: string;
+      monthLabel: string;
+      fullLabel: string;
+      income: number;
+      expense: number;
+      netProfit: number;
+      readingsCount: number;
+      yatraCount: number;
+    }[] = [];
+
+    const now = new Date();
+    const anchorDate = selectedMonth !== 'all' ? new Date(`${selectedMonth}-01T00:00:00`) : now;
+    const shortMonthNames = ['ဇန်', 'ဖေ', 'မတ်', 'ဧ', 'မေ', 'ဇွန်', 'ဇူ', 'သြ', 'စက်', 'အောက်', 'နို', 'ဒီ'];
+
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(anchorDate.getFullYear(), anchorDate.getMonth() - i, 1);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const key = `${yyyy}-${mm}`;
+
+      const monthLabel = `${shortMonthNames[d.getMonth()]} '${String(yyyy).slice(2)}`;
+      const fullLabel = `${yyyy} ခုနှစ်၊ ${shortMonthNames[d.getMonth()]}လ`;
+
+      const monthConsultations = consultations.filter(c => (c.readingDateTime || c.bookingDate || '').startsWith(key));
+      const monthExpenses = expenses.filter(e => (e.date || '').startsWith(key));
+
+      const income = monthConsultations.reduce((sum, c) => sum + (c.totalAmount || 0), 0);
+      const expense = monthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+      const netProfit = income - expense;
+      const readingsCount = monthConsultations.length;
+      const yatraCount = monthConsultations.filter(c => c.yatraEnabled || c.yatraName || (c.yatraFee && c.yatraFee > 0) || (c.navawinType && c.navawinType !== 'none')).length;
+
+      data.push({
+        key,
+        monthLabel,
+        fullLabel,
+        income,
+        expense,
+        netProfit,
+        readingsCount,
+        yatraCount,
+      });
+    }
+
+    return data;
+  }, [consultations, expenses, selectedMonth]);
+
+  // 12-Month Summary Stats
+  const trendStats = useMemo(() => {
+    const total12Income = last12MonthsTrend.reduce((sum, m) => sum + m.income, 0);
+    const total12Expense = last12MonthsTrend.reduce((sum, m) => sum + m.expense, 0);
+    const total12Profit = total12Income - total12Expense;
+    const avgMonthlyIncome = Math.round(total12Income / 12);
+    const peakMonth = [...last12MonthsTrend].sort((a, b) => b.income - a.income)[0];
+
+    return {
+      total12Income,
+      total12Expense,
+      total12Profit,
+      avgMonthlyIncome,
+      peakMonth,
+    };
+  }, [last12MonthsTrend]);
 
   // Format month name for display
   const formatMonthLabel = (m: string) => {
@@ -199,29 +274,25 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
           </div>
         </div>
 
-        {/* Card 2: Navawin Yatra Count */}
+        {/* Card 2: Yatra Count */}
         <div className="bg-stone-850 p-5 rounded-2xl border border-amber-500/30 shadow-xl relative overflow-hidden bg-gradient-to-br from-stone-850 via-amber-950/20 to-stone-900">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider text-amber-300 font-semibold">နဝင်းယတြာ ဦးရေ</span>
+            <span className="text-xs uppercase tracking-wider text-amber-300 font-semibold">ယတြာ ဆောင်ရွက်မှု</span>
             <span className="p-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
               <Sparkles className="w-5 h-5" />
             </span>
           </div>
           <div className="mt-3">
             <div className="text-3xl font-extrabold text-amber-300">
-              {metrics.navawinClientsCount} <span className="text-lg font-normal text-amber-200/70">ဦး</span>
+              {metrics.yatraClientsCount} <span className="text-lg font-normal text-amber-200/70">ဦး</span>
             </div>
-            <div className="text-xs text-stone-300 mt-1 flex items-center gap-2 flex-wrap">
-              <span>၁ ကြိမ်: <strong className="text-amber-300">{metrics.navawin1Count}</strong></span>
-              <span>•</span>
-              <span>၂ ကြိမ်: <strong className="text-amber-300">{metrics.navawin2Count}</strong></span>
-              <span>•</span>
-              <span>၃ ကြိမ်/အထူး: <strong className="text-amber-400">{metrics.navawin3Count + metrics.navawinSpecialCount}</strong></span>
-            </div>
+            <p className="text-xs text-stone-300 mt-1">
+              ယတြာပြုလုပ်သူ စုစုပေါင်း: <strong className="text-amber-300">{metrics.yatraClientsCount}</strong> ဦး
+            </p>
           </div>
           <div className="mt-4 pt-3 border-t border-stone-800 text-xs text-stone-400 flex justify-between">
-            <span>နဝင်းယတြာ ရငွေ:</span>
-            <span className="font-mono font-bold text-amber-300">{formatMMK(metrics.navawinRevenue)}</span>
+            <span>ယတြာစရိတ် ရငွေ:</span>
+            <span className="font-mono font-bold text-amber-300">{formatMMK(metrics.yatraRevenue)}</span>
           </div>
         </div>
 
@@ -274,8 +345,8 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                 <span className="font-mono text-stone-300">{formatMMK(metrics.serviceRevenue)}</span>
               </div>
               <div className="flex justify-between">
-                <span>နဝင်းယတြာ ကုန်ကျငွေ:</span>
-                <span className="font-mono text-amber-300">{formatMMK(metrics.navawinRevenue)}</span>
+                <span>ယတြာအစီအရင် ရငွေ:</span>
+                <span className="font-mono text-amber-300">{formatMMK(metrics.yatraRevenue)}</span>
               </div>
               <div className="flex justify-between">
                 <span>အဆောင်ပစ္စည်း POS ရောင်းရငွေ:</span>
@@ -370,43 +441,289 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
         </div>
       </div>
 
-      {/* Navawin Detailed Breakdown Table */}
+      {/* 12-Month Financial Progress & Income Trend Line Chart (Recharts) */}
+      <div className="bg-stone-850 p-6 rounded-2xl border border-stone-800 shadow-xl space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-emerald-500/20 text-amber-300 border border-amber-500/30">
+              <LineChartIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-stone-100 flex items-center gap-2">
+                <span>လွန်ခဲ့သော ၁၂ လ ဘဏ္ဍာရေးနှင့် ဝင်ငွေ တိုးတက်မှု လမ်းကြောင်း (12-Month Financial Trend)</span>
+              </h3>
+              <p className="text-xs text-stone-400 mt-0.5">
+                လစဉ် ဝင်ငွေ၊ အသုံးစရိတ် နှင့် အသားတင်အမြတ်ငွေ စီးဆင်းမှု မျဉ်းကွေးဇယား (Monthly Income & Financial Trend Chart)
+              </p>
+            </div>
+          </div>
+
+          {/* Metric View Selector */}
+          <div className="flex items-center gap-1.5 bg-stone-900 p-1 rounded-xl border border-stone-800 self-start sm:self-auto text-xs">
+            <button
+              type="button"
+              onClick={() => setTrendMetricView('all')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                trendMetricView === 'all'
+                  ? 'bg-amber-500 text-stone-950 font-bold shadow'
+                  : 'text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              အားလုံး (All)
+            </button>
+            <button
+              type="button"
+              onClick={() => setTrendMetricView('income')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                trendMetricView === 'income'
+                  ? 'bg-emerald-500 text-stone-950 font-bold shadow'
+                  : 'text-stone-400 hover:text-emerald-300'
+              }`}
+            >
+              ဝင်ငွေ
+            </button>
+            <button
+              type="button"
+              onClick={() => setTrendMetricView('profit')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                trendMetricView === 'profit'
+                  ? 'bg-amber-400 text-stone-950 font-bold shadow'
+                  : 'text-stone-400 hover:text-amber-300'
+              }`}
+            >
+              အမြတ်
+            </button>
+            <button
+              type="button"
+              onClick={() => setTrendMetricView('expense')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                trendMetricView === 'expense'
+                  ? 'bg-rose-500 text-white font-bold shadow'
+                  : 'text-stone-400 hover:text-rose-300'
+              }`}
+            >
+              ထွက်ငွေ
+            </button>
+          </div>
+        </div>
+
+        {/* 12-Month Quick KPI Summaries */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-stone-900/60 p-3 rounded-xl border border-stone-800">
+            <span className="text-[11px] text-stone-400 block">၁၂ လ စုစုပေါင်း ဝင်ငွေ</span>
+            <span className="text-base sm:text-lg font-bold font-mono text-emerald-400">
+              {formatMMK(trendStats.total12Income)}
+            </span>
+          </div>
+          <div className="bg-stone-900/60 p-3 rounded-xl border border-stone-800">
+            <span className="text-[11px] text-stone-400 block">၁၂ လ စုစုပေါင်း အသုံးစရိတ်</span>
+            <span className="text-base sm:text-lg font-bold font-mono text-rose-400">
+              {formatMMK(trendStats.total12Expense)}
+            </span>
+          </div>
+          <div className="bg-stone-900/60 p-3 rounded-xl border border-stone-800">
+            <span className="text-[11px] text-stone-400 block">၁၂ လ ပျမ်းမျှ လစဉ်ဝင်ငွေ</span>
+            <span className="text-base sm:text-lg font-bold font-mono text-amber-300">
+              {formatMMK(trendStats.avgMonthlyIncome)}
+            </span>
+          </div>
+          <div className="bg-stone-900/60 p-3 rounded-xl border border-stone-800">
+            <span className="text-[11px] text-stone-400 block">အမြင့်ဆုံး ဝင်ငွေရရှိသည့်လ</span>
+            <span className="text-xs sm:text-sm font-bold text-stone-200 block truncate" title={trendStats.peakMonth && trendStats.peakMonth.income > 0 ? `${trendStats.peakMonth.fullLabel} (${formatMMK(trendStats.peakMonth.income)})` : '-'}>
+              {trendStats.peakMonth && trendStats.peakMonth.income > 0
+                ? `${trendStats.peakMonth.monthLabel}: ${formatMMK(trendStats.peakMonth.income)}`
+                : '-'}
+            </span>
+          </div>
+        </div>
+
+        {/* Recharts Line / Area Chart Container */}
+        <div className="w-full h-72 sm:h-80 pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={last12MonthsTrend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                </linearGradient>
+                <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
+                </linearGradient>
+                <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#292524" vertical={false} />
+              <XAxis
+                dataKey="monthLabel"
+                stroke="#78716c"
+                fontSize={11}
+                tickLine={false}
+                axisLine={{ stroke: '#44403c' }}
+              />
+              <YAxis
+                stroke="#78716c"
+                fontSize={11}
+                tickLine={false}
+                axisLine={{ stroke: '#44403c' }}
+                tickFormatter={(val) => {
+                  if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+                  if (val >= 100000) return `${(val / 100000).toFixed(0)}L`;
+                  if (val >= 1000) return `${(val / 1000).toFixed(0)}K`;
+                  return `${val}`;
+                }}
+              />
+              <Tooltip
+                content={({ active, payload }: any) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="bg-stone-900/95 border border-amber-500/50 p-3 rounded-xl shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[200px]">
+                        <div className="font-bold text-amber-200 border-b border-stone-800 pb-1 flex items-center justify-between">
+                          <span>{data.fullLabel}</span>
+                          <span className="text-[10px] text-stone-400 font-mono">({data.key})</span>
+                        </div>
+                        <div className="flex justify-between items-center text-emerald-400">
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> ဝင်ငွေ (Income):
+                          </span>
+                          <span className="font-mono font-bold">{formatMMK(data.income)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-rose-400">
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> အသုံးစရိတ် (Expense):
+                          </span>
+                          <span className="font-mono font-bold">{formatMMK(data.expense)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-amber-300 font-semibold pt-1 border-t border-stone-800">
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> အသားတင်အမြတ်:
+                          </span>
+                          <span className="font-mono font-bold">{formatMMK(data.netProfit)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-stone-400 text-[11px] pt-1">
+                          <span>ဧည့်သည်/ယတြာ:</span>
+                          <span className="font-medium text-stone-300">{data.readingsCount} ဦး / {data.yatraCount} မှု</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Legend
+                verticalAlign="top"
+                align="right"
+                iconType="circle"
+                wrapperStyle={{ paddingBottom: '12px', fontSize: '11px' }}
+                formatter={(value) => {
+                  if (value === 'income') return <span className="text-emerald-400">ဝင်ငွေ (Income)</span>;
+                  if (value === 'netProfit') return <span className="text-amber-400">အသားတင်အမြတ် (Net Profit)</span>;
+                  if (value === 'expense') return <span className="text-rose-400">အသုံးစရိတ် (Expense)</span>;
+                  return value;
+                }}
+              />
+              {(trendMetricView === 'all' || trendMetricView === 'income') && (
+                <Area
+                  type="monotone"
+                  dataKey="income"
+                  name="income"
+                  stroke="#10b981"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#incomeGradient)"
+                  activeDot={{ r: 6, fill: '#10b981', stroke: '#064e3b', strokeWidth: 2 }}
+                />
+              )}
+              {(trendMetricView === 'all' || trendMetricView === 'profit') && (
+                <Area
+                  type="monotone"
+                  dataKey="netProfit"
+                  name="netProfit"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#profitGradient)"
+                  activeDot={{ r: 5, fill: '#f59e0b', stroke: '#78350f', strokeWidth: 2 }}
+                />
+              )}
+              {(trendMetricView === 'all' || trendMetricView === 'expense') && (
+                <Area
+                  type="monotone"
+                  dataKey="expense"
+                  name="expense"
+                  stroke="#f43f5e"
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                  fillOpacity={1}
+                  fill="url(#expenseGradient)"
+                  activeDot={{ r: 5, fill: '#f43f5e', stroke: '#881337', strokeWidth: 2 }}
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Yatra & Expenses Detailed Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Navawin Breakdown */}
+        {/* Yatra by Type Breakdown */}
         <div className="bg-stone-850 p-5 rounded-2xl border border-stone-800 shadow-xl space-y-3">
           <div className="flex items-center justify-between border-b border-stone-800 pb-2">
             <h4 className="font-bold text-amber-300 text-sm flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
-              <span>နဝင်းယတြာ အကြိမ်ရေအလိုက် ခွဲခြမ်းစိတ်ဖြာချက်</span>
+              <span>ယတြာ အမျိုးအစားအလိုက် ခွဲခြမ်းစိတ်ဖြာချက်</span>
             </h4>
-            <span className="text-xs text-stone-400">စုစုပေါင်း {metrics.navawinClientsCount} ဦး</span>
+            <span className="text-xs text-stone-400">စုစုပေါင်း {metrics.yatraClientsCount} ဦး</span>
           </div>
 
           <div className="space-y-2.5 pt-1">
-            {NAWAWIN_OPTIONS.map((opt) => {
-              const count = currentMonthConsultations.filter(c => c.navawinType === opt.key).length;
-              const totalAmount = currentMonthConsultations
-                .filter(c => c.navawinType === opt.key)
-                .reduce((s, c) => s + (c.navawinFee || 0), 0);
-              const percentage = currentMonthConsultations.length > 0 
-                ? ((count / currentMonthConsultations.length) * 100).toFixed(0) 
-                : 0;
+            {(() => {
+              const yatraMap = new Map<string, { total: number; count: number }>();
+              currentMonthConsultations.forEach((c) => {
+                if (c.yatraEnabled || c.yatraName || (c.yatraFee && c.yatraFee > 0) || (c.navawinType && c.navawinType !== 'none')) {
+                  const yName = c.yatraName || 'ယတြာ အစီအရင်';
+                  const current = yatraMap.get(yName) || { total: 0, count: 0 };
+                  yatraMap.set(yName, {
+                    total: current.total + (c.yatraFee || c.navawinFee || 0),
+                    count: current.count + 1,
+                  });
+                }
+              });
 
-              return (
-                <div key={opt.key} className="bg-stone-900/60 p-3 rounded-xl border border-stone-800 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-semibold text-stone-200">{opt.label}</span>
-                    <div className="text-stone-400 text-[11px] mt-0.5">
-                      ဧည့်သည် {count} ဦး ({percentage}%)
+              if (yatraMap.size === 0) {
+                return (
+                  <p className="text-stone-500 text-xs text-center py-6">
+                    ယခုလတွင် ယတြာ ပြုလုပ်ထားသော မှတ်တမ်း မရှိသေးပါ။
+                  </p>
+                );
+              }
+
+              const totalYatraClients = Array.from(yatraMap.values()).reduce((s, v) => s + v.count, 0);
+
+              return Array.from(yatraMap.entries()).map(([yName, data]) => {
+                const percentage = totalYatraClients > 0
+                  ? ((data.count / totalYatraClients) * 100).toFixed(0)
+                  : 0;
+
+                return (
+                  <div key={yName} className="bg-stone-900/60 p-3 rounded-xl border border-stone-800 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-semibold text-stone-200">{yName}</span>
+                      <div className="text-stone-400 text-[11px] mt-0.5">
+                        ဧည့်သည် {data.count} ဦး ({percentage}%)
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-bold text-amber-300">{formatMMK(data.total)}</span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="font-mono font-bold text-amber-300">{formatMMK(totalAmount)}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         </div>
 
@@ -421,27 +738,45 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
           </div>
 
           <div className="space-y-2.5 pt-1">
-            {EXPENSE_CATEGORIES.map((cat) => {
-              const catExpenses = currentMonthExpenses.filter(e => e.category === cat.key);
-              const catTotal = catExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-              const percentage = metrics.totalExpense > 0 
-                ? ((catTotal / metrics.totalExpense) * 100).toFixed(0) 
-                : 0;
+            {(() => {
+              const categoryMap = new Map<string, { total: number; count: number }>();
+              currentMonthExpenses.forEach((e) => {
+                const catName = e.category || 'အထွေထွေ';
+                const current = categoryMap.get(catName) || { total: 0, count: 0 };
+                categoryMap.set(catName, {
+                  total: current.total + (e.amount || 0),
+                  count: current.count + 1,
+                });
+              });
 
-              return (
-                <div key={cat.key} className="bg-stone-900/60 p-3 rounded-xl border border-stone-800 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-semibold text-stone-200">{cat.label}</span>
-                    <div className="text-stone-400 text-[11px] mt-0.5">
-                      စာရင်းသွင်းမှု {catExpenses.length} ကြိမ် ({percentage}%)
+              if (categoryMap.size === 0) {
+                return (
+                  <p className="text-stone-500 text-xs text-center py-4">
+                    ယခုလတွင် အသုံးစရိတ် မရှိသေးပါ။
+                  </p>
+                );
+              }
+
+              return Array.from(categoryMap.entries()).map(([catName, data]) => {
+                const percentage = metrics.totalExpense > 0 
+                  ? ((data.total / metrics.totalExpense) * 100).toFixed(0) 
+                  : 0;
+
+                return (
+                  <div key={catName} className="bg-stone-900/60 p-3 rounded-xl border border-stone-800 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-semibold text-stone-200">{catName}</span>
+                      <div className="text-stone-400 text-[11px] mt-0.5">
+                        စာရင်းသွင်းမှု {data.count} ကြိမ် ({percentage}%)
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-bold text-rose-300">{formatMMK(data.total)}</span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="font-mono font-bold text-rose-300">{formatMMK(catTotal)}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         </div>
 

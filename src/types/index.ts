@@ -50,7 +50,8 @@ export interface PurchasedAmulet {
 }
 
 export interface ConsultationRecord {
-  id: string;                  // ဗေဒင်မေးသူ ID (e.g. BD-001) - Auto generated with edit option
+  id: string;                  // ဗေဒင်မေးသူ / ဘိုကင် ID (e.g. BD-001) - Auto generated with edit option
+  customerId?: string;         // သီးသန့် Customer ID (Optional, e.g. CUST-001)
   customerName: string;        // အမည် (Skipable / Optional)
   phone: string;               // ဖုန်းနံပါတ်
   socialPlatform?: 'viber' | 'facebook' | 'tiktok' | 'telegram' | 'phone' | 'other'; // Social Account Dropdown
@@ -58,6 +59,7 @@ export interface ConsultationRecord {
   gender?: 'male' | 'female' | 'other';
   birthDayOfWeek: DayOfWeekBurmese; // နေ့နံ
   birthDate?: string;          // မွေးသက္ကရာဇ် (YYYY-MM-DD or မြန်မာနှစ်)
+  myanmarBirthDate?: string;   // မြန်မာမွေးရက်စွဲ (e.g. ၁၃၈၈ ခု၊ သီတင်းကျွတ် လဆန်း ၅ ရက်)
   birthTime?: string;          // မွေးဖွားချိန် (e.g. မနက် ၉:၃၀)
   age?: number;                // အသက်
   mahabote?: MahaboteHouse;    // မဟာဘုတ်ခွင်
@@ -112,18 +114,30 @@ export interface AmuletCatalogItem {
   suggestedDay?: DayOfWeekBurmese | 'အားလုံး';
 }
 
-export type ExpenseCategory = 
-  | 'yatra_materials'    // ယတြာပစ္စည်း ဝယ်ယူမှု
-  | 'flower_candles'     // ပန်း၊ ဆီမီး၊ အမွှေးတိုင်
-  | 'offering_pwe'       // ကန်တော့ပွဲ စရိတ်
-  | 'office_utilities'   // ရုံးသုံး/မီး/ရေ/အင်တာနက်
-  | 'assistant_fee'      // လက်ထောက်/စာရေးစရိတ်
-  | 'other';             // အထွေထွေ စရိတ်
+export interface YatraCatalogItem {
+  id: string;
+  name: string;
+  defaultFee: number;
+  category?: string;
+  description?: string;
+  inStock?: boolean;
+}
+
+export type ExpenseCategory = string;
+
+export interface ExpenseCategoryConfig {
+  id: string;
+  name: string;
+  subCategories: string[];
+  color?: string;
+  icon?: string;
+}
 
 export interface ExpenseRecord {
   id: string;
   title: string;
-  category: ExpenseCategory;
+  category: string; // Main category
+  subCategory?: string; // Sub category
   amount: number;
   date: string; // YYYY-MM-DD
   note?: string;

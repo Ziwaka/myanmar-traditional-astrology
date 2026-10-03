@@ -286,7 +286,10 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
 
                 <div>
                   <span className="text-stone-500 block text-[11px]">မွေးသက္ကရာဇ် & အသက်:</span>
-                  <span>{formatDateDDMMYYYY(record.birthDate) || '-'} {record.age ? `(အသက် ${record.age} နှစ်)` : ''}</span>
+                  <span>
+                    {formatDateDDMMYYYY(record.birthDate) || '-'} {record.age ? `(အသက် ${record.age} နှစ်)` : ''}
+                    {record.myanmarBirthDate && <span className="block text-[11px] text-amber-900 font-semibold">{record.myanmarBirthDate}</span>}
+                  </span>
                 </div>
 
                 <div>

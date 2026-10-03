@@ -18,7 +18,8 @@ import {
   Smartphone,
   Wifi,
   WifiOff,
-  Users
+  Users,
+  Activity
 } from 'lucide-react';
 import { ActiveTab } from './Navbar';
 import { UserAccount, getEffectivePermissions } from '../utils/auth';
@@ -91,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       key: 'amulets',
-      label: 'အဆောင်ပစ္စည်း ကတ်တလောက် (POS)',
+      label: 'ယတြာ & အဆောင် ကတ်တလောက် (Catalogs)',
       icon: <ShoppingBag className="w-4 h-4 text-purple-400" />,
       hide: !perms.canManageAmulets,
     },
@@ -100,6 +101,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'User အကောင့် & လုပ်ပိုင်ခွင့်များ',
       icon: <ShieldCheck className="w-4 h-4 text-cyan-400" />,
       hide: !perms.canManageUsers && currentAccount.role !== 'super_admin',
+    },
+    {
+      key: 'sync_monitor',
+      label: 'Sync Monitor Dashboard',
+      icon: <Activity className="w-4 h-4 text-emerald-400" />,
+      badge: 'Live',
+    },
+    {
+      key: 'quota_monitor',
+      label: 'Quota Monitor Dashboard',
+      icon: <Database className="w-4 h-4 text-amber-400" />,
+      badge: '5 MB',
     },
   ];
 

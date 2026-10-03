@@ -24,7 +24,9 @@ export type ActiveTab =
   | 'royal_customers' 
   | 'expenses' 
   | 'amulets'
-  | 'users';
+  | 'users'
+  | 'sync_monitor'
+  | 'quota_monitor';
 
 interface NavbarProps {
   onToggleSidebar: () => void;
@@ -41,6 +43,7 @@ interface NavbarProps {
   cloudVersion?: string;
   isNewVersionAvailable?: boolean;
   storageQuotaPercentage?: number;
+  isCloudSyncOverdue?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -58,6 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   cloudVersion = '1.3.5',
   isNewVersionAvailable = false,
   storageQuotaPercentage,
+  isCloudSyncOverdue = false,
 }) => {
   const isOnline = useOnlineStatus();
 
@@ -69,6 +73,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       case 'expenses': return 'အသုံးစရိတ် စီမံခန့်ခွဲမှု';
       case 'amulets': return 'အဆောင်ပစ္စည်း ကတ်တလောက် (POS)';
       case 'users': return 'အသုံးပြုသူ အကောင့်များနှင့် လုပ်ပိုင်ခွင့်များ';
+      case 'sync_monitor': return 'Sync Monitor Dashboard (Live Monitor)';
+      case 'quota_monitor': return 'Quota Monitor Dashboard (Storage Analytics)';
       default: return 'မြန်မာ့ရိုးရာဗေဒင်ပညာ';
     }
   };
@@ -81,6 +87,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       case 'expenses': return 'အသုံးစရိတ်';
       case 'amulets': return 'အဆောင် POS';
       case 'users': return 'အကောင့်များ';
+      case 'sync_monitor': return 'Sync Monitor';
+      case 'quota_monitor': return 'Quota Monitor';
       default: return 'ဗေဒင်မှတ်တမ်း';
     }
   };
@@ -128,17 +136,37 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
 
-            {/* Desktop Only: PWA Install & Version Badge (Hidden on mobile to keep header clean) */}
+            {/* Desktop Only: PWA Install & Version / Cloud Sync Badge */}
             <div className="hidden md:flex items-center gap-2">
               <PWAInstallButton variant="header" />
-              <button
-                onClick={onOpenVersionModal}
-                title="Version History (နှိပ်ပါ)"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs bg-stone-850 border border-stone-700 text-emerald-300 hover:bg-stone-800 transition cursor-pointer"
-              >
-                <Cloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="font-mono text-[11px] font-semibold">v{cloudVersion}</span>
-              </button>
+              
+              {onOpenCloudSyncModal && (
+                <button
+                  onClick={onOpenCloudSyncModal}
+                  title={isCloudSyncOverdue ? "Cloud Sync မလုပ်ရသေးသည်မှာ ၄၈ နာရီကျော်လွန်နေပါပြီ (နှိပ်ပါ)" : "Cloud Sync Status (နှိပ်ပါ)"}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs transition cursor-pointer ${
+                    isCloudSyncOverdue
+                      ? 'bg-rose-950/80 border border-rose-500/60 text-rose-300 animate-pulse hover:bg-rose-900'
+                      : 'bg-stone-850 border border-stone-700 text-emerald-300 hover:bg-stone-800'
+                  }`}
+                >
+                  <Cloud className={`w-3.5 h-3.5 shrink-0 ${isCloudSyncOverdue ? 'text-rose-400' : 'text-emerald-400'}`} />
+                  <span className="font-mono text-[11px] font-semibold">
+                    {isCloudSyncOverdue ? 'Sync လိုအပ်' : `v${cloudVersion}`}
+                  </span>
+                </button>
+              )}
+
+              {!onOpenCloudSyncModal && (
+                <button
+                  onClick={onOpenVersionModal}
+                  title="Version History (နှိပ်ပါ)"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs bg-stone-850 border border-stone-700 text-emerald-300 hover:bg-stone-800 transition cursor-pointer"
+                >
+                  <Cloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="font-mono text-[11px] font-semibold">v{cloudVersion}</span>
+                </button>
+              )}
             </div>
 
             {/* + New Consultation Primary Action Button */}

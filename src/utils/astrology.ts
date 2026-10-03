@@ -1,14 +1,14 @@
-import { DayOfWeekBurmese, MahaboteHouse, NavawinCountType, ExpenseCategory } from '../types';
+import { DayOfWeekBurmese, MahaboteHouse, NavawinCountType } from '../types';
 
 export const BURMESE_DAYS: { key: DayOfWeekBurmese; shorthand: string; label: string; planet: string; number: number; animal: string }[] = [
-  { key: 'တနင်္ဂနွေ', shorthand: '၁ နွေ', label: '၁ နွေ (Sunday)', planet: 'နေမင်း', number: 1, animal: 'ဂဠုန်' },
-  { key: 'တနင်္လာ', shorthand: '၂ လာ', label: '၂ လာ (Monday)', planet: 'လမင်း', number: 2, animal: 'ကျား' },
-  { key: 'အင်္ဂါ', shorthand: '၃ ဂါ', label: '၃ ဂါ (Tuesday)', planet: 'အင်္ဂါဂြိုဟ်', number: 3, animal: 'ခြင်္သေ့' },
-  { key: 'ဗုဒ္ဓဟူး', shorthand: '၄ ဟူး', label: '၄ ဟူး (Wed AM)', planet: 'ဗုဒ္ဓဟူးဂြိုဟ်', number: 4, animal: 'ဆင်စွယ်စုံ' },
-  { key: 'ကြာသပတေး', shorthand: '၅ တေး', label: '၅ တေး (Thursday)', planet: 'ကြာသပတေးဂြိုဟ်', number: 5, animal: 'ကြွက်' },
-  { key: 'သောကြာ', shorthand: '၆ ကြာ', label: '၆ ကြာ (Friday)', planet: 'သောကြာဂြိုဟ်', number: 6, animal: 'ပူး' },
-  { key: 'စနေ', shorthand: '၇ နေ', label: '၇ နေ (Saturday)', planet: 'စနေဂြိုဟ်', number: 7, animal: 'နဂါး' },
-  { key: 'ရာဟု', shorthand: '၈ ရာ', label: '၈ ရာ (Wed PM)', planet: 'ရာဟုဂြိုဟ်', number: 8, animal: 'ဟိုင်းဆင်' },
+  { key: 'တနင်္ဂနွေ', shorthand: '၁ နွေ', label: '၁ နွေ', planet: 'နွေ', number: 1, animal: 'ဂဠုန်' },
+  { key: 'တနင်္လာ', shorthand: '၂ လာ', label: '၂ လာ', planet: 'လာ', number: 2, animal: 'ကျား' },
+  { key: 'အင်္ဂါ', shorthand: '၃ ဂါ', label: '၃ ဂါ', planet: 'ဂါ', number: 3, animal: 'ခြင်္သေ့' },
+  { key: 'ဗုဒ္ဓဟူး', shorthand: '၄ ဟူး', label: '၄ ဟူး', planet: 'ဟူး', number: 4, animal: 'ဆင်စွယ်စုံ' },
+  { key: 'ကြာသပတေး', shorthand: '၅ တေး', label: '၅ တေး', planet: 'တေး', number: 5, animal: 'ကြွက်' },
+  { key: 'သောကြာ', shorthand: '၆ ကြာ', label: '၆ ကြာ', planet: 'ကြာ', number: 6, animal: 'ပူး' },
+  { key: 'စနေ', shorthand: '၇ နေ', label: '၇ နေ', planet: 'နေ', number: 7, animal: 'နဂါး' },
+  { key: 'ရာဟု', shorthand: '၈ ရာ', label: '၈ ရာ', planet: 'ရာ', number: 8, animal: 'ဟိုင်းဆင်' },
 ];
 
 export const MAHABOTE_HOUSES: { key: MahaboteHouse; label: string; meaning: string }[] = [
@@ -27,15 +27,6 @@ export const NAWAWIN_OPTIONS: { key: NavawinCountType; label: string; count: num
   { key: '2_times', label: '၂ ကြိမ်စာ နဝင်းယတြာ', count: 2, defaultFee: 30000 },
   { key: '3_times', label: '၃ ကြိမ်စာ နဝင်းယတြာ (အပြည့်အစုံ)', count: 3, defaultFee: 45000 },
   { key: 'special', label: 'အထူး ၉ ရက်နဝင်း ယတြာ', count: 9, defaultFee: 60000 },
-];
-
-export const EXPENSE_CATEGORIES: { key: ExpenseCategory; label: string }[] = [
-  { key: 'yatra_materials', label: 'ယတြာပစ္စည်း ဝယ်ယူမှု' },
-  { key: 'flower_candles', label: 'ပန်း၊ ဆီမီး၊ အမွှေးတိုင်' },
-  { key: 'offering_pwe', label: 'ကန်တော့ပွဲ/ပူဇော်ပွဲ စရိတ်' },
-  { key: 'office_utilities', label: 'ရုံးသုံး/ခန်းမ/မီး/ရေ' },
-  { key: 'assistant_fee', label: 'လက်ထောက်/စာရေး စရိတ်' },
-  { key: 'other', label: 'အထွေထွေ ကုန်ကျစရိတ်' },
 ];
 
 // Helper to format currency in Myanmar Kyats

@@ -10,8 +10,10 @@ import {
   getDocFromServer,
   writeBatch
 } from 'firebase/firestore';
-import { AmuletCatalogItem, ConsultationRecord, ExpenseRecord } from '../types';
-import { loadConsultations, loadExpenses, loadAmuletsCatalog } from './storage';
+import { AmuletCatalogItem, ConsultationRecord, ExpenseRecord, ExpenseCategoryConfig } from '../types';
+import { loadConsultations, saveConsultations, loadExpenses, saveExpenses, loadAmuletsCatalog, saveAmuletsCatalog, loadExpenseCategories, saveExpenseCategories } from './storage';
+import { addSyncLog } from './syncLog';
+import { recordCloudSyncTime } from './cloudSyncReminder';
 import firebaseConfigJson from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -140,6 +142,39 @@ export async function deleteExpenseFromCloud(id: string): Promise<void> {
   await deleteDoc(docRef);
 }
 
+export async function saveExpenseCategoryToCloud(cat: ExpenseCategoryConfig): Promise<void> {
+  const docRef = doc(db, 'expense_categories', cat.id);
+  await setDoc(docRef, cat, { merge: true });
+}
+
+export async function deleteExpenseCategoryFromCloud(id: string): Promise<void> {
+  const docRef = doc(db, 'expense_categories', id);
+  await deleteDoc(docRef);
+}
+
+export function subscribeToExpenseCategories(
+  onUpdate: (cats: ExpenseCategoryConfig[]) => void,
+  onError?: (err: Error) => void
+): () => void {
+  const colRef = collection(db, 'expense_categories');
+  return onSnapshot(
+    colRef,
+    (snapshot) => {
+      const cats: ExpenseCategoryConfig[] = [];
+      snapshot.forEach((docSnap) => {
+        cats.push(docSnap.data() as ExpenseCategoryConfig);
+      });
+      if (cats.length > 0) {
+        onUpdate(cats);
+      }
+    },
+    (err) => {
+      console.warn('Firestore expense_categories subscription error:', err);
+      if (onError) onError(err);
+    }
+  );
+}
+
 export async function saveAmuletToCloud(item: AmuletCatalogItem): Promise<void> {
   const docRef = doc(db, 'amulets', item.id);
   await setDoc(docRef, item, { merge: true });
@@ -224,5 +259,114 @@ export async function uploadAllLocalToCloud(): Promise<{ uploadedConsultations: 
     await saveAmuletToCloud(a);
   }
 
+  recordCloudSyncTime();
+  addSyncLog({
+    action: 'manual_push',
+    collection: 'all',
+    itemCount: cCount + eCount,
+    status: 'success',
+    details: `Manual Push: Consultations (${cCount}) + Expenses (${eCount}) uploaded to Cloud`,
+  });
+
   return { uploadedConsultations: cCount, uploadedExpenses: eCount };
 }
+
+// Measure roundtrip network latency to Google Cloud Firestore in milliseconds
+export async function checkFirestoreLatencyMs(): Promise<number> {
+  const start = performance.now();
+  try {
+    await getDocFromServer(doc(db, 'system', 'connection'));
+    const end = performance.now();
+    return Math.round(end - start);
+  } catch (e) {
+    const end = performance.now();
+    return Math.round(end - start);
+  }
+}
+
+// Fetch exact count of records currently in Cloud Firestore
+export async function fetchCloudDocumentCounts(): Promise<{
+  consultations: number;
+  expenses: number;
+  amulets: number;
+  lastUpdated: string;
+}> {
+  try {
+    const cSnap = await getDocs(collection(db, 'consultations'));
+    const eSnap = await getDocs(collection(db, 'expenses'));
+    const aSnap = await getDocs(collection(db, 'amulets'));
+
+    return {
+      consultations: cSnap.size,
+      expenses: eSnap.size,
+      amulets: aSnap.size,
+      lastUpdated: new Date().toISOString(),
+    };
+  } catch (e) {
+    console.warn('Could not fetch cloud document counts', e);
+    return { consultations: 0, expenses: 0, amulets: 0, lastUpdated: new Date().toISOString() };
+  }
+}
+
+// Force Pull all documents from Cloud Firestore and sync into LocalStorage
+export async function pullAllCloudToLocal(): Promise<{
+  downloadedConsultations: number;
+  downloadedExpenses: number;
+  downloadedAmulets: number;
+}> {
+  try {
+    const cSnap = await getDocs(collection(db, 'consultations'));
+    const fetchedConsultations: ConsultationRecord[] = [];
+    cSnap.forEach((docSnap) => {
+      fetchedConsultations.push(docSnap.data() as ConsultationRecord);
+    });
+
+    const eSnap = await getDocs(collection(db, 'expenses'));
+    const fetchedExpenses: ExpenseRecord[] = [];
+    eSnap.forEach((docSnap) => {
+      fetchedExpenses.push(docSnap.data() as ExpenseRecord);
+    });
+
+    const aSnap = await getDocs(collection(db, 'amulets'));
+    const fetchedAmulets: AmuletCatalogItem[] = [];
+    aSnap.forEach((docSnap) => {
+      fetchedAmulets.push(docSnap.data() as AmuletCatalogItem);
+    });
+
+    if (fetchedConsultations.length > 0) {
+      saveConsultations(fetchedConsultations);
+    }
+    if (fetchedExpenses.length > 0) {
+      saveExpenses(fetchedExpenses);
+    }
+    if (fetchedAmulets.length > 0) {
+      saveAmuletsCatalog(fetchedAmulets);
+    }
+
+    recordCloudSyncTime();
+    addSyncLog({
+      action: 'manual_pull',
+      collection: 'all',
+      itemCount: fetchedConsultations.length + fetchedExpenses.length,
+      status: 'success',
+      details: `Manual Pull: Consultations (${fetchedConsultations.length}) + Expenses (${fetchedExpenses.length}) downloaded from Cloud`,
+    });
+
+    return {
+      downloadedConsultations: fetchedConsultations.length,
+      downloadedExpenses: fetchedExpenses.length,
+      downloadedAmulets: fetchedAmulets.length,
+    };
+  } catch (err) {
+    console.error('Error during pullAllCloudToLocal', err);
+    addSyncLog({
+      action: 'manual_pull',
+      collection: 'all',
+      itemCount: 0,
+      status: 'error',
+      details: `Failed to pull from Cloud: ${String(err)}`,
+    });
+    throw err;
+  }
+}
+

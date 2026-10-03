@@ -17,7 +17,7 @@ import {
   Plus
 } from 'lucide-react';
 import { ConsultationRecord, ConsultationStatus } from '../types';
-import { formatMMK, formatDateDDMMYYYY, NAWAWIN_OPTIONS } from '../utils/astrology';
+import { formatMMK, formatDateDDMMYYYY } from '../utils/astrology';
 
 interface ConsultationListProps {
   records: ConsultationRecord[];
@@ -40,7 +40,7 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | ConsultationStatus | 'today'>('all');
-  const [navawinFilter, setNavawinFilter] = useState<'all' | 'with_navawin' | '3_times'>('all');
+  const [yatraFilter, setYatraFilter] = useState<'all' | 'with_yatra' | 'no_yatra'>('all');
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -53,7 +53,8 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
         rec.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         rec.phone.includes(searchTerm) ||
         (rec.notes && rec.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (rec.predictions && rec.predictions.toLowerCase().includes(searchTerm.toLowerCase()));
+        (rec.predictions && rec.predictions.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (rec.yatraName && rec.yatraName.toLowerCase().includes(searchTerm.toLowerCase()));
 
       if (!matchesSearch) return false;
 
@@ -65,16 +66,14 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
         if (rec.status !== statusFilter) return false;
       }
 
-      // Navawin filter
-      if (navawinFilter === 'with_navawin') {
-        if (rec.navawinType === 'none') return false;
-      } else if (navawinFilter === '3_times') {
-        if (rec.navawinType !== '3_times' && rec.navawinType !== 'special') return false;
-      }
+      // Yatra filter
+      const hasYatra = !!(rec.yatraEnabled || rec.yatraName || (rec.yatraFee && rec.yatraFee > 0) || (rec.navawinType && rec.navawinType !== 'none'));
+      if (yatraFilter === 'with_yatra' && !hasYatra) return false;
+      if (yatraFilter === 'no_yatra' && hasYatra) return false;
 
       return true;
     });
-  }, [records, searchTerm, statusFilter, navawinFilter, todayStr]);
+  }, [records, searchTerm, statusFilter, yatraFilter, todayStr]);
 
   // Quick metrics
   const stats = useMemo(() => {
@@ -87,25 +86,47 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
     return { total, completed, ongoingYatra, yatraCount, totalRevenue };
   }, [records]);
 
+  // Fast lookup map for customer visit counts (by phone, customerId, or name)
+  const customerVisitCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    records.forEach((r) => {
+      const cleanPhone = r.phone ? r.phone.replace(/[^0-9]/g, '') : '';
+      const cleanCustId = r.customerId ? r.customerId.trim().toLowerCase() : '';
+      const cleanName = r.customerName ? r.customerName.trim().toLowerCase() : '';
+
+      if (cleanPhone && cleanPhone.length >= 6) {
+        counts.set(`phone:${cleanPhone}`, (counts.get(`phone:${cleanPhone}`) || 0) + 1);
+      } else if (cleanCustId) {
+        counts.set(`cust:${cleanCustId}`, (counts.get(`cust:${cleanCustId}`) || 0) + 1);
+      } else if (cleanName) {
+        counts.set(`name:${cleanName}`, (counts.get(`name:${cleanName}`) || 0) + 1);
+      }
+    });
+
+    return counts;
+  }, [records]);
+
+  const getCustomerVisitCount = (r: ConsultationRecord): number => {
+    const cleanPhone = r.phone ? r.phone.replace(/[^0-9]/g, '') : '';
+    const cleanCustId = r.customerId ? r.customerId.trim().toLowerCase() : '';
+    const cleanName = r.customerName ? r.customerName.trim().toLowerCase() : '';
+
+    if (cleanPhone && cleanPhone.length >= 6) {
+      return customerVisitCounts.get(`phone:${cleanPhone}`) || 1;
+    }
+    if (cleanCustId) {
+      return customerVisitCounts.get(`cust:${cleanCustId}`) || 1;
+    }
+    if (cleanName) {
+      return customerVisitCounts.get(`name:${cleanName}`) || 1;
+    }
+    return 1;
+  };
+
   // Helper labels
   const getServiceName = (cat: string) => {
     return cat || 'ဗေဒင်ဝန်ဆောင်မှု';
-  };
-
-  const getNavawinBadge = (type: string) => {
-    const found = NAWAWIN_OPTIONS.find(n => n.key === type);
-    if (!found || type === 'none') {
-      return <span className="text-stone-500 text-xs">- မပါ -</span>;
-    }
-    const color = type === '3_times' || type === 'special'
-      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-      : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40';
-    return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border font-medium ${color}`}>
-        <Sparkles className="w-3 h-3 text-amber-400" />
-        {found.label}
-      </span>
-    );
   };
 
   const getStatusBadge = (status: ConsultationStatus, taskDone: boolean) => {
@@ -210,13 +231,13 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
           </select>
 
           <select
-            value={navawinFilter}
-            onChange={(e) => setNavawinFilter(e.target.value as any)}
+            value={yatraFilter}
+            onChange={(e) => setYatraFilter(e.target.value as any)}
             className="flex-1 sm:flex-none bg-stone-900 text-stone-200 border border-stone-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 cursor-pointer text-xs min-w-0"
           >
-            <option value="all">နဝင်း (အားလုံး)</option>
-            <option value="with_navawin">နဝင်းပါသူများ</option>
-            <option value="3_times">၃ ကြိမ်စာ/အထူး</option>
+            <option value="all">ယတြာ (အားလုံး)</option>
+            <option value="with_yatra">ယတြာ ပါသူများ</option>
+            <option value="no_yatra">ယတြာ မပါသူများ</option>
           </select>
 
           <button
@@ -237,10 +258,10 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
               <tr>
                 <th className="py-3 px-3 w-12 text-center">Task</th>
                 <th className="py-3 px-3">ID & အမည်</th>
-                <th className="py-3 px-3">နေ့နံ / မဟာဘုတ်</th>
+                <th className="py-3 px-3">မွေးနံ / မဟာဘုတ်</th>
                 <th className="py-3 px-3">ဘိုကင် / ဟောမည့်အချိန်</th>
                 <th className="py-3 px-3">ဝန်ဆောင်မှု</th>
-                <th className="py-3 px-3">နဝင်းယတြာ</th>
+                <th className="py-3 px-3">ယတြာ အစီအရင်</th>
                 <th className="py-3 px-3">အဆောင်ပစ္စည်း</th>
                 <th className="py-3 px-3 text-right">ကျသင့်ငွေ</th>
                 <th className="py-3 px-3 text-center">အခြေအနေ</th>
@@ -290,9 +311,35 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
 
                       {/* ID & Name */}
                       <td className="py-3 px-3">
-                        <div className="font-semibold text-stone-100 group-hover:text-amber-300 flex items-center gap-1.5">
+                        <div className="font-semibold text-stone-100 group-hover:text-amber-300 flex items-center gap-1.5 flex-wrap">
                           <span>{rec.customerName || 'မမေးသူ (အမည်မသိ)'}</span>
-                          {rec.age && <span className="text-xs text-stone-400">({rec.age} နှစ်)</span>}
+                          {rec.age && <span className="text-xs text-stone-400 font-normal">({rec.age} နှစ်)</span>}
+                          {(() => {
+                            const visitCount = getCustomerVisitCount(rec);
+                            if (visitCount > 3) {
+                              return (
+                                <span 
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-bold tracking-wide shadow-sm"
+                                  title={`ဖောက်သည်ဟောင်း (စုစုပေါင်း ${visitCount} ကြိမ် မေးမြန်းခဲ့သည်)`}
+                                >
+                                  <Sparkles className="w-2.5 h-2.5 text-purple-400" />
+                                  <span>Frequent ({visitCount} ကြိမ်)</span>
+                                </span>
+                              );
+                            }
+                            if (visitCount > 1) {
+                              return (
+                                <span 
+                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 text-[10px] font-medium"
+                                  title={`မေးဖူးသူ (စုစုပေါင်း ${visitCount} ကြိမ်)`}
+                                >
+                                  <UserCheck className="w-2.5 h-2.5 text-blue-400" />
+                                  <span>{visitCount} ကြိမ်မေး</span>
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-stone-400 mt-0.5">
                           <span className="font-mono text-amber-400/90 font-semibold">{rec.id}</span>
@@ -343,13 +390,22 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                         </div>
                       </td>
 
-                      {/* Navawin Yatra */}
+                      {/* Yatra Ritual */}
                       <td className="py-3 px-3 whitespace-nowrap">
-                        {getNavawinBadge(rec.navawinType)}
-                        {rec.navawinFee > 0 && (
-                          <div className="text-xs text-amber-400/80 font-mono mt-0.5">
-                            +{formatMMK(rec.navawinFee)}
+                        {rec.yatraEnabled || rec.yatraName || (rec.yatraFee && rec.yatraFee > 0) || (rec.navawinType && rec.navawinType !== 'none') ? (
+                          <div>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 font-medium">
+                              <Sparkles className="w-3 h-3 text-amber-400" />
+                              {rec.yatraName || 'ယတြာ အစီအရင်'}
+                            </span>
+                            {(rec.yatraFee && rec.yatraFee > 0) || (rec.navawinFee && rec.navawinFee > 0) ? (
+                              <div className="text-xs text-amber-400/90 font-mono mt-0.5">
+                                +{formatMMK(rec.yatraFee || rec.navawinFee)}
+                              </div>
+                            ) : null}
                           </div>
+                        ) : (
+                          <span className="text-stone-500 text-xs">- မပါ -</span>
                         )}
                       </td>
 
