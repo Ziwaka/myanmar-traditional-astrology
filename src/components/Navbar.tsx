@@ -24,6 +24,8 @@ export type ActiveTab =
   | 'monthly_report' 
   | 'royal_customers' 
   | 'expenses' 
+  | 'yatra_catalog'
+  | 'amulets_catalog'
   | 'amulets'
   | 'users'
   | 'sync_monitor'
@@ -78,6 +80,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       case 'monthly_report': return 'လစဉ် စာရင်းဇယား အစီရင်ခံစာ';
       case 'royal_customers': return 'ဖောက်သည်ကြီးများ (Royal VIP)';
       case 'expenses': return 'အသုံးစရိတ် စီမံခန့်ခွဲမှု';
+      case 'yatra_catalog': return 'ယတြာ ကတ်တလောက် (Yatra Rituals)';
+      case 'amulets_catalog': return 'အဆောင်ပစ္စည်း ကတ်တလောက် (Amulet POS)';
       case 'amulets': return 'အဆောင်ပစ္စည်း ကတ်တလောက် (POS)';
       case 'users': return 'အသုံးပြုသူ အကောင့်များနှင့် လုပ်ပိုင်ခွင့်များ';
       case 'sync_monitor': return 'Sync Monitor Dashboard (Live Monitor)';
@@ -92,6 +96,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       case 'monthly_report': return 'လစဉ်ရှင်းတမ်း';
       case 'royal_customers': return 'VIP ဖောက်သည်';
       case 'expenses': return 'အသုံးစရိတ်';
+      case 'yatra_catalog': return 'ယတြာ ကတ်တလောက်';
+      case 'amulets_catalog': return 'အဆောင် POS';
       case 'amulets': return 'အဆောင် POS';
       case 'users': return 'အကောင့်များ';
       case 'sync_monitor': return 'Sync Monitor';

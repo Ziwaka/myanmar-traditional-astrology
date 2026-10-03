@@ -100,6 +100,20 @@
       },
       "required": ["id", "name", "price", "category", "inStock"]
     },
+    "YatraCatalogItem": {
+      "title": "YatraCatalogItem",
+      "description": "Custom Yatra ritual service item (ယတြာ အစီအရင် ကတ်တလောက်)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "defaultFee": { "type": "number" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "inStock": { "type": "boolean" }
+      },
+      "required": ["id", "name", "defaultFee"]
+    },
     "ExpenseCategoryConfig": {
       "title": "ExpenseCategoryConfig",
       "description": "Configured expense categories",
@@ -141,6 +155,10 @@
     "/amulets/{amuletId}": {
       "schema": "AmuletCatalogItem",
       "description": "Collection of amulets and sacred merchandise"
+    },
+    "/yatras/{yatraId}": {
+      "schema": "YatraCatalogItem",
+      "description": "Collection of Yatra ritual catalog items"
     },
     "/expense_categories/{categoryId}": {
       "schema": "ExpenseCategoryConfig",

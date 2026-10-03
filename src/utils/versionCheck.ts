@@ -15,29 +15,32 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.8.13';
+export const LOCAL_APP_VERSION = '1.8.15';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
   {
-    version: '1.8.13',
+    version: '1.8.15',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'Streamline Service to ဗေဒင်ဟောစာတမ်း',
-    badge: 'Service Streamlined',
+    title: 'Quantity Multipliers & Auto-Calculators in Entry Form',
+    badge: 'Quantity Multipliers',
     changelog: [
-      'ဇာတာဖွဲ့/အထူးဟောစာတမ်း ကို ဖြုတ်ပယ်ပြီး ပုံသေ ဗေဒင်ဟောစာတမ်း အမည်ဖြင့်သာ သန့်ရှင်းစွာ ထားရှိပေးခြင်း။',
-      'ဉာဏ်ပူဇော်ခ အား ၃၀,၀၀၀ ကျပ် နှင့် ၅၀,၀၀၀ ကျပ် Tick Boxes ဖြင့် လျင်မြန်စွာ ရွေးချယ်နိုင်အောင် ထားရှိပေးခြင်း။'
+      'ယတြာများအတွက် အကြိမ်အရေအတွက် (၁ ကြိမ် ၊ ၂ ကြိမ် ၊ ၃ ကြိမ် စသည်) ကို လျင်မြန်စွာ ရွေးချယ်နိုင်သော စနစ် ထည့်သွင်းပေးခြင်း။',
+      'အဆောင်ပစ္စည်းများအတွက် ဝယ်ယူပြီးစာရင်းတွင် တိုက်ရိုက် အရေအတွက် အတိုး/အလျော့ ပြုလုပ်နိုင်သော (+ / -) ခလုတ်များ တည်ဆောက်ခြင်း။',
+      'ရွေးချယ်လိုက်သည့် အရေအတွက်အပေါ် မူတည်၍ ကျသင့်ငွေများကို စက္ကန့်ပိုင်းအတွင်း အလိုအလျောက် တိကျစွာ တွက်ချက်ပေးခြင်း။'
     ]
   },
   {
-    version: '1.8.12',
+    version: '1.8.14',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'Service Fee to ဉာဏ်ပူဇော်ခ & Quick Tick Boxes',
-    badge: 'UI & Service Update',
+    title: 'Separate Yatra & Amulet Catalogs & Cloud Sync Integration',
+    badge: 'Database & UI Split',
     changelog: [
-      'ဗေဒင်မေးသူ စာရင်းသွင်းပုံစံမှ ဖုန်းနံပါတ် Field အား လုံးဝ ဖြုတ်ပယ်ပေးခြင်း။',
-      'အမည်အား "ဉာဏ်ပူဇော်ခ" သို့ ပြောင်းလဲပြီး ၃၀,၀၀၀ ကျပ် နှင့် ၅၀,၀၀၀ ကျပ် Tick Box များ ထည့်သွင်းပေးထားခြင်း။'
+      'ယတြာ ကတ်တလောက် (Yatra Catalog) နှင့် အဆောင် ကတ်တလောက် (Amulet Catalog) အား တက်ဘ်များနှင့် ဘေးဘားမီနူးတွင် သီးခြားစီ ခွဲထုတ်ပြီးစနစ်တကျ ပြင်ဆင်ခြင်း။',
+      'Firebase Firestore တွင် \'yatras\' collection အသစ်တည်ဆောက်၍ Real-time Sync စနစ် အပြည့်အဝ ချိတ်ဆက်ခြင်း။',
+      'ယခင်အမှားအယွင်းကြောင့် အဆောင်စုဆောင်းမှုထဲ ရောက်ရှိနေသည့် ယတြာမှတ်တမ်းများအား Cloud နှင့် local storage နှစ်ဖက်စလုံးတွင် အလိုအလျောက် ရွေးထုတ်ပြောင်းရွှေ့ပေးသည့် (Automatic Migration) စနစ်ထည့်သွင်းခြင်း။',
+      'ဗေဒင်မေးသူစာရင်းသွင်းပုံစံ (Entry Form) တွင် ယတြာကတ်တလောက်မှ ရွေးချယ်မှုများကို အလွယ်တကူ ကလစ်တစ်ချက်နှိပ်ရုံဖြင့် အလိုအလျောက် ဖြည့်သွင်းနိုင်စေခြင်း။'
     ]
   }
 ];

@@ -167,9 +167,10 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   const [customYatraName, setCustomYatraName] = useState<string>(initialData?.yatraName || '');
   const [yatraFee, setYatraFee] = useState<number>(
     initialData?.yatraFee !== undefined 
-      ? initialData.yatraFee 
+      ? (initialData.yatraQty && initialData.yatraQty > 0 ? Math.round(initialData.yatraFee / initialData.yatraQty) : initialData.yatraFee)
       : (initialData?.navawinFee || 30000)
   );
+  const [yatraQty, setYatraQty] = useState<number>(initialData?.yatraQty || 1);
 
   // Pure Custom Amulets POS & Catalog link
   const [amulets, setAmulets] = useState<PurchasedAmulet[]>(initialData?.amulets || []);
@@ -193,9 +194,9 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
 
   const totalAmount = useMemo(() => {
     const sFee = Number(serviceFee) || 0;
-    const yFee = yatraEnabled ? (Number(yatraFee) || 0) : 0;
+    const yFee = yatraEnabled ? (Number(yatraFee) || 0) * (Number(yatraQty) || 1) : 0;
     return sFee + yFee + amuletsTotal;
-  }, [serviceFee, yatraEnabled, yatraFee, amuletsTotal]);
+  }, [serviceFee, yatraEnabled, yatraFee, yatraQty, amuletsTotal]);
 
   useEffect(() => {
     if (!initialData && paymentStatus === 'paid') {
@@ -270,13 +271,20 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
     setAmulets(amulets.filter((_, i) => i !== index));
   };
 
+  const handleUpdateAmuletQty = (index: number, newQty: number) => {
+    if (newQty < 1) return;
+    const updated = [...amulets];
+    updated[index].quantity = newQty;
+    setAmulets(updated);
+  };
+
   const buildCurrentRecord = (): ConsultationRecord => {
     const cleanServiceName = serviceName.trim() || 'ဗေဒင်ဝန်ဆောင်မှု';
     const finalYatraName = customYatraName.trim() || (yatraEnabled ? 'ယတြာ အစီအရင်' : '');
     const legacyNavawin: NavawinCountType = yatraEnabled ? '3_times' : 'none';
 
     const sFee = Number(serviceFee) || 0;
-    const yFee = yatraEnabled ? (Number(yatraFee) || 0) : 0;
+    const yFee = yatraEnabled ? (Number(yatraFee) || 0) * (Number(yatraQty) || 1) : 0;
     const aFee = amuletsTotal || 0;
     const finalTotal = totalAmount > 0 ? totalAmount : (sFee + yFee + aFee);
     const finalPaid = paymentStatus === 'paid' ? finalTotal : (paymentStatus === 'unpaid' ? 0 : (Number(paidAmount) || 0));
@@ -303,6 +311,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
       yatraEnabled,
       yatraName: finalYatraName,
       yatraFee: yFee,
+      yatraQty,
       navawinType: legacyNavawin,
       navawinFee: yFee,
 
@@ -843,37 +852,38 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               </label>
             </div>
 
+            {/* 1-Click Yatra Catalog Quick Select Chips */}
+            {yatraCatalog && yatraCatalog.length > 0 && (
+              <div className="p-2.5 bg-stone-900/90 rounded-xl border border-amber-500/30 space-y-1.5 mt-1">
+                <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-amber-400" />
+                  <span>ယတြာ ကတ်တလောက်မှ ရွေးချယ်ရန် (နှိပ်ပါက ယတြာအလိုအလျောက် ပွင့်သွားမည်):</span>
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {yatraCatalog.map((y) => (
+                    <button
+                      key={y.id}
+                      type="button"
+                      onClick={() => {
+                        setYatraEnabled(true);
+                        setCustomYatraName(y.name);
+                        setYatraFee(y.defaultFee);
+                      }}
+                      className={`px-2.5 py-1 rounded-xl text-xs border transition cursor-pointer active:scale-95 ${
+                        yatraEnabled && customYatraName === y.name
+                          ? 'bg-amber-500 text-stone-950 border-amber-400 font-bold shadow'
+                          : 'bg-stone-950 hover:bg-stone-800 text-stone-200 border-amber-500/40'
+                      }`}
+                    >
+                      + {y.name} ({formatMMK(y.defaultFee)})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {yatraEnabled ? (
               <div className="space-y-2.5 pt-0.5">
-                
-                {/* 1-Click Yatra Catalog Quick Select Chips */}
-                {yatraCatalog && yatraCatalog.length > 0 && (
-                  <div className="p-2.5 bg-stone-900/90 rounded-xl border border-amber-500/30 space-y-1.5">
-                    <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-amber-400" />
-                      <span>ယတြာ Catalog မှ ရွေးချယ်ရန်:</span>
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {yatraCatalog.map((y) => (
-                        <button
-                          key={y.id}
-                          type="button"
-                          onClick={() => {
-                            setCustomYatraName(y.name);
-                            setYatraFee(y.defaultFee);
-                          }}
-                          className={`px-2.5 py-1 rounded-xl text-xs border transition cursor-pointer active:scale-95 ${
-                            customYatraName === y.name
-                              ? 'bg-amber-500 text-stone-950 border-amber-400 font-bold shadow'
-                              : 'bg-stone-950 hover:bg-stone-800 text-stone-200 border-amber-500/40'
-                          }`}
-                        >
-                          + {y.name} ({formatMMK(y.defaultFee)})
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-stone-900/90 p-2.5 rounded-xl border border-stone-800 space-y-1">
@@ -892,7 +902,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
 
                   <div className="bg-stone-900/90 p-2.5 rounded-xl border border-stone-800 flex items-center justify-between">
                     <div>
-                      <span className="text-stone-300 font-medium block text-xs">ယတြာ ကုန်ကျငွေ / အလှူငွေ (ကျပ်)</span>
+                      <span className="text-stone-300 font-medium block text-xs">ယတြာ ၁ ကြိမ်စာ စရိတ် / အလှူငွေ (ကျပ်)</span>
                       <span className="text-[10px] text-stone-500">စိတ်ကြိုက် သတ်မှတ်ပါ</span>
                     </div>
                     <input
@@ -902,6 +912,48 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                       onChange={(e) => setYatraFee(Number(e.target.value))}
                       className="w-36 px-3 py-1.5 text-right rounded-xl bg-stone-950 border border-amber-500/40 text-amber-300 font-mono font-bold text-base focus:border-amber-400"
                     />
+                  </div>
+                </div>
+
+                {/* Yatra Quantity Multiplier selector */}
+                <div className="bg-stone-900/90 p-3 rounded-xl border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <span className="text-stone-300 font-semibold text-xs block">
+                      ယတြာ ပြုလုပ်မည့် အကြိမ် အရေအတွက် (Frequency)
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[1, 2, 3, 5, 9].map((q) => (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => setYatraQty(q)}
+                          className={`px-3 py-1 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                            yatraQty === q
+                              ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-md'
+                              : 'bg-stone-950 text-stone-400 border-stone-800 hover:text-stone-200'
+                          }`}
+                        >
+                          {q} ကြိမ်
+                        </button>
+                      ))}
+                      <div className="flex items-center gap-1 ml-1">
+                        <span className="text-xs text-stone-500 font-medium">စိတ်ကြိုက်:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={yatraQty}
+                          onChange={(e) => setYatraQty(Math.max(1, Number(e.target.value) || 1))}
+                          className="w-14 px-2 py-1 rounded-lg bg-stone-950 border border-stone-700 text-stone-200 text-center text-xs font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-stone-800/80 flex items-center justify-between sm:block gap-4">
+                    <span className="text-stone-400 text-xs font-medium block">စုစုပေါင်း ယတြာစရိတ်:</span>
+                    <div className="text-base sm:text-lg font-bold text-amber-300 font-mono mt-0.5">
+                      {formatMMK(yatraFee * yatraQty)}
+                    </div>
                   </div>
                 </div>
 
@@ -1020,17 +1072,40 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                   {amulets.map((a, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-2 rounded-xl bg-stone-900 border border-stone-800 text-xs"
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-stone-900 border border-stone-800 text-xs"
                     >
-                      <div className="flex-1 mr-2">
-                        <span className="font-bold text-stone-200">{a.name}</span>
-                        <span className="text-stone-400 text-[11px] ml-2 font-mono">
-                          ({formatMMK(a.price)} × {a.quantity})
+                      <div className="flex-1 mr-2 min-w-0">
+                        <div className="font-bold text-stone-200 truncate">{a.name}</div>
+                        <span className="text-stone-400 text-[10px] font-mono">
+                          {formatMMK(a.price)}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-amber-300 font-mono">
+                      <div className="flex items-center gap-3 shrink-0">
+                        {/* Quantity Incrementor/Decrementor */}
+                        <div className="flex items-center bg-stone-950 rounded-lg p-0.5 border border-stone-800 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateAmuletQty(idx, a.quantity - 1)}
+                            className="w-5 h-5 flex items-center justify-center rounded bg-stone-900 text-stone-400 hover:bg-stone-800 hover:text-stone-200 text-xs font-bold transition cursor-pointer"
+                            title="၁ ခု လျှော့ရန်"
+                          >
+                            -
+                          </button>
+                          <span className="w-6 text-center font-bold font-mono text-xs text-stone-300">
+                            {a.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateAmuletQty(idx, a.quantity + 1)}
+                            className="w-5 h-5 flex items-center justify-center rounded bg-stone-900 text-stone-400 hover:bg-stone-800 hover:text-stone-200 text-xs font-bold transition cursor-pointer"
+                            title="၁ ခု တိုးရန်"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <span className="font-bold text-amber-300 font-mono w-20 text-right">
                           {formatMMK(a.price * a.quantity)}
                         </span>
                         <button

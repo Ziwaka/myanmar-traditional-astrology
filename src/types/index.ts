@@ -76,6 +76,7 @@ export interface ConsultationRecord {
   yatraType?: string;          // ရွေးချယ်ထားသော ယတြာ Key (e.g. navawin_3, custom_yatra)
   yatraName?: string;          // ယတြာ အမည် (ရွေးချယ်ထားသော အမည် သို့မဟုတ် စိတ်ကြိုက်အမည်)
   yatraFee?: number;           // ယတြာ စရိတ်/အလှူငွေ (ကျပ်)
+  yatraQty?: number;           // ယတြာ အကြိမ်ရေ (အရေအတွက်)
 
   // Navawin legacy fields (kept for backward-compatibility)
   navawinType: NavawinCountType; 

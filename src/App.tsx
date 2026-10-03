@@ -78,6 +78,7 @@ import {
   subscribeToExpenses, 
   subscribeToUsers,
   subscribeToAmulets, 
+  subscribeToYatras,
   subscribeToExpenseCategories,
   saveConsultationToCloud, 
   deleteConsultationFromCloud, 
@@ -85,6 +86,9 @@ import {
   deleteExpenseFromCloud, 
   saveAmuletToCloud, 
   deleteAmuletFromCloud,
+  saveYatraToCloud,
+  deleteYatraFromCloud,
+  cleanupAndMigrateYatrasFromAmulets,
   seedOrMigrateLocalToCloud
 } from './utils/firebase';
 import { loadExpenseCategories, saveExpenseCategories } from './utils/storage';
@@ -231,7 +235,8 @@ export default function App() {
 
     // Test Firestore connection & seed if cloud is empty
     testFirestoreConnection().then(() => {
-      seedOrMigrateLocalToCloud(localC, localE, localA, loadUserAccounts());
+      seedOrMigrateLocalToCloud(localC, localE, localA, loadUserAccounts(), localY);
+      cleanupAndMigrateYatrasFromAmulets().catch(err => console.warn('Amulets to Yatras migration check:', err));
     }).catch(err => {
       console.warn('Initial cloud sync check:', err);
     });
@@ -295,6 +300,14 @@ export default function App() {
       }
     });
 
+    const unsubYatras = subscribeToYatras((cloudYatras) => {
+      if (cloudYatras && cloudYatras.length > 0) {
+        setYatraCatalog(cloudYatras);
+        saveYatraCatalog(cloudYatras);
+        refreshDatabaseQuota();
+      }
+    });
+
     const unsubExpenseCategories = subscribeToExpenseCategories((cloudCategories) => {
       if (cloudCategories && cloudCategories.length > 0) {
         saveExpenseCategories(cloudCategories);
@@ -331,6 +344,7 @@ export default function App() {
       unsubExpenses();
       unsubUsers();
       unsubAmulets();
+      unsubYatras();
       unsubExpenseCategories();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('focus', handleFocus);
@@ -488,6 +502,7 @@ export default function App() {
     setYatraCatalog(updated);
     saveYatraCatalog(updated);
     refreshDatabaseQuota();
+    saveYatraToCloud(item).catch(e => console.warn('Cloud yatra save error:', e));
   };
 
   // Delete Yatra from Catalog
@@ -496,6 +511,7 @@ export default function App() {
     setYatraCatalog(updated);
     saveYatraCatalog(updated);
     refreshDatabaseQuota();
+    deleteYatraFromCloud(id).catch(e => console.warn('Cloud yatra delete error:', e));
   };
 
   // Add Amulet to Catalog
@@ -744,7 +760,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'amulets' && (
+          {activeTab === 'yatra_catalog' && (
             <CatalogsManagerView
               yatraCatalog={yatraCatalog}
               amuletCatalog={amuletsCatalog}
@@ -753,6 +769,20 @@ export default function App() {
               onAddAmuletItem={handleAddCatalogItem}
               onDeleteAmuletItem={handleDeleteCatalogItem}
               onToggleAmuletStock={handleToggleStock}
+              forcedSubTab="yatra"
+            />
+          )}
+
+          {(activeTab === 'amulets_catalog' || activeTab === 'amulets') && (
+            <CatalogsManagerView
+              yatraCatalog={yatraCatalog}
+              amuletCatalog={amuletsCatalog}
+              onAddYatraItem={handleAddYatraCatalogItem}
+              onDeleteYatraItem={handleDeleteYatraCatalogItem}
+              onAddAmuletItem={handleAddCatalogItem}
+              onDeleteAmuletItem={handleDeleteCatalogItem}
+              onToggleAmuletStock={handleToggleStock}
+              forcedSubTab="amulets"
             />
           )}
 

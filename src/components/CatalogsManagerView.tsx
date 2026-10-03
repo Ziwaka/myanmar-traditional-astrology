@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShoppingBag, 
   Flame, 
@@ -26,6 +26,8 @@ interface CatalogsManagerViewProps {
   onAddAmuletItem: (item: AmuletCatalogItem) => void;
   onDeleteAmuletItem: (id: string) => void;
   onToggleAmuletStock?: (id: string) => void;
+  initialSubTab?: 'yatra' | 'amulets';
+  forcedSubTab?: 'yatra' | 'amulets';
 }
 
 export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
@@ -36,9 +38,17 @@ export const CatalogsManagerView: React.FC<CatalogsManagerViewProps> = ({
   onAddAmuletItem,
   onDeleteAmuletItem,
   onToggleAmuletStock,
+  initialSubTab,
+  forcedSubTab,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'yatra' | 'amulets'>('yatra');
+  const [activeSubTab, setActiveSubTab] = useState<'yatra' | 'amulets'>(forcedSubTab || initialSubTab || 'yatra');
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (forcedSubTab) {
+      setActiveSubTab(forcedSubTab);
+    }
+  }, [forcedSubTab]);
 
   // Yatra Modal State
   const [isAddYatraModalOpen, setIsAddYatraModalOpen] = useState(false);

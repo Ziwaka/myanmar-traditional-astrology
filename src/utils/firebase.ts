@@ -10,7 +10,7 @@ import {
   getDocFromServer,
   writeBatch
 } from 'firebase/firestore';
-import { AmuletCatalogItem, ConsultationRecord, ExpenseRecord, ExpenseCategoryConfig } from '../types';
+import { AmuletCatalogItem, YatraCatalogItem, ConsultationRecord, ExpenseRecord, ExpenseCategoryConfig } from '../types';
 import { 
   loadConsultations, 
   saveConsultations, 
@@ -18,6 +18,8 @@ import {
   saveExpenses, 
   loadAmuletsCatalog, 
   saveAmuletsCatalog, 
+  loadYatraCatalog,
+  saveYatraCatalog,
   loadExpenseCategories, 
   saveExpenseCategories 
 } from './storage';
@@ -161,6 +163,29 @@ export function subscribeToAmulets(
   );
 }
 
+export function subscribeToYatras(
+  onUpdate: (items: YatraCatalogItem[]) => void,
+  onError?: (err: Error) => void
+): () => void {
+  const colRef = collection(db, 'yatras');
+  return onSnapshot(
+    colRef,
+    (snapshot) => {
+      const items: YatraCatalogItem[] = [];
+      snapshot.forEach((docSnap) => {
+        items.push(docSnap.data() as YatraCatalogItem);
+      });
+      if (items.length > 0) {
+        onUpdate(items);
+      }
+    },
+    (err) => {
+      console.warn('Firestore yatras subscription error:', err);
+      if (onError) onError(err);
+    }
+  );
+}
+
 export function subscribeToExpenseCategories(
   onUpdate: (cats: ExpenseCategoryConfig[]) => void,
   onError?: (err: Error) => void
@@ -243,19 +268,111 @@ export async function deleteAmuletFromCloud(id: string): Promise<void> {
   await deleteDoc(docRef);
 }
 
+export async function saveYatraToCloud(item: YatraCatalogItem): Promise<void> {
+  const docRef = doc(db, 'yatras', item.id);
+  const cleanData = cleanForFirestore(item);
+  await setDoc(docRef, cleanData, { merge: true });
+}
+
+export async function deleteYatraFromCloud(id: string): Promise<void> {
+  const docRef = doc(db, 'yatras', id);
+  await deleteDoc(docRef);
+}
+
+/**
+ * Migration helper: Detects any Yatra items mistakenly stored in 'amulets' collection or localStorage,
+ * safely moves them into 'yatras', and removes them from 'amulets'.
+ */
+export async function cleanupAndMigrateYatrasFromAmulets(): Promise<{ migratedYatras: number; removedFromAmulets: number }> {
+  try {
+    let migrated = 0;
+    let removed = 0;
+
+    // 1. Clean Cloud Firestore
+    const amuletsSnap = await getDocs(collection(db, 'amulets'));
+    for (const docSnap of amuletsSnap.docs) {
+      const data = docSnap.data();
+      const id = docSnap.id;
+      const isYatra = 
+        id.startsWith('yatra-') || 
+        (typeof data.category === 'string' && (data.category.includes('ယတြာ') || data.category.includes('နဝင်း'))) ||
+        (typeof data.name === 'string' && (data.name.includes('ယတြာ') || data.name.includes('နဝင်း') || data.name.includes('အစီအရင်')));
+
+      if (isYatra) {
+        const yatraItem: YatraCatalogItem = {
+          id: id.startsWith('yatra-') ? id : `yatra-migrated-${id}`,
+          name: data.name || '',
+          defaultFee: data.defaultFee || data.price || 0,
+          category: data.category || 'ယတြာအစီအရင်',
+          description: data.description || '',
+          inStock: true,
+        };
+        await setDoc(doc(db, 'yatras', yatraItem.id), cleanForFirestore(yatraItem));
+        await deleteDoc(doc(db, 'amulets', id));
+        migrated++;
+        removed++;
+      }
+    }
+
+    // 2. Clean Local Storage
+    const localAmulets = loadAmuletsCatalog();
+    const localYatras = loadYatraCatalog();
+    const nonYatraAmulets: AmuletCatalogItem[] = [];
+    const extractedYatras: YatraCatalogItem[] = [];
+
+    for (const a of localAmulets) {
+      const isYatra = 
+        a.id.startsWith('yatra-') ||
+        (a.category && (a.category.includes('ယတြာ') || a.category.includes('နဝင်း'))) ||
+        (a.name && (a.name.includes('ယတြာ') || a.name.includes('နဝင်း') || a.name.includes('အစီအရင်')));
+
+      if (isYatra) {
+        extractedYatras.push({
+          id: a.id.startsWith('yatra-') ? a.id : `yatra-migrated-${a.id}`,
+          name: a.name,
+          defaultFee: a.price || 0,
+          category: a.category || 'ယတြာအစီအရင်',
+          description: a.description || '',
+          inStock: true,
+        });
+      } else {
+        nonYatraAmulets.push(a);
+      }
+    }
+
+    if (extractedYatras.length > 0) {
+      const combinedYatras = [...localYatras];
+      for (const y of extractedYatras) {
+        if (!combinedYatras.some(item => item.id === y.id || item.name.toLowerCase() === y.name.toLowerCase())) {
+          combinedYatras.push(y);
+        }
+      }
+      saveYatraCatalog(combinedYatras);
+      saveAmuletsCatalog(nonYatraAmulets);
+    }
+
+    return { migratedYatras: migrated, removedFromAmulets: removed };
+  } catch (err) {
+    console.warn('Error in cleanupAndMigrateYatrasFromAmulets:', err);
+    return { migratedYatras: 0, removedFromAmulets: 0 };
+  }
+}
+
 // One-click Migration: Upload local data to Cloud Firestore if cloud is empty
 export async function seedOrMigrateLocalToCloud(
   localConsultations: ConsultationRecord[],
   localExpenses: ExpenseRecord[],
   localAmulets: AmuletCatalogItem[],
-  localUsers: UserAccount[] = []
-): Promise<{ uploadedConsultations: number; uploadedExpenses: number; uploadedAmulets: number; uploadedUsers: number }> {
+  localUsers: UserAccount[] = [],
+  localYatras: YatraCatalogItem[] = []
+): Promise<{ uploadedConsultations: number; uploadedExpenses: number; uploadedAmulets: number; uploadedUsers: number; uploadedYatras: number }> {
   try {
     const consultationsSnap = await getDocs(collection(db, 'consultations'));
     let uploadedConsultations = 0;
     let uploadedExpenses = 0;
     let uploadedAmulets = 0;
     let uploadedUsers = 0;
+    let uploadedYatras = 0;
 
     // If cloud is empty or has fewer records than local, sync local to cloud
     if (consultationsSnap.empty && localConsultations.length > 0) {
@@ -290,6 +407,18 @@ export async function seedOrMigrateLocalToCloud(
       await batch.commit();
     }
 
+    const yatrasSnap = await getDocs(collection(db, 'yatras'));
+    const sourceYatras = localYatras.length > 0 ? localYatras : loadYatraCatalog();
+    if (yatrasSnap.empty && sourceYatras.length > 0) {
+      const batch = writeBatch(db);
+      for (const y of sourceYatras) {
+        const ref = doc(db, 'yatras', y.id);
+        batch.set(ref, cleanForFirestore(y));
+        uploadedYatras++;
+      }
+      await batch.commit();
+    }
+
     const usersSnap = await getDocs(collection(db, 'users'));
     const sourceUsers = localUsers.length > 0 ? localUsers : INITIAL_USER_ACCOUNTS;
     if (usersSnap.empty && sourceUsers.length > 0) {
@@ -302,18 +431,19 @@ export async function seedOrMigrateLocalToCloud(
       await batch.commit();
     }
 
-    return { uploadedConsultations, uploadedExpenses, uploadedAmulets, uploadedUsers };
+    return { uploadedConsultations, uploadedExpenses, uploadedAmulets, uploadedUsers, uploadedYatras };
   } catch (err) {
     console.warn('Error during cloud migration check:', err);
-    return { uploadedConsultations: 0, uploadedExpenses: 0, uploadedAmulets: 0, uploadedUsers: 0 };
+    return { uploadedConsultations: 0, uploadedExpenses: 0, uploadedAmulets: 0, uploadedUsers: 0, uploadedYatras: 0 };
   }
 }
 
 // Upload all local records to Cloud (for initial bootstrap or manual sync)
-export async function uploadAllLocalToCloud(): Promise<{ uploadedConsultations: number; uploadedExpenses: number; uploadedUsers: number }> {
+export async function uploadAllLocalToCloud(): Promise<{ uploadedConsultations: number; uploadedExpenses: number; uploadedUsers: number; uploadedYatras: number }> {
   const localConsultations = loadConsultations();
   const localExpenses = loadExpenses();
   const localAmulets = loadAmuletsCatalog();
+  const localYatras = loadYatraCatalog();
   const localUsers = loadUserAccounts();
 
   let cCount = 0;
@@ -332,6 +462,12 @@ export async function uploadAllLocalToCloud(): Promise<{ uploadedConsultations: 
     await saveAmuletToCloud(a);
   }
 
+  let yCount = 0;
+  for (const y of localYatras) {
+    await saveYatraToCloud(y);
+    yCount++;
+  }
+
   let uCount = 0;
   for (const u of localUsers) {
     await saveUserToCloud(u);
@@ -342,12 +478,12 @@ export async function uploadAllLocalToCloud(): Promise<{ uploadedConsultations: 
   addSyncLog({
     action: 'manual_push',
     collection: 'all',
-    itemCount: cCount + eCount + uCount,
+    itemCount: cCount + eCount + uCount + yCount,
     status: 'success',
-    details: `Manual Push: Consultations (${cCount}) + Expenses (${eCount}) + Users (${uCount}) uploaded to Cloud`,
+    details: `Manual Push: Consultations (${cCount}) + Expenses (${eCount}) + Yatras (${yCount}) + Users (${uCount}) uploaded to Cloud`,
   });
 
-  return { uploadedConsultations: cCount, uploadedExpenses: eCount, uploadedUsers: uCount };
+  return { uploadedConsultations: cCount, uploadedExpenses: eCount, uploadedUsers: uCount, uploadedYatras: yCount };
 }
 
 // Measure roundtrip network latency to Google Cloud Firestore in milliseconds
@@ -368,6 +504,7 @@ export async function fetchCloudDocumentCounts(): Promise<{
   consultations: number;
   expenses: number;
   amulets: number;
+  yatras: number;
   users: number;
   lastUpdated: string;
 }> {
@@ -375,18 +512,20 @@ export async function fetchCloudDocumentCounts(): Promise<{
     const cSnap = await getDocs(collection(db, 'consultations'));
     const eSnap = await getDocs(collection(db, 'expenses'));
     const aSnap = await getDocs(collection(db, 'amulets'));
+    const ySnap = await getDocs(collection(db, 'yatras'));
     const uSnap = await getDocs(collection(db, 'users'));
 
     return {
       consultations: cSnap.size,
       expenses: eSnap.size,
       amulets: aSnap.size,
+      yatras: ySnap.size,
       users: uSnap.size,
       lastUpdated: new Date().toISOString(),
     };
   } catch (e) {
     console.warn('Could not fetch cloud document counts', e);
-    return { consultations: 0, expenses: 0, amulets: 0, users: 0, lastUpdated: new Date().toISOString() };
+    return { consultations: 0, expenses: 0, amulets: 0, yatras: 0, users: 0, lastUpdated: new Date().toISOString() };
   }
 }
 
@@ -395,6 +534,7 @@ export async function pullAllCloudToLocal(): Promise<{
   downloadedConsultations: number;
   downloadedExpenses: number;
   downloadedAmulets: number;
+  downloadedYatras: number;
   downloadedUsers: number;
 }> {
   try {
@@ -416,6 +556,12 @@ export async function pullAllCloudToLocal(): Promise<{
       fetchedAmulets.push(docSnap.data() as AmuletCatalogItem);
     });
 
+    const ySnap = await getDocs(collection(db, 'yatras'));
+    const fetchedYatras: YatraCatalogItem[] = [];
+    ySnap.forEach((docSnap) => {
+      fetchedYatras.push(docSnap.data() as YatraCatalogItem);
+    });
+
     const uSnap = await getDocs(collection(db, 'users'));
     const fetchedUsers: UserAccount[] = [];
     uSnap.forEach((docSnap) => {
@@ -431,6 +577,9 @@ export async function pullAllCloudToLocal(): Promise<{
     if (fetchedAmulets.length > 0) {
       saveAmuletsCatalog(fetchedAmulets);
     }
+    if (fetchedYatras.length > 0) {
+      saveYatraCatalog(fetchedYatras);
+    }
     if (fetchedUsers.length > 0) {
       saveUserAccounts(fetchedUsers);
     }
@@ -439,15 +588,16 @@ export async function pullAllCloudToLocal(): Promise<{
     addSyncLog({
       action: 'manual_pull',
       collection: 'all',
-      itemCount: fetchedConsultations.length + fetchedExpenses.length + fetchedUsers.length,
+      itemCount: fetchedConsultations.length + fetchedExpenses.length + fetchedUsers.length + fetchedYatras.length,
       status: 'success',
-      details: `Manual Pull: Consultations (${fetchedConsultations.length}) + Expenses (${fetchedExpenses.length}) + Users (${fetchedUsers.length}) downloaded from Cloud`,
+      details: `Manual Pull: Consultations (${fetchedConsultations.length}) + Expenses (${fetchedExpenses.length}) + Yatras (${fetchedYatras.length}) + Users (${fetchedUsers.length}) downloaded from Cloud`,
     });
 
     return {
       downloadedConsultations: fetchedConsultations.length,
       downloadedExpenses: fetchedExpenses.length,
       downloadedAmulets: fetchedAmulets.length,
+      downloadedYatras: fetchedYatras.length,
       downloadedUsers: fetchedUsers.length,
     };
   } catch (err) {

@@ -23,6 +23,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Yatra Rituals Catalog (ယတြာ ကတ်တလောက်)
+    match /yatras/{yatraId} {
+      allow read, write: if true;
+    }
+
     // Expense Categories
     match /expense_categories/{categoryId} {
       allow read, write: if true;
