@@ -527,11 +527,7 @@ export default function App() {
   // Pre-fill booking for Royal Customer
   const handleBookForCustomer = (
     customerName: string,
-    phone: string,
-    birthDayOfWeek: DayOfWeekBurmese,
-    birthDate?: string,
-    age?: number,
-    mahabote?: MahaboteHouse
+    phone: string
   ) => {
     const nextId = generateNextConsultationId(consultations);
     const now = new Date();
@@ -542,10 +538,6 @@ export default function App() {
       id: nextId,
       customerName,
       phone,
-      birthDayOfWeek,
-      birthDate,
-      age,
-      mahabote,
       bookingDate: todayStr,
       readingDateTime: nowDateTimeStr,
       serviceCategory: 'general_reading',

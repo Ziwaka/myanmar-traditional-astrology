@@ -28,28 +28,15 @@ import {
 import { DatePickerInput } from './DatePickerInput';
 import { TimePickerInput } from './TimePickerInput';
 import { 
-  getMyanmarDateFromGregorian, 
-  getGregorianFromMyanmarDate, 
-  MYANMAR_MONTHS, 
-  MOON_PHASES,
-  toBurmeseNumerals
-} from '../utils/myanmarCalendar';
-import { 
   AmuletCatalogItem, 
   YatraCatalogItem,
   ConsultationRecord, 
-  DayOfWeekBurmese, 
-  MahaboteHouse, 
   NavawinCountType, 
   PurchasedAmulet 
 } from '../types';
 import { 
-  BURMESE_DAYS, 
-  calculateMahabote, 
   formatMMK, 
-  formatDateDDMMYYYY,
-  getBurmeseDayFromDate, 
-  MAHABOTE_HOUSES
+  formatDateDDMMYYYY
 } from '../utils/astrology';
 import { 
   loadSavedCustomServices, 
@@ -122,6 +109,9 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   // Customer info - Name is SKIPABLE (optional!)
   const [customerName, setCustomerName] = useState(initialData?.customerName || '');
   const [phone, setPhone] = useState(initialData?.phone || '');
+  const [consultationMode, setConsultationMode] = useState<'in_person' | 'remote'>(
+    initialData?.consultationMode || 'in_person'
+  );
   
   // Social Account fields
   const [socialPlatform, setSocialPlatform] = useState<'viber' | 'facebook' | 'tiktok' | 'telegram' | 'phone' | 'other'>(
@@ -130,22 +120,6 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   const [socialAccountName, setSocialAccountName] = useState(initialData?.socialAccountName || '');
 
   const [gender, setGender] = useState<'male' | 'female' | 'other'>(initialData?.gender || 'female');
-  
-  // Birth Details & Mode: 'gregorian' | 'myanmar' | 'day_only'
-  const [birthInputMode, setBirthInputMode] = useState<'gregorian' | 'myanmar' | 'day_only'>('gregorian');
-  const [birthDayOfWeek, setBirthDayOfWeek] = useState<DayOfWeekBurmese>(initialData?.birthDayOfWeek || 'တနင်္ဂနွေ');
-  const [birthDate, setBirthDate] = useState(initialData?.birthDate || '');
-  const [myanmarBirthDate, setMyanmarBirthDate] = useState(initialData?.myanmarBirthDate || '');
-  
-  // Myanmar Date Inputs State
-  const [myanmarYearInput, setMyanmarYearInput] = useState<number>(1388);
-  const [myanmarMonthInput, setMyanmarMonthInput] = useState<string>('သီတင်းကျွတ်');
-  const [myanmarMoonPhaseInput, setMyanmarMoonPhaseInput] = useState<string>('လဆန်း');
-  const [myanmarDayInput, setMyanmarDayInput] = useState<number>(5);
-
-  const [birthTime, setBirthTime] = useState(initialData?.birthTime || '');
-  const [age, setAge] = useState<number | undefined>(initialData?.age || undefined);
-  const [mahabote, setMahabote] = useState<MahaboteHouse | undefined>(initialData?.mahabote || 'အထွန်း');
 
   // Current user & all user accounts for assignment
   const allUserAccounts = useMemo(() => loadUserAccounts(), []);
@@ -217,63 +191,10 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
     }
   }, [totalAmount, paymentStatus, initialData]);
 
-  const handleBirthDateChange = (dateStr: string) => {
-    setBirthDate(dateStr);
-    if (dateStr) {
-      const mmResult = getMyanmarDateFromGregorian(dateStr);
-      if (mmResult) {
-        setBirthDayOfWeek(mmResult.dayOfWeek);
-        setMahabote(mmResult.mahabote);
-        setMyanmarBirthDate(mmResult.fullFormattedStr);
-        setMyanmarYearInput(mmResult.myanmarYear);
-        setMyanmarMonthInput(mmResult.monthName);
-        setMyanmarMoonPhaseInput(mmResult.moonPhase);
-        setMyanmarDayInput(mmResult.fortnightDay);
-
-        const year = new Date(dateStr).getFullYear();
-        if (year && !isNaN(year)) {
-          const currentYear = new Date().getFullYear();
-          setAge(currentYear - year);
-        }
-      }
-    }
-  };
-
-  const handleMyanmarDateInputChange = (
-    y: number,
-    mName: string,
-    phase: string,
-    dNum: number
-  ) => {
-    setMyanmarYearInput(y);
-    setMyanmarMonthInput(mName);
-    setMyanmarMoonPhaseInput(phase);
-    setMyanmarDayInput(dNum);
-
-    const calcResult = getGregorianFromMyanmarDate(y, mName, phase, dNum);
-    if (calcResult) {
-      setBirthDate(calcResult.gregorianDate);
-      setBirthDayOfWeek(calcResult.dow);
-      setMahabote(calcResult.mahabote);
-      setMyanmarBirthDate(`${toBurmeseNumerals(y)} ခု၊ ${mName} ${phase} ${toBurmeseNumerals(dNum)} ရက်`);
-
-      const year = new Date(calcResult.gregorianDate).getFullYear();
-      if (year && !isNaN(year)) {
-        const currentYear = new Date().getFullYear();
-        setAge(currentYear - year);
-      }
-    }
-  };
-
   const handleSelectExistingCustomer = (profile: CustomerHistoryProfile) => {
     setCustomerName(profile.customerName || '');
     setPhone(profile.phone || '');
     if (profile.gender) setGender(profile.gender);
-    if (profile.birthDayOfWeek) setBirthDayOfWeek(profile.birthDayOfWeek as DayOfWeekBurmese);
-    if (profile.birthDate) setBirthDate(profile.birthDate);
-    if (profile.birthTime) setBirthTime(profile.birthTime);
-    if (profile.age) setAge(profile.age);
-    if (profile.mahabote) setMahabote(profile.mahabote as MahaboteHouse);
 
     setSelectedHistoryProfile(profile);
     setShowHistoryDossier(true);
@@ -346,15 +267,16 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
       id: id || nextId,
       customerName: customerName.trim() || 'မမေးသူ (အမည်မသိ)',
       phone: phone.trim() || '09-',
-      socialPlatform,
-      socialAccountName: socialAccountName.trim(),
+      consultationMode,
+      socialPlatform: consultationMode === 'remote' ? socialPlatform : undefined,
+      socialAccountName: consultationMode === 'remote' ? socialAccountName.trim() : undefined,
       gender,
-      birthDayOfWeek,
-      birthDate,
-      myanmarBirthDate,
-      birthTime,
-      age: age ? Number(age) : undefined,
-      mahabote,
+      birthDayOfWeek: initialData?.birthDayOfWeek,
+      birthDate: initialData?.birthDate,
+      myanmarBirthDate: initialData?.myanmarBirthDate,
+      birthTime: initialData?.birthTime,
+      age: initialData?.age,
+      mahabote: initialData?.mahabote,
       bookingDate,
       readingDateTime,
       serviceCategory: cleanServiceName as any,
@@ -651,391 +573,81 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               </div>
             </div>
 
-            {/* 2. Social Account Info */}
-            <div className="p-3 bg-stone-900/70 border border-stone-800 rounded-2xl space-y-2">
-              <label className="block text-stone-300 font-semibold text-xs flex items-center gap-1.5">
-                <Globe className="w-4 h-4 text-blue-400" />
-                <span>Social Account အချက်အလက်</span>
+            {/* Consultation Mode: In Person vs Remote (Default: In Person) */}
+            <div className="p-3 bg-stone-900/80 border border-stone-800 rounded-2xl space-y-2">
+              <label className="block text-xs font-bold text-stone-300 flex items-center justify-between">
+                <span>မေးမြန်းမည့် ပုံစံ (Consultation Mode):</span>
+                <span className="text-[11px] text-amber-400 font-normal">
+                  {consultationMode === 'in_person' ? '🏢 လူကိုယ်တိုင် လာရောက်မေးမြန်းမည်' : '🌐 အွန်လိုင်း / အဝေးမှ မေးမြန်းမည်'}
+                </span>
               </label>
 
-              <div className="space-y-2">
-                <select
-                  value={socialPlatform}
-                  onChange={(e) => setSocialPlatform(e.target.value as any)}
-                  style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-amber-300 font-semibold focus:border-amber-400 cursor-pointer"
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConsultationMode('in_person')}
+                  className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer border ${
+                    consultationMode === 'in_person'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 border-amber-400 shadow-md ring-2 ring-amber-400/40 font-extrabold scale-[1.01]'
+                      : 'bg-stone-950 text-stone-400 hover:text-stone-200 border-stone-800'
+                  }`}
                 >
-                  <option value="viber">📱 Viber</option>
-                  <option value="facebook">📘 Facebook</option>
-                  <option value="tiktok">🎵 TikTok</option>
-                  <option value="telegram">✈️ Telegram</option>
-                  <option value="phone">📞 Phone Call</option>
-                  <option value="other">🌐 အခြား</option>
-                </select>
+                  <span>🏢 In Person</span>
+                  <span className="hidden sm:inline text-xs font-semibold">(လူကိုယ်တိုင်)</span>
+                </button>
 
-                <input
-                  type="text"
-                  placeholder="Social Account Name / ID ရိုက်ထည့်ပါ (ဥပမာ- Phyo Phyo / @user123)..."
-                  value={socialAccountName}
-                  onChange={(e) => setSocialAccountName(e.target.value)}
-                  style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 placeholder-stone-500 focus:border-amber-400 font-medium"
-                />
+                <button
+                  type="button"
+                  onClick={() => setConsultationMode('remote')}
+                  className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer border ${
+                    consultationMode === 'remote'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white border-blue-400 shadow-md ring-2 ring-blue-400/40 font-extrabold scale-[1.01]'
+                      : 'bg-stone-950 text-stone-400 hover:text-stone-200 border-stone-800'
+                  }`}
+                >
+                  <span>🌐 Remote</span>
+                  <span className="hidden sm:inline text-xs font-semibold">(အွန်လိုင်း)</span>
+                </button>
               </div>
             </div>
 
-            {/* 3. မွေးသက္ကရာဇ်၊ မွေးနံ၊ မြန်မာပြက္ခဒိန်၊ မဟာဘုတ်ခွင် */}
-            <div className="p-4 bg-stone-900/90 border border-amber-500/40 rounded-2xl space-y-4 shadow-inner">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-800 pb-2.5">
-                <span className="text-sm font-bold text-amber-300 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>မွေးသက္ကရာဇ် & မွေးနံ ဇာတာ ထည့်သွင်းရန်</span>
-                </span>
-
-                {/* Mode Selector Tabs */}
-                <div className="flex items-center gap-1 bg-stone-950 p-1 rounded-xl border border-stone-800 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setBirthInputMode('gregorian')}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
-                      birthInputMode === 'gregorian'
-                        ? 'bg-amber-500 text-stone-950 shadow'
-                        : 'text-stone-400 hover:text-amber-300'
-                    }`}
-                  >
-                    📅 အင်္ဂလိပ် မွေးနေ့
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setBirthInputMode('myanmar')}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
-                      birthInputMode === 'myanmar'
-                        ? 'bg-amber-500 text-stone-950 shadow'
-                        : 'text-stone-400 hover:text-amber-300'
-                    }`}
-                  >
-                    🇲🇲 မြန်မာ မွေးနေ့
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setBirthInputMode('day_only')}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
-                      birthInputMode === 'day_only'
-                        ? 'bg-amber-500 text-stone-950 shadow'
-                        : 'text-stone-400 hover:text-amber-300'
-                    }`}
-                  >
-                    ☀️ မွေးနံ သီးသန့်
-                  </button>
+            {/* Social Account Info - ONLY VISIBLE WHEN REMOTE IS SELECTED */}
+            {consultationMode === 'remote' && (
+              <div className="p-3.5 bg-blue-950/30 border border-blue-500/40 rounded-2xl space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-200 shadow-inner">
+                <div className="flex items-center justify-between">
+                  <label className="text-blue-300 font-bold text-xs flex items-center gap-1.5">
+                    <Globe className="w-4 h-4 text-blue-400" />
+                    <span>Online / Social Account အချက်အလက် (Remote)</span>
+                  </label>
+                  <span className="text-[10px] text-blue-400">Viber / Facebook / Telegram စသဖြင့်</span>
                 </div>
-              </div>
 
-              {/* MODE 1: GREGORIAN DATE PICKER */}
-              {birthInputMode === 'gregorian' && (
-                <div className="space-y-3 animate-in fade-in duration-150">
-                  <DatePickerInput
-                    label="မွေးသက္ကရာဇ် (အင်္ဂလိပ် ပြက္ခဒိန်)"
-                    value={birthDate}
-                    onChange={(newDate) => handleBirthDateChange(newDate)}
-                    placeholder="မွေးရက်စွဲ ရွေးရန် (ပြက္ခဒိန်)"
+                <div className="space-y-2">
+                  <select
+                    value={socialPlatform}
+                    onChange={(e) => setSocialPlatform(e.target.value as any)}
+                    style={{ fontSize: '16px' }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-blue-500/40 text-blue-200 font-semibold focus:border-blue-400 cursor-pointer"
+                  >
+                    <option value="viber">📱 Viber</option>
+                    <option value="facebook">📘 Facebook</option>
+                    <option value="telegram">✈️ Telegram</option>
+                    <option value="tiktok">🎵 TikTok</option>
+                    <option value="phone">📞 Phone Call</option>
+                    <option value="other">🌐 အခြား</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    placeholder="Social Account Name / ID / Phone ရိုက်ထည့်ပါ (ဥပမာ- Phyo Phyo / @user123)..."
+                    value={socialAccountName}
+                    onChange={(e) => setSocialAccountName(e.target.value)}
+                    style={{ fontSize: '16px' }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 placeholder-stone-500 focus:border-blue-400 font-medium"
                   />
-
-                  {/* Auto Calculated Results Display */}
-                  <div className="p-3 bg-stone-950 rounded-xl border border-amber-500/30 space-y-2">
-                    <span className="text-xs font-bold text-amber-400 block">
-                      ⚡ အလိုအလျောက် တွက်ချက်ရရှိသော မွေးနံနှင့် မြန်မာရက်စွဲ:
-                    </span>
-
-                    <div className="space-y-2">
-                      <div className="space-y-1">
-                        <label className="block text-xs font-bold text-amber-300">တွက်ချက်ရရှိသော မွေးနံ:</label>
-                        <select
-                          value={birthDayOfWeek}
-                          onChange={(e) => setBirthDayOfWeek(e.target.value as DayOfWeekBurmese)}
-                          style={{ fontSize: '16px' }}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-stone-900 border border-amber-500/60 text-amber-300 font-bold focus:border-amber-400 cursor-pointer"
-                        >
-                          {BURMESE_DAYS.map((d) => (
-                            <option key={d.key} value={d.key}>
-                              {d.shorthand}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="block text-xs font-bold text-amber-300">
-                          တွက်ချက်ရရှိသော မြန်မာ မွေးရက်စွဲ (လိုအပ်ပါက စိတ်ကြိုက် ပြင်နိုင်ပါသည်):
-                        </label>
-                        <input
-                          type="text"
-                          value={myanmarBirthDate}
-                          onChange={(e) => setMyanmarBirthDate(e.target.value)}
-                          placeholder="ဥပမာ - ၁၃၅၁ ခု၊ တပေါင်း လဆုတ် ၁၃ ရက် (၆ ကြာ)"
-                          style={{ fontSize: '16px' }}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-stone-900 border border-amber-500/50 text-amber-300 font-bold focus:border-amber-400 shadow-inner"
-                        />
-                      </div>
-
-                      {/* Mahabote House Selector with 1-Tap Quick Override Buttons */}
-                      <div className="space-y-2 pt-1">
-                        <div className="flex items-center justify-between">
-                          <label className="block text-xs font-bold text-stone-300">
-                            မဟာဘုတ်ခွင် <span className="text-amber-400 font-normal">(စိတ်ကြိုက် ရွေးချယ်/ပြောင်းလဲနိုင်သည်)</span>:
-                          </label>
-                          <span className="text-xs px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
-                            လက်ရှိ: {mahabote || 'အထွန်း'}
-                          </span>
-                        </div>
-
-                        {/* 1-Tap Pill Buttons for all 7 houses */}
-                        <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
-                          {MAHABOTE_HOUSES.map((m) => {
-                            const isSelected = mahabote === m.key;
-                            return (
-                              <button
-                                key={m.key}
-                                type="button"
-                                onClick={() => setMahabote(m.key)}
-                                className={`px-2 py-2 rounded-xl text-xs font-bold transition-all text-center flex flex-col items-center justify-center border ${
-                                  isSelected
-                                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 border-amber-400 shadow-md shadow-amber-500/20 scale-[1.02]'
-                                    : 'bg-stone-900/80 hover:bg-stone-800 text-stone-300 border-stone-700/60 hover:border-stone-500'
-                                }`}
-                              >
-                                <span>{m.label}</span>
-                                <span className={`text-[10px] mt-0.5 truncate max-w-full font-normal ${isSelected ? 'text-stone-900 font-semibold' : 'text-stone-400'}`}>
-                                  {m.meaning.split('/')[0]}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        <select
-                          value={mahabote || 'အထွန်း'}
-                          onChange={(e) => setMahabote(e.target.value as MahaboteHouse)}
-                          style={{ fontSize: '16px' }}
-                          className="w-full px-3.5 py-2 rounded-xl bg-stone-900 border border-stone-700 text-stone-300 text-xs focus:border-amber-500 cursor-pointer"
-                        >
-                          {MAHABOTE_HOUSES.map((m) => (
-                            <option key={m.key} value={m.key}>
-                              {m.label} ({m.meaning})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
                 </div>
-              )}
-
-              {/* MODE 2: MYANMAR CALENDAR INPUT */}
-              {birthInputMode === 'myanmar' && (
-                <div className="space-y-3 animate-in fade-in duration-150">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-stone-300">မြန်မာ သက္ကရာဇ် (ခုနှစ်):</label>
-                    <input
-                      type="number"
-                      value={myanmarYearInput}
-                      onChange={(e) => {
-                        const y = Number(e.target.value) || 1388;
-                        handleMyanmarDateInputChange(y, myanmarMonthInput, myanmarMoonPhaseInput, myanmarDayInput);
-                      }}
-                      style={{ fontSize: '16px' }}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-amber-300 font-mono font-bold focus:border-amber-400"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-stone-300">မြန်မာလ:</label>
-                    <select
-                      value={myanmarMonthInput}
-                      onChange={(e) => {
-                        const m = e.target.value;
-                        handleMyanmarDateInputChange(myanmarYearInput, m, myanmarMoonPhaseInput, myanmarDayInput);
-                      }}
-                      style={{ fontSize: '16px' }}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-amber-200 font-semibold focus:border-amber-400 cursor-pointer"
-                    >
-                      {MYANMAR_MONTHS.map((m: string) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-stone-300">လဆန်း / လပြည့် / လဆုတ် / လကွယ်:</label>
-                    <select
-                      value={myanmarMoonPhaseInput}
-                      onChange={(e) => {
-                        const p = e.target.value;
-                        handleMyanmarDateInputChange(myanmarYearInput, myanmarMonthInput, p, myanmarDayInput);
-                      }}
-                      style={{ fontSize: '16px' }}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-amber-200 font-semibold focus:border-amber-400 cursor-pointer"
-                    >
-                      {MOON_PHASES.map((p: string) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-stone-300">ရက် (၁ မှ ၁၅):</label>
-                    <select
-                      value={myanmarDayInput}
-                      onChange={(e) => {
-                        const d = Number(e.target.value) || 1;
-                        handleMyanmarDateInputChange(myanmarYearInput, myanmarMonthInput, myanmarMoonPhaseInput, d);
-                      }}
-                      style={{ fontSize: '16px' }}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-amber-200 font-semibold focus:border-amber-400 cursor-pointer"
-                    >
-                      {Array.from({ length: 15 }, (_, i) => i + 1).map((d) => (
-                        <option key={d} value={d}>
-                          {toBurmeseNumerals(d)} ရက်
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Calculated Gregorian & Day Result */}
-                  <div className="p-3 bg-stone-950 rounded-xl border border-amber-500/30 space-y-3">
-                    <span className="text-xs font-bold text-amber-400 block">
-                      ⚡ အလိုအလျောက် တွက်ချက်ရရှိသော အင်္ဂလိပ် မွေးရက်စွဲနှင့် မွေးနံ:
-                    </span>
-                    <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-stone-200">
-                      <div className="p-2 bg-stone-900 rounded-lg">
-                        <span className="text-stone-400 block text-[11px]">အင်္ဂလိပ် မွေးရက်စွဲ:</span>
-                        <strong className="text-amber-300 font-bold">{formatDateDDMMYYYY(birthDate) || '-'}</strong>
-                      </div>
-                      <div className="p-2 bg-stone-900 rounded-lg">
-                        <span className="text-stone-400 block text-[11px]">မွေးနံ:</span>
-                        <strong className="text-amber-300 font-bold">{birthDayOfWeek}</strong>
-                      </div>
-                    </div>
-
-                    {/* Mahabote House Selector in Mode 2 */}
-                    <div className="space-y-1.5 pt-1">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-xs font-bold text-stone-300">
-                          မဟာဘုတ်ခွင် <span className="text-amber-400 font-normal">(စိတ်ကြိုက် ရွေးချယ်နိုင်သည်)</span>:
-                        </label>
-                        <span className="text-xs px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
-                          {mahabote || 'အထွန်း'}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
-                        {MAHABOTE_HOUSES.map((m) => {
-                          const isSelected = mahabote === m.key;
-                          return (
-                            <button
-                              key={m.key}
-                              type="button"
-                              onClick={() => setMahabote(m.key)}
-                              className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all text-center flex flex-col items-center justify-center border ${
-                                isSelected
-                                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 border-amber-400 shadow-md shadow-amber-500/20 scale-[1.02]'
-                                  : 'bg-stone-900/80 hover:bg-stone-800 text-stone-300 border-stone-700/60 hover:border-stone-500'
-                              }`}
-                            >
-                              <span>{m.label}</span>
-                              <span className={`text-[10px] truncate max-w-full font-normal ${isSelected ? 'text-stone-900 font-semibold' : 'text-stone-400'}`}>
-                                {m.meaning.split('/')[0]}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* MODE 3: DAY OF WEEK ONLY */}
-              {birthInputMode === 'day_only' && (
-                <div className="space-y-3 animate-in fade-in duration-150">
-                  <div className="space-y-1">
-                    <label className="block text-sm font-bold text-amber-300">
-                      မွေးနံ ရွေးချယ်ပါ <span className="text-rose-400">*</span>
-                    </label>
-                    <select
-                      value={birthDayOfWeek}
-                      onChange={(e) => setBirthDayOfWeek(e.target.value as DayOfWeekBurmese)}
-                      style={{ fontSize: '16px' }}
-                      className="w-full px-3.5 py-3 rounded-xl bg-stone-950 border border-amber-500/60 text-amber-300 font-bold focus:border-amber-400 cursor-pointer shadow-inner"
-                    >
-                      {BURMESE_DAYS.map((d) => (
-                        <option key={d.key} value={d.key}>
-                          {d.shorthand}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5 pt-1">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-stone-300">
-                        မဟာဘုတ်ခွင် <span className="text-amber-400 font-normal">(စိတ်ကြိုက် ရွေးချယ်နိုင်သည်)</span>:
-                      </label>
-                      <span className="text-xs px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
-                        {mahabote || 'အထွန်း'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
-                      {MAHABOTE_HOUSES.map((m) => {
-                        const isSelected = mahabote === m.key;
-                        return (
-                          <button
-                            key={m.key}
-                            type="button"
-                            onClick={() => setMahabote(m.key)}
-                            className={`px-2 py-2 rounded-xl text-xs font-bold transition-all text-center flex flex-col items-center justify-center border ${
-                              isSelected
-                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 border-amber-400 shadow-md shadow-amber-500/20 scale-[1.02]'
-                                : 'bg-stone-900/80 hover:bg-stone-800 text-stone-300 border-stone-700/60 hover:border-stone-500'
-                            }`}
-                          >
-                            <span>{m.label}</span>
-                            <span className={`text-[10px] truncate max-w-full font-normal ${isSelected ? 'text-stone-900 font-semibold' : 'text-stone-400'}`}>
-                              {m.meaning.split('/')[0]}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <select
-                      value={mahabote || 'အထွန်း'}
-                      onChange={(e) => setMahabote(e.target.value as MahaboteHouse)}
-                      style={{ fontSize: '16px' }}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-stone-200 focus:border-amber-500 cursor-pointer shadow-inner text-xs"
-                    >
-                      {MAHABOTE_HOUSES.map((m) => (
-                        <option key={m.key} value={m.key}>
-                          {m.label} ({m.meaning})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* Birth Time with AM/PM TimePicker Component */}
-              <TimePickerInput
-                label="မွေးဖွားချိန် (Time)"
-                value={birthTime}
-                onChange={(newTime) => setBirthTime(newTime)}
-              />
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Section 2: Booking, Schedule & Status */}

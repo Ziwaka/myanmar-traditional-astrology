@@ -15,34 +15,27 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.7.2';
+export const LOCAL_APP_VERSION = '1.8.1';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
   {
-    version: '1.7.2',
-    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂',
-    title: 'Account-Specific Expense Deduction (Cash / KPay / Wave / Banking)',
-    badge: 'Account Tracking',
+    version: '1.8.1',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
+    title: 'In Person vs Remote Mode with Conditional Social Account',
+    badge: 'Consultation Mode',
     changelog: [
-      'အသုံးစရိတ် ထည့်သွင်းရာတွင် ငွေထုတ်ယူသုံးစွဲသည့် အကောင့် (Cash / KPay / Wave / Banking) အလိုက် တိကျစွာ ရွေးချယ်နိုင်ပြီး၊ သက်ဆိုင်ရာ အကောင့် Balance ထဲမှ သီးသန့် အလိုအလျောက် နုတ်ယူတွက်ချက်ပေးခြင်း။'
+      'မေးမြန်းမည့်ပုံစံကို "🏢 In Person (လူကိုယ်တိုင်)" နှင့် "🌐 Remote (အွန်လိုင်း)" ဟူ၍ ရွေးချယ်နိုင်အောင် ထည့်သွင်းပေးခြင်း။',
+      'Default အား "In Person" အဖြစ် သတ်မှတ်ထားပြီး၊ "Remote" ကို ရွေးချယ်မှသာလျှင် Viber/Facebook/Telegram Social Account ရိုက်ထည့်သည့် Option ပေါ်လာအောင် ဖွဲ့စည်းပေးထားခြင်း။'
     ]
   },
   {
-    version: '1.7.1',
-    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂',
-    title: 'Zero Horizontal Scroll & Responsive Clean Wrap Grid Layout',
+    version: '1.8.0',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
+    title: 'Streamlined Customer Registration Flow',
     changelog: [
-      'အသုံးစရိတ် စီမံခန့်ခွဲမှု Tab Menu များအား ဘေးတိုက် Scroll မလိုစေဘဲ မျက်နှာပြင်ပေါ်တွင် အပြည့်မြင်ရသော Responsive Grid ဖြင့် ပြင်ဆင်ခြင်း။'
-    ]
-  },
-  {
-    version: '1.7.0',
-    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂',
-    title: 'Daily Cash Flow & Auto-Linked Consultation Income Balance Sheet',
-    changelog: [
-      'ဗေဒင်ဟောစာရင်းမှ ဝင်ငွေ အလိုအလျောက် ချိတ်ဆက်မှု၊ ထပ်တိုးဝင်ငွေ၊ အသုံးစရိတ်နှင့် တရက်တာ Balance ရှင်းတမ်း။'
+      'မွေးသက္ကရာဇ်၊ မွေးနံ၊ မွေးချိန် နှင့် မဟာဘုတ်ခွင်များအား ဖြုတ်ပယ်၍ လျင်မြန်ရှင်းလင်းစွာ စာရင်းသွင်းနိုင်အောင် ပြင်ဆင်ခြင်း။'
     ]
   }
 ];

@@ -151,51 +151,30 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
           
-          {/* Customer & Horoscope Dossier Card */}
+          {/* Customer & Booking Dossier Card */}
           <div className="bg-stone-850 p-4 rounded-xl border border-stone-800 space-y-3">
             <div className="flex items-center justify-between border-b border-stone-800 pb-2">
               <span className="font-semibold text-amber-400 flex items-center gap-2">
-                <User className="w-4 h-4" /> မေးသူ ကိုယ်ရေးနှင့် မွေးဇာတာ အချက်အလက်
+                <User className="w-4 h-4" /> မေးသူ ကိုယ်ရေးနှင့် အချက်အလက်
               </span>
               <span className="text-stone-400 flex items-center gap-2">
+                {record.consultationMode === 'remote' ? (
+                  <span className="px-2 py-0.5 rounded-md bg-blue-900/60 text-blue-300 border border-blue-700/60 text-xs font-bold">
+                    🌐 Remote (အွန်လိုင်း)
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-md bg-stone-800 text-stone-300 border border-stone-700 text-xs font-semibold">
+                    🏢 In Person (လူကိုယ်တိုင်)
+                  </span>
+                )}
                 <Phone className="w-3.5 h-3.5 text-stone-500" />
                 <span>{record.phone || 'ဖုန်းမပါ'}</span>
                 {record.socialAccountName && (
-                  <span className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800 text-xs">
+                  <span className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800 text-xs font-mono">
                     {record.socialPlatform || 'Social'}: {record.socialAccountName}
                   </span>
                 )}
               </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-stone-300">
-              <div className="bg-stone-900/60 p-2.5 rounded-lg border border-stone-800">
-                <span className="text-stone-500 text-[11px] block">မွေးနံ:</span>
-                <span className="font-semibold text-amber-300">{record.birthDayOfWeek} ဖွား</span>
-                {dayInfo && <span className="text-xs text-stone-400 block">({dayInfo.shorthand})</span>}
-              </div>
-
-              <div className="bg-stone-900/60 p-2.5 rounded-lg border border-stone-800">
-                <span className="text-stone-500 text-[11px] block">မဟာဘုတ်:</span>
-                <span className="font-semibold text-stone-200">{record.mahabote || '-'} ဖွား</span>
-              </div>
-
-              <div className="bg-stone-900/60 p-2.5 rounded-lg border border-stone-800">
-                <span className="text-stone-500 text-[11px] block">မွေးသက္ကရာဇ် & အသက်:</span>
-                <span className="font-medium text-stone-200 block">
-                  {formatDateDDMMYYYY(record.birthDate) || '-'} {record.age ? `(${record.age} နှစ်)` : ''}
-                </span>
-                {record.myanmarBirthDate && (
-                  <span className="text-xs text-amber-300 font-semibold block mt-1">
-                    {record.myanmarBirthDate}
-                  </span>
-                )}
-              </div>
-
-              <div className="bg-stone-900/60 p-2.5 rounded-lg border border-stone-800">
-                <span className="text-stone-500 text-[11px] block">မွေးဖွားချိန်:</span>
-                <span className="font-medium text-stone-200">{record.birthTime || '-'}</span>
-              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">

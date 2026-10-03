@@ -258,7 +258,6 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
               <tr>
                 <th className="py-3 px-3 w-12 text-center">Task</th>
                 <th className="py-3 px-3">ID & အမည်</th>
-                <th className="py-3 px-3">မွေးနံ / မဟာဘုတ်</th>
                 <th className="py-3 px-3">ဘိုကင် / ဟောမည့်အချိန်</th>
                 <th className="py-3 px-3">ဝန်ဆောင်မှု</th>
                 <th className="py-3 px-3">ယတြာ အစီအရင်</th>
@@ -343,6 +342,15 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-stone-400 mt-0.5">
                           <span className="font-mono text-amber-400/90 font-semibold">{rec.id}</span>
+                          {rec.consultationMode === 'remote' ? (
+                            <span className="px-1.5 py-0.5 rounded-md bg-blue-900/60 text-blue-300 border border-blue-700/60 text-[10px] font-bold">
+                              🌐 Remote
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 rounded-md bg-stone-800 text-stone-300 border border-stone-700 text-[10px] font-medium">
+                              🏢 In Person
+                            </span>
+                          )}
                           {rec.phone && (
                             <span className="flex items-center gap-0.5">
                               <Phone className="w-2.5 h-2.5 text-stone-500" />
@@ -355,18 +363,6 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                             </span>
                           )}
                         </div>
-                      </td>
-
-                      {/* Day of Week & Mahabote */}
-                      <td className="py-3 px-3 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded text-xs bg-amber-500/10 text-amber-300 border border-amber-500/20 font-medium">
-                          {rec.birthDayOfWeek} ဖွား
-                        </span>
-                        {rec.mahabote && (
-                          <span className="ml-1.5 px-1.5 py-0.5 rounded text-xs bg-stone-800 text-stone-300 border border-stone-700">
-                            {rec.mahabote} ဖွား
-                          </span>
-                        )}
                       </td>
 
                       {/* Booking & Reading Time */}

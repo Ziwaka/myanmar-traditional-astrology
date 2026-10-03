@@ -248,22 +248,25 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
               </p>
             </div>
 
-            {/* Section 1: မေးသူဇာတာ အချက်အလက်များ (Client Horoscope Dossier) */}
+            {/* Section 1: မေးသူ အချက်အလက်များ (Client Profile) */}
             <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-300/80 space-y-2.5">
               <div className="flex items-center justify-between border-b border-amber-200/80 pb-1.5">
                 <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-amber-700" />
-                  <span>၁။ မေးသူဇာတာနှင့် အချက်အလက် (Client Horoscope Profile)</span>
+                  <span>၁။ မေးသူနှင့် ရက်ချိန်း အချက်အလက် (Client Profile)</span>
                 </span>
                 <span className="text-xs font-mono font-bold text-amber-900 bg-amber-200/60 px-2 py-0.5 rounded border border-amber-300">
                   ID: {record.id}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4 text-xs text-stone-800">
+              <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs text-stone-800">
                 <div>
                   <span className="text-stone-500 block text-[11px]">ဗေဒင်မေးသူ အမည်:</span>
                   <strong className="text-stone-950 text-sm">{record.customerName || 'မမေးသူ'}</strong>
+                  <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-900">
+                    {record.consultationMode === 'remote' ? '🌐 Remote (အွန်လိုင်း)' : '🏢 In Person (လူကိုယ်တိုင်)'}
+                  </span>
                 </div>
 
                 <div>
@@ -275,36 +278,13 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                 </div>
 
                 <div>
-                  <span className="text-stone-500 block text-[11px]">ကျား/မ:</span>
-                  <span>{record.gender === 'male' ? 'အမျိုးသား' : record.gender === 'female' ? 'အမျိုးသမီး' : 'အခြား'}</span>
+                  <span className="text-stone-500 block text-[11px]">ဘိုကင်ရက်စွဲ:</span>
+                  <span className="font-mono">{formatDateDDMMYYYY(record.bookingDate)}</span>
                 </div>
 
                 <div>
-                  <span className="text-stone-500 block text-[11px]">မွေးနံ:</span>
-                  <strong className="text-amber-900">{record.birthDayOfWeek} ဖွား {dayInfo ? `(${dayInfo.shorthand})` : ''}</strong>
-                </div>
-
-                <div>
-                  <span className="text-stone-500 block text-[11px]">မွေးသက္ကရာဇ် & အသက်:</span>
-                  <span>
-                    {formatDateDDMMYYYY(record.birthDate) || '-'} {record.age ? `(အသက် ${record.age} နှစ်)` : ''}
-                    {record.myanmarBirthDate && <span className="block text-[11px] text-amber-900 font-semibold">{record.myanmarBirthDate}</span>}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-stone-500 block text-[11px]">မဟာဘုတ်ခွင်:</span>
-                  <strong className="text-amber-900">{record.mahabote ? `${record.mahabote} ဖွား` : '-'}</strong>
-                </div>
-
-                <div>
-                  <span className="text-stone-500 block text-[11px]">မွေးဖွားချိန်:</span>
-                  <span>{record.birthTime || '-'}</span>
-                </div>
-
-                <div className="col-span-2">
                   <span className="text-stone-500 block text-[11px]">ဟောကြားသည့် ရက်စွဲနှင့် အချိန်:</span>
-                  <strong className="font-mono">{formatDateDDMMYYYY(record.readingDateTime)}</strong>
+                  <strong className="font-mono text-amber-950">{formatDateDDMMYYYY(record.readingDateTime)}</strong>
                 </div>
               </div>
             </div>

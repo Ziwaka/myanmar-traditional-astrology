@@ -22,7 +22,7 @@ import { formatMMK, formatDateDDMMYYYY } from '../utils/astrology';
 
 interface LoyalCustomersViewProps {
   consultations: ConsultationRecord[];
-  onBookForCustomer: (customerName: string, phone: string, birthDayOfWeek: any, birthDate?: string, age?: number, mahabote?: any) => void;
+  onBookForCustomer: (customerName: string, phone: string) => void;
   onSelectRecord: (record: ConsultationRecord) => void;
 }
 
@@ -219,13 +219,6 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
                 </span>
               </div>
 
-              {/* Astrological Quick Details */}
-              <div className="bg-stone-900/80 p-2.5 rounded-xl border border-stone-800/80 text-xs flex items-center justify-between text-stone-300">
-                <span>{latest.birthDayOfWeek} ဖွား</span>
-                {latest.mahabote && <span>မဟာဘုတ်: {latest.mahabote}</span>}
-                {latest.age && <span>အသက်: {latest.age} နှစ်</span>}
-              </div>
-
               {/* Stats: Visits, Navawin, Lifetime Value */}
               <div className="grid grid-cols-3 gap-2 text-center text-xs py-1 border-y border-stone-800">
                 <div>
@@ -263,14 +256,7 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => onBookForCustomer(
-                    c.name,
-                    c.phone,
-                    latest.birthDayOfWeek,
-                    latest.birthDate,
-                    latest.age,
-                    latest.mahabote
-                  )}
+                  onClick={() => onBookForCustomer(c.name, c.phone)}
                   title="ရက်ချိန်းအသစ် ဘိုကင်တင်ရန်"
                   className="p-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition cursor-pointer"
                 >
@@ -348,15 +334,10 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const latest = selectedCustomer.records[0];
                     setSelectedCustomer(null);
                     onBookForCustomer(
                       selectedCustomer.name,
-                      selectedCustomer.phone,
-                      latest.birthDayOfWeek,
-                      latest.birthDate,
-                      latest.age,
-                      latest.mahabote
+                      selectedCustomer.phone
                     );
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs shadow transition cursor-pointer"

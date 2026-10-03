@@ -318,7 +318,7 @@ export interface CustomerHistoryProfile {
   customerName: string;
   phone: string;
   gender?: 'male' | 'female' | 'other';
-  birthDayOfWeek: string;
+  birthDayOfWeek?: string;
   birthDate?: string;
   birthTime?: string;
   age?: number;

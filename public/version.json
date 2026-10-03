@@ -1,19 +1,20 @@
 {
-  "version": "1.7.2",
-  "releaseDate": "2026-10-02",
-  "title": "Account-Specific Expense Deduction (Cash / KPay / Wave / Banking)",
+  "version": "1.8.1",
+  "releaseDate": "2026-10-03",
+  "title": "In Person vs Remote Mode with Conditional Social Account",
   "isCloudAuthoritative": true,
   "changelog": [
-    "အသုံးစရိတ် ထည့်သွင်းရာတွင် ငွေထုတ်ယူသုံးစွဲသည့် အကောင့် (Cash / KPay / Wave / Banking) အလိုက် တိကျစွာ ရွေးချယ်နိုင်ပြီး၊ သက်ဆိုင်ရာ အကောင့် Balance ထဲမှ သီးသန့် အလိုအလျောက် နုတ်ယူတွက်ချက်ပေးခြင်း။"
+    "မေးမြန်းမည့်ပုံစံကို 'In Person (လူကိုယ်တိုင်)' နှင့် 'Remote (အွန်လိုင်း)' ဟူ၍ ရွေးချယ်နိုင်အောင် ထည့်သွင်းပေးခြင်း။",
+    "Default အား 'In Person' အဖြစ် ထားရှိပြီး၊ 'Remote' ကို ရွေးချယ်မှသာလျှင် Social Account Option (Viber/Facebook/Telegram) ပေါ်လာအောင် ပြင်ဆင်ခြင်း။"
   ],
   "history": [
     {
-      "version": "1.7.2",
-      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂",
-      "title": "Account-Specific Expense Deduction",
-      "badge": "Account Tracking",
+      "version": "1.8.1",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃",
+      "title": "In Person vs Remote Mode",
+      "badge": "Consultation Mode",
       "changelog": [
-        "ငွေထုတ်သုံးသည့် အကောင့် (Cash / KPay / Wave / Banking) အလိုက် Balance တိကျစွာ လျော့နည်းတွက်ချက်မှု"
+        "In Person vs Remote မေးမြန်းမှုပုံစံ ရွေးချယ်မှုနှင့် Remote ရွေးမှသာ Social Account ပေါ်ခြင်း"
       ]
     }
   ]

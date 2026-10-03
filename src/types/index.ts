@@ -54,15 +54,16 @@ export interface ConsultationRecord {
   customerId?: string;         // သီးသန့် Customer ID (Optional, e.g. CUST-001)
   customerName: string;        // အမည် (Skipable / Optional)
   phone: string;               // ဖုန်းနံပါတ်
+  consultationMode?: 'in_person' | 'remote'; // လူကိုယ်တိုင် (In Person) သို့မဟုတ် အွန်လိုင်း (Remote)
   socialPlatform?: 'viber' | 'facebook' | 'tiktok' | 'telegram' | 'phone' | 'other'; // Social Account Dropdown
   socialAccountName?: string;  // Social Account Name / ID
   gender?: 'male' | 'female' | 'other';
-  birthDayOfWeek: DayOfWeekBurmese; // နေ့နံ
-  birthDate?: string;          // မွေးသက္ကရာဇ် (YYYY-MM-DD or မြန်မာနှစ်)
-  myanmarBirthDate?: string;   // မြန်မာမွေးရက်စွဲ (e.g. ၁၃၈၈ ခု၊ သီတင်းကျွတ် လဆန်း ၅ ရက်)
-  birthTime?: string;          // မွေးဖွားချိန် (e.g. မနက် ၉:၃၀)
-  age?: number;                // အသက်
-  mahabote?: MahaboteHouse;    // မဟာဘုတ်ခွင်
+  birthDayOfWeek?: DayOfWeekBurmese; // နေ့နံ (Optional)
+  birthDate?: string;          // မွေးသက္ကရာဇ် (Optional)
+  myanmarBirthDate?: string;   // မြန်မာမွေးရက်စွဲ (Optional)
+  birthTime?: string;          // မွေးဖွားချိန် (Optional)
+  age?: number;                // အသက် (Optional)
+  mahabote?: MahaboteHouse;    // မဟာဘုတ်ခွင် (Optional)
   
   bookingDate: string;         // ဘိုကင်တင်သည့်နေ့ (YYYY-MM-DD)
   readingDateTime: string;     // ဟောမည့်နေ့နှင့် အချိန် (YYYY-MM-DDTHH:mm)
