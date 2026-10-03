@@ -121,3 +121,22 @@ export function calculateMahabote(burmeseYear: number, dayOfWeek: DayOfWeekBurme
     default: return 'အထွန်း';
   }
 }
+
+// Extract exact Payment Date (ငွေရှင်းသည့်နေ့) from consultation record
+export function getRecordPaymentDate(r: {
+  paidDate?: string;
+  bookingDate?: string;
+  createdAt?: string;
+  readingDateTime?: string;
+}): string {
+  if (r.paidDate && r.paidDate.trim()) {
+    return r.paidDate.trim().slice(0, 10);
+  }
+  if (r.bookingDate && r.bookingDate.trim()) {
+    return r.bookingDate.trim().slice(0, 10);
+  }
+  if (r.createdAt && r.createdAt.trim()) {
+    return r.createdAt.trim().slice(0, 10);
+  }
+  return (r.readingDateTime || '').slice(0, 10);
+}

@@ -169,6 +169,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   // Payment
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>(initialData?.paymentStatus || 'paid');
   const [paidAmount, setPaidAmount] = useState<number>(initialData?.paidAmount || 20000);
+  const [paidDate, setPaidDate] = useState<string>(initialData?.paidDate || initialData?.bookingDate || todayStr);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'kpay' | 'wave' | 'cbbank' | 'ayapay'>(initialData?.paymentMethod || 'kpay');
 
   // Notes
@@ -263,6 +264,12 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
     const finalYatraName = customYatraName.trim() || (yatraEnabled ? 'ယတြာ အစီအရင်' : '');
     const legacyNavawin: NavawinCountType = yatraEnabled ? '3_times' : 'none';
 
+    const sFee = Number(serviceFee) || 0;
+    const yFee = yatraEnabled ? (Number(yatraFee) || 0) : 0;
+    const aFee = amuletsTotal || 0;
+    const finalTotal = totalAmount > 0 ? totalAmount : (sFee + yFee + aFee);
+    const finalPaid = paymentStatus === 'paid' ? finalTotal : (paymentStatus === 'unpaid' ? 0 : (Number(paidAmount) || 0));
+
     return {
       id: id || nextId,
       customerName: customerName.trim() || 'မမေးသူ (အမည်မသိ)',
@@ -280,19 +287,20 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
       bookingDate,
       readingDateTime,
       serviceCategory: cleanServiceName as any,
-      serviceFee: Number(serviceFee) || 0,
+      serviceFee: sFee,
       
       yatraEnabled,
       yatraName: finalYatraName,
-      yatraFee: yatraEnabled ? (Number(yatraFee) || 0) : 0,
+      yatraFee: yFee,
       navawinType: legacyNavawin,
-      navawinFee: yatraEnabled ? (Number(yatraFee) || 0) : 0,
+      navawinFee: yFee,
 
       amulets,
-      amuletsTotal,
+      amuletsTotal: aFee,
 
-      totalAmount,
-      paidAmount: Number(paidAmount) || 0,
+      totalAmount: finalTotal,
+      paidAmount: finalPaid,
+      paidDate: paymentStatus === 'unpaid' ? undefined : (paidDate || bookingDate || todayStr),
       paymentStatus,
       paymentMethod,
       
@@ -1069,6 +1077,42 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                   className="w-full px-3.5 py-3 rounded-xl bg-stone-900 border border-stone-700 text-amber-300 font-mono font-bold focus:border-amber-500 shadow-inner"
                 />
               </div>
+
+              {/* Payment Date (ငွေရှင်းသည့်ရက်) */}
+              {paymentStatus !== 'unpaid' && (
+                <div className="space-y-1.5 p-3 rounded-xl bg-stone-900/90 border border-stone-800">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-amber-300 flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>ငွေရှင်းသည့်နေ့ရက် (Payment Date)</span>
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setPaidDate(todayStr)}
+                        className="px-2 py-0.5 rounded text-[11px] bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-700 cursor-pointer"
+                      >
+                        ယနေ့
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaidDate(bookingDate)}
+                        className="px-2 py-0.5 rounded text-[11px] bg-stone-800 hover:bg-stone-700 text-amber-300 border border-stone-700 cursor-pointer"
+                      >
+                        ဘိုကင်ရက်
+                      </button>
+                    </div>
+                  </div>
+                  <DatePickerInput
+                    label=""
+                    value={paidDate}
+                    onChange={(d) => setPaidDate(d)}
+                  />
+                  <p className="text-[10px] text-stone-400">
+                    * ဤရက်စွဲသည် Daily Balance နှင့် လစဉ်ငွေဝင်စာရင်းတွင် ငွေဝင်အဖြစ် တိုက်ရိုက်သက်ရောက်ပါမည်။
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="block text-sm font-semibold text-stone-300">ငွေပေးချေသည့် နည်းလမ်း</label>

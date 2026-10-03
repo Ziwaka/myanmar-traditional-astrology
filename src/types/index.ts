@@ -86,6 +86,7 @@ export interface ConsultationRecord {
   
   totalAmount: number;         // စုစုပေါင်း ကျသင့်ငွေ (serviceFee + (yatraFee || navawinFee) + amuletsTotal)
   paidAmount: number;          // ရှင်းပြီးငွေ
+  paidDate?: string;           // ငွေရှင်းသည့်နေ့ရက် (YYYY-MM-DD)
   paymentStatus: PaymentStatus;// ငွေပေးချေမှု အခြေအနေ
   paymentMethod: 'cash' | 'kpay' | 'wave' | 'cbbank' | 'ayapay'; // ငွေပေးချေသည့် နည်းလမ်း
   

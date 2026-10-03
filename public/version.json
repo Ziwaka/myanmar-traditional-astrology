@@ -1,20 +1,29 @@
 {
-  "version": "1.8.1",
+  "version": "1.8.9",
   "releaseDate": "2026-10-03",
-  "title": "In Person vs Remote Mode with Conditional Social Account",
+  "title": "Compact & Space-Efficient Transaction Cards",
   "isCloudAuthoritative": true,
   "changelog": [
-    "မေးမြန်းမည့်ပုံစံကို 'In Person (လူကိုယ်တိုင်)' နှင့် 'Remote (အွန်လိုင်း)' ဟူ၍ ရွေးချယ်နိုင်အောင် ထည့်သွင်းပေးခြင်း။",
-    "Default အား 'In Person' အဖြစ် ထားရှိပြီး၊ 'Remote' ကို ရွေးချယ်မှသာလျှင် Social Account Option (Viber/Facebook/Telegram) ပေါ်လာအောင် ပြင်ဆင်ခြင်း။"
+    "ငွေစာရင်း Transaction Card များကို အရွယ်အစား အလွန်ကြီးမားနေခြင်းမှ ဖုန်းမျက်နှာပြင်နှင့် ကိုက်ညီအောင် ကျစ်လျစ်သပ်ရပ်သော Compact List စနစ်သို့ ပြောင်းလဲပြင်ဆင်ခြင်း။",
+    "နေ့ရက်ခေါင်းစဉ် Banner နှင့် အသေးစိတ်စာကြောင်းများကို အမြင့်ချုံ့ပြီး တစ်မျက်နှာတည်းတွင် Transaction များစွာကို ရှင်းလင်းစွာ ကြည့်ရှုနိုင်အောင် ပြုပြင်ခြင်း။"
   ],
   "history": [
     {
-      "version": "1.8.1",
+      "version": "1.8.9",
       "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃",
-      "title": "In Person vs Remote Mode",
-      "badge": "Consultation Mode",
+      "title": "Compact Transaction Cards",
+      "badge": "Compact UI",
       "changelog": [
-        "In Person vs Remote မေးမြန်းမှုပုံစံ ရွေးချယ်မှုနှင့် Remote ရွေးမှသာ Social Account ပေါ်ခြင်း"
+        "Transaction Card များ အမြင့်ချုံ့ပြီး ကျစ်လျစ်သပ်ရပ်အောင် ပြင်ဆင်ခြင်း"
+      ]
+    },
+    {
+      "version": "1.8.8",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃",
+      "title": "Mobile UI & Text Overflow Fixes",
+      "badge": "Mobile UI Fixes",
+      "changelog": [
+        "ဖုန်းမျက်နှာပြင်တွင် စာတန်းများ မပြည့်မစုံ ဖြတ်တောက်ခံရမှုများ ပြင်ဆင်ခြင်း"
       ]
     }
   ]

@@ -90,7 +90,12 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
     const yatraRevenue = currentMonthConsultations.reduce((sum, c) => sum + (c.yatraFee || c.navawinFee || 0), 0);
     const amuletsRevenue = currentMonthConsultations.reduce((sum, c) => sum + (c.amuletsTotal || 0), 0);
     const totalIncome = currentMonthConsultations.reduce((sum, c) => sum + (c.totalAmount || 0), 0);
-    const collectedIncome = currentMonthConsultations.reduce((sum, c) => sum + (c.paidAmount || 0), 0);
+    const collectedIncome = currentMonthConsultations.reduce((sum, c) => {
+      if (c.paymentStatus === 'paid') {
+        return sum + (c.totalAmount || c.paidAmount || 0);
+      }
+      return sum + (c.paidAmount || 0);
+    }, 0);
     const outstandingCredit = Math.max(0, totalIncome - collectedIncome);
 
     // 4. Expenses (ထွက်ငွေ)

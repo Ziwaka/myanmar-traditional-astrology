@@ -15,27 +15,28 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.8.1';
+export const LOCAL_APP_VERSION = '1.8.9';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
   {
-    version: '1.8.1',
+    version: '1.8.9',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'In Person vs Remote Mode with Conditional Social Account',
-    badge: 'Consultation Mode',
+    title: 'Compact & Space-Efficient Transaction Cards',
+    badge: 'Compact UI',
     changelog: [
-      'မေးမြန်းမည့်ပုံစံကို "🏢 In Person (လူကိုယ်တိုင်)" နှင့် "🌐 Remote (အွန်လိုင်း)" ဟူ၍ ရွေးချယ်နိုင်အောင် ထည့်သွင်းပေးခြင်း။',
-      'Default အား "In Person" အဖြစ် သတ်မှတ်ထားပြီး၊ "Remote" ကို ရွေးချယ်မှသာလျှင် Viber/Facebook/Telegram Social Account ရိုက်ထည့်သည့် Option ပေါ်လာအောင် ဖွဲ့စည်းပေးထားခြင်း။'
+      'ငွေစာရင်း Transaction Card များကို အရွယ်အစား အလွန်ကြီးမားနေခြင်းမှ ဖုန်းမျက်နှာပြင်နှင့် ကိုက်ညီအောင် ကျစ်လျစ်သပ်ရပ်သော Compact List စနစ်သို့ ပြောင်းလဲပြင်ဆင်ခြင်း။',
+      'နေ့ရက်ခေါင်းစဉ် Banner နှင့် အသေးစိတ်စာကြောင်းများကို အမြင့်ချုံ့ပြီး တစ်မျက်နှာတည်းတွင် Transaction များစွာကို ရှင်းလင်းစွာ ကြည့်ရှုနိုင်အောင် ပြုပြင်ခြင်း။'
     ]
   },
   {
-    version: '1.8.0',
+    version: '1.8.8',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'Streamlined Customer Registration Flow',
+    title: 'Mobile UI & Text Overflow Fixes',
+    badge: 'Mobile UI Fixes',
     changelog: [
-      'မွေးသက္ကရာဇ်၊ မွေးနံ၊ မွေးချိန် နှင့် မဟာဘုတ်ခွင်များအား ဖြုတ်ပယ်၍ လျင်မြန်ရှင်းလင်းစွာ စာရင်းသွင်းနိုင်အောင် ပြင်ဆင်ခြင်း။'
+      'ဖုန်းမျက်နှာပြင်တွင် "အခြေအနေ", "မေးမြန်းမှု", "ယတြာ" filter စာတန်းများ မပြည့်မစုံ ဖြတ်တောက်ခံရခြင်းကို 3-Column Grid စနစ်ဖြင့် ပြင်ဆင်ပြီး အပြည့်အဝ ဖော်ပြပေးခြင်း။'
     ]
   }
 ];

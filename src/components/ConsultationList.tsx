@@ -5,7 +5,6 @@ import {
   Calendar, 
   Clock, 
   CheckCircle2, 
-  AlertCircle, 
   Eye, 
   Edit3, 
   Printer, 
@@ -14,10 +13,12 @@ import {
   ShoppingBag, 
   Phone, 
   UserCheck, 
-  Plus
+  Plus,
+  Globe,
+  CreditCard
 } from 'lucide-react';
 import { ConsultationRecord, ConsultationStatus } from '../types';
-import { formatMMK, formatDateDDMMYYYY } from '../utils/astrology';
+import { formatMMK, formatDateDDMMYYYY, getRecordPaymentDate } from '../utils/astrology';
 
 interface ConsultationListProps {
   records: ConsultationRecord[];
@@ -28,6 +29,33 @@ interface ConsultationListProps {
   onToggleTaskDone: (id: string) => void;
   onOpenNewConsultation: () => void;
 }
+
+export const getRecordTotalAmount = (r: ConsultationRecord): number => {
+  if (typeof r.totalAmount === 'number' && r.totalAmount > 0) {
+    return r.totalAmount;
+  }
+  const sFee = Number(r.serviceFee) || 0;
+  const yFee = (r.yatraEnabled || r.yatraName) ? (Number(r.yatraFee || r.navawinFee) || 0) : 0;
+  const aFee = Number(r.amuletsTotal) || (r.amulets ? r.amulets.reduce((s, a) => s + (a.price * a.quantity), 0) : 0);
+  return sFee + yFee + aFee;
+};
+
+export const getRecordPaidAmount = (r: ConsultationRecord): number => {
+  const total = getRecordTotalAmount(r);
+  if (r.paymentStatus === 'paid' || !r.paymentStatus) {
+    return total;
+  }
+  if (r.paymentStatus === 'partial') {
+    return typeof r.paidAmount === 'number' ? r.paidAmount : total;
+  }
+  if (typeof r.paidAmount === 'number' && r.paidAmount > 0) {
+    return r.paidAmount;
+  }
+  if (r.taskDone || r.status === 'completed') {
+    return total;
+  }
+  return 0;
+};
 
 export const ConsultationList: React.FC<ConsultationListProps> = ({
   records,
@@ -41,6 +69,7 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | ConsultationStatus | 'today'>('all');
   const [yatraFilter, setYatraFilter] = useState<'all' | 'with_yatra' | 'no_yatra'>('all');
+  const [modeFilter, setModeFilter] = useState<'all' | 'in_person' | 'remote'>('all');
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -52,6 +81,7 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
         rec.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         rec.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         rec.phone.includes(searchTerm) ||
+        (rec.socialAccountName && rec.socialAccountName.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (rec.notes && rec.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (rec.predictions && rec.predictions.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (rec.yatraName && rec.yatraName.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -71,9 +101,15 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
       if (yatraFilter === 'with_yatra' && !hasYatra) return false;
       if (yatraFilter === 'no_yatra' && hasYatra) return false;
 
+      // Mode filter (In Person vs Remote)
+      if (modeFilter !== 'all') {
+        const actualMode = rec.consultationMode || 'in_person';
+        if (actualMode !== modeFilter) return false;
+      }
+
       return true;
     });
-  }, [records, searchTerm, statusFilter, yatraFilter, todayStr]);
+  }, [records, searchTerm, statusFilter, yatraFilter, modeFilter, todayStr]);
 
   // Quick metrics
   const stats = useMemo(() => {
@@ -81,9 +117,33 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
     const completed = records.filter(r => r.taskDone || r.status === 'completed').length;
     const ongoingYatra = records.filter(r => r.status === 'yatra_ongoing').length;
     const yatraCount = records.filter(r => r.yatraEnabled || r.yatraName || (r.yatraFee && r.yatraFee > 0) || r.navawinType !== 'none').length;
-    const totalRevenue = records.reduce((sum, r) => sum + r.totalAmount, 0);
+    
+    let totalCollectedRevenue = 0;
+    let totalBilledRevenue = 0;
+    let paidCount = 0;
 
-    return { total, completed, ongoingYatra, yatraCount, totalRevenue };
+    records.forEach(r => {
+      const recTotal = getRecordTotalAmount(r);
+      const recPaid = getRecordPaidAmount(r);
+      totalBilledRevenue += recTotal;
+      totalCollectedRevenue += recPaid;
+      if (recPaid >= recTotal && recTotal > 0) {
+        paidCount++;
+      }
+    });
+
+    const totalPendingRevenue = Math.max(0, totalBilledRevenue - totalCollectedRevenue);
+
+    return { 
+      total, 
+      completed, 
+      ongoingYatra, 
+      yatraCount, 
+      totalCollectedRevenue,
+      totalBilledRevenue,
+      totalPendingRevenue,
+      paidCount
+    };
   }, [records]);
 
   // Fast lookup map for customer visit counts (by phone, customerId, or name)
@@ -124,33 +184,28 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
     return 1;
   };
 
-  // Helper labels
-  const getServiceName = (cat: string) => {
-    return cat || 'ဗေဒင်ဝန်ဆောင်မှု';
-  };
-
   const getStatusBadge = (status: ConsultationStatus, taskDone: boolean) => {
     if (taskDone || status === 'completed') {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-          ပြီးစီး (Done)
+          <span>ပြီးစီး</span>
         </span>
       );
     }
     if (status === 'yatra_ongoing') {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold animate-pulse">
           <Clock className="w-3 h-3 text-amber-400" />
-          ယတြာလုပ်ဆဲ
+          <span>ယတြာလုပ်ဆဲ</span>
         </span>
       );
     }
     if (status === 'scheduled') {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 font-semibold">
           <Calendar className="w-3 h-3 text-blue-400" />
-          ရက်ချိန်းစောင့်
+          <span>ရက်ချိန်းစောင့်</span>
         </span>
       );
     }
@@ -162,11 +217,11 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 w-full max-w-full min-w-0 overflow-hidden">
+    <div className="space-y-4 sm:space-y-5 w-full max-w-full min-w-0">
       {/* Quick Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 w-full min-w-0">
         <div className="bg-stone-850 p-3 sm:p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md min-w-0">
-          <p className="text-[11px] sm:text-xs text-stone-400 truncate">ဗေဒင်မေးသူ စုစုပေါင်း</p>
+          <p className="text-[11px] sm:text-xs text-stone-400">ဗေဒင်မေးသူ စုစုပေါင်း</p>
           <div className="flex items-baseline justify-between mt-1 min-w-0">
             <span className="text-xl sm:text-2xl font-bold text-amber-200">{stats.total} ဦး</span>
             <span className="text-[10px] sm:text-xs text-emerald-400">ပြီးစီး {stats.completed}</span>
@@ -174,7 +229,7 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
         </div>
 
         <div className="bg-stone-850 p-3 sm:p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md min-w-0">
-          <p className="text-[11px] sm:text-xs text-stone-400 truncate">ယတြာ ယူသူ (စုစုပေါင်း)</p>
+          <p className="text-[11px] sm:text-xs text-stone-400">ယတြာ ယူသူ (စုစုပေါင်း)</p>
           <div className="flex items-baseline justify-between mt-1 min-w-0">
             <span className="text-xl sm:text-2xl font-bold text-amber-400">{stats.yatraCount} ဦး</span>
             <span className="text-[10px] sm:text-xs text-amber-300/80">ယတြာ {stats.ongoingYatra}</span>
@@ -182,7 +237,7 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
         </div>
 
         <div className="bg-stone-850 p-3 sm:p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md min-w-0">
-          <p className="text-[11px] sm:text-xs text-stone-400 truncate">ယတြာပြုလုပ်ဆဲ</p>
+          <p className="text-[11px] sm:text-xs text-stone-400">ယတြာပြုလုပ်ဆဲ</p>
           <div className="flex items-baseline justify-between mt-1 min-w-0">
             <span className="text-xl sm:text-2xl font-bold text-blue-400">{stats.ongoingYatra} ဦး</span>
             <span className="text-[10px] sm:text-xs text-stone-400">စောင့်ကြည့်ဆဲ</span>
@@ -190,38 +245,58 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
         </div>
 
         <div className="bg-stone-850 p-3 sm:p-3.5 rounded-xl border border-stone-800 bg-gradient-to-br from-stone-900 to-stone-850 shadow-md min-w-0">
-          <p className="text-[11px] sm:text-xs text-stone-400 truncate">ဝင်ငွေ စုစုပေါင်း</p>
+          <div className="flex items-center justify-between gap-1">
+            <p className="text-[11px] sm:text-xs text-emerald-400 font-semibold">ငွေဝင် စုစုပေါင်း (ရရှိပြီး)</p>
+            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono shrink-0">
+              {records.filter(r => r.paymentStatus === 'paid' || (r.paidAmount && r.paidAmount > 0)).length} ခု
+            </span>
+          </div>
           <div className="flex items-baseline justify-between mt-1 min-w-0">
-            <span className="text-lg sm:text-xl font-bold text-emerald-400 truncate">{stats.totalRevenue.toLocaleString()} ကျပ်</span>
+            <span className="text-lg sm:text-xl font-bold text-emerald-400 font-mono">
+              {stats.totalCollectedRevenue.toLocaleString()} ကျပ်
+            </span>
+          </div>
+          <div className="text-[10px] text-stone-400 mt-1 flex flex-wrap items-center justify-between gap-1">
+            <span>(မပြီးသေးသော်လည်း ရှင်းပြီးငွေ အပါ)</span>
+            {stats.totalPendingRevenue > 0 && (
+              <span className="text-rose-400/90 font-mono font-semibold">ကျန် {stats.totalPendingRevenue.toLocaleString()}</span>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Control Bar: Search & Filters */}
-      <div className="bg-stone-850 p-3 sm:p-4 rounded-xl border border-stone-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow w-full min-w-0">
+      {/* Control Bar: Search, Filters & New Record */}
+      <div className="bg-stone-850 p-3 sm:p-4 rounded-2xl border border-stone-800 space-y-2.5 shadow w-full min-w-0">
         
-        {/* Search Input */}
-        <div className="relative w-full md:w-72 lg:w-80 min-w-0">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-          <input
-            type="text"
-            placeholder="အမည်၊ ဖုန်း၊ ID ဖြင့် ရှာရန်..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-lg bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-500"
-          />
+        {/* Top Row: Search Input & New Record Button */}
+        <div className="flex items-center gap-2 w-full">
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+            <input
+              type="text"
+              placeholder="အမည်၊ ဖုန်း၊ ID ဖြင့် ရှာရန်..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-xl bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-500"
+            />
+          </div>
+
+          <button
+            onClick={onOpenNewConsultation}
+            className="flex items-center justify-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-extrabold text-xs shadow-md transition active:scale-95 whitespace-nowrap cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4 text-stone-950" />
+            <span>+ အသစ်ထည့်</span>
+          </button>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto text-xs min-w-0">
-          <span className="text-stone-400 flex items-center gap-1 font-medium text-[11px] hidden sm:flex">
-            <Filter className="w-3.5 h-3.5" /> စစ်ထုတ်ရန်:
-          </span>
-
+        {/* Filter Dropdowns Row: 3 columns grid on mobile so labels never get cut off */}
+        <div className="grid grid-cols-3 gap-2 w-full text-xs">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="flex-1 sm:flex-none bg-stone-900 text-stone-200 border border-stone-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 cursor-pointer text-xs min-w-0"
+            className="w-full bg-stone-900 text-stone-200 border border-stone-700 rounded-xl px-2 py-2 focus:outline-none focus:border-amber-500 cursor-pointer text-xs font-semibold"
+            title="အခြေအနေအလိုက် စစ်ထုတ်ရန်"
           >
             <option value="all">အခြေအနေ (အားလုံး)</option>
             <option value="today">ယနေ့ ရက်ချိန်းများ</option>
@@ -231,266 +306,274 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
           </select>
 
           <select
+            value={modeFilter}
+            onChange={(e) => setModeFilter(e.target.value as any)}
+            className="w-full bg-stone-900 text-stone-200 border border-stone-700 rounded-xl px-2 py-2 focus:outline-none focus:border-amber-500 cursor-pointer text-xs font-semibold"
+            title="မေးမြန်းမှု ပုံစံ"
+          >
+            <option value="all">မေးမြန်းမှု (အားလုံး)</option>
+            <option value="in_person">🏢 လူကိုယ်တိုင်</option>
+            <option value="remote">🌐 အွန်လိုင်း</option>
+          </select>
+
+          <select
             value={yatraFilter}
             onChange={(e) => setYatraFilter(e.target.value as any)}
-            className="flex-1 sm:flex-none bg-stone-900 text-stone-200 border border-stone-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 cursor-pointer text-xs min-w-0"
+            className="w-full bg-stone-900 text-stone-200 border border-stone-700 rounded-xl px-2 py-2 focus:outline-none focus:border-amber-500 cursor-pointer text-xs font-semibold"
+            title="ယတြာ အခြေအနေ"
           >
             <option value="all">ယတြာ (အားလုံး)</option>
             <option value="with_yatra">ယတြာ ပါသူများ</option>
             <option value="no_yatra">ယတြာ မပါသူများ</option>
           </select>
+        </div>
+      </div>
 
+      {/* Customer Cards List: Zero Horizontal Scroll! */}
+      {filteredRecords.length === 0 ? (
+        <div className="bg-stone-850 rounded-2xl border border-stone-800 p-8 sm:p-12 text-center text-stone-500 space-y-3">
+          <p className="text-base sm:text-lg text-stone-400 font-medium">ရှာဖွေမှုနှင့် ကိုက်ညီသော ဗေဒင်မှတ်တမ်း မရှိသေးပါ။</p>
           <button
             onClick={onOpenNewConsultation}
-            className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs shadow transition whitespace-nowrap cursor-pointer sm:ml-auto shrink-0"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs sm:text-sm font-semibold hover:bg-amber-500/30 transition cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>အသစ်ထည့်</span>
+            <Plus className="w-4 h-4" /> ပထမဆုံး စာရင်းသွင်းမည်
           </button>
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 w-full min-w-0">
+          {filteredRecords.map((rec) => {
+            const isToday = rec.readingDateTime.slice(0, 10) === todayStr;
+            const visitCount = getCustomerVisitCount(rec);
+            const serviceName = rec.serviceCategory || 'ဗေဒင်ဝန်ဆောင်မှု';
+            const hasYatra = !!(rec.yatraEnabled || rec.yatraName || (rec.yatraFee && rec.yatraFee > 0) || (rec.navawinType && rec.navawinType !== 'none'));
+            const hasAmulets = !!(rec.amulets && rec.amulets.length > 0);
+            const recTotal = getRecordTotalAmount(rec);
+            const recPaid = getRecordPaidAmount(rec);
+            const isFullyPaid = recPaid >= recTotal && recTotal > 0;
+            const isPartial = recPaid > 0 && recPaid < recTotal;
 
-      {/* Main Table / Records List */}
-      <div className="bg-stone-850 rounded-xl border border-stone-800 shadow-xl overflow-hidden w-full max-w-full">
-        <div className="overflow-x-auto w-full max-w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-stone-900/90 text-stone-400 uppercase tracking-wider text-xs border-b border-stone-800">
-              <tr>
-                <th className="py-3 px-3 w-12 text-center">Task</th>
-                <th className="py-3 px-3">ID & အမည်</th>
-                <th className="py-3 px-3">ဘိုကင် / ဟောမည့်အချိန်</th>
-                <th className="py-3 px-3">ဝန်ဆောင်မှု</th>
-                <th className="py-3 px-3">ယတြာ အစီအရင်</th>
-                <th className="py-3 px-3">အဆောင်ပစ္စည်း</th>
-                <th className="py-3 px-3 text-right">ကျသင့်ငွေ</th>
-                <th className="py-3 px-3 text-center">အခြေအနေ</th>
-                <th className="py-3 px-3 text-center">လုပ်ဆောင်ချက်</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-800/80">
-              {filteredRecords.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="py-12 text-center text-stone-500">
-                    <p className="text-base">ရှာဖွေမှုနှင့် ကိုက်ညီသော ဗေဒင်မှတ်တမ်း မရှိသေးပါ။</p>
-                    <button
-                      onClick={onOpenNewConsultation}
-                      className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-semibold hover:bg-amber-500/30 transition cursor-pointer"
-                    >
-                      <Plus className="w-4 h-4" /> ပထမဆုံး စာရင်းသွင်းမည်
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                filteredRecords.map((rec) => {
-                  const isToday = rec.readingDateTime.slice(0, 10) === todayStr;
-                  const formattedDateTime = rec.readingDateTime.replace('T', ' ');
-
-                  return (
-                    <tr
-                      key={rec.id}
-                      className={`hover:bg-stone-800/50 transition group ${
-                        rec.taskDone ? 'bg-stone-900/40 text-stone-400' : ''
-                      } ${isToday ? 'border-l-4 border-amber-500' : ''}`}
-                    >
+            return (
+              <div
+                key={rec.id}
+                className={`bg-stone-850 rounded-2xl border transition-all duration-150 p-4 sm:p-4.5 flex flex-col justify-between gap-3 shadow-md hover:shadow-xl hover:border-amber-500/50 relative overflow-hidden ${
+                  rec.taskDone ? 'border-stone-800/80 bg-stone-900/60' : 'border-stone-800'
+                } ${isToday ? 'border-l-4 border-l-amber-500 ring-1 ring-amber-500/20' : ''}`}
+              >
+                {/* Top Row: Task checkbox + Customer Name + Status Badge */}
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       {/* Task Done Checkbox */}
-                      <td className="py-3 px-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => onToggleTaskDone(rec.id)}
-                          title={rec.taskDone ? 'ပြီးစီးပြီး (အမှတ်အသားဖြုတ်ရန် နှိပ်ပါ)' : 'ပြီးစီးကြောင်း အမှတ်အသားပြုရန်'}
-                          className={`w-5 h-5 rounded flex items-center justify-center border transition cursor-pointer mx-auto ${
-                            rec.taskDone
-                              ? 'bg-emerald-600 border-emerald-500 text-white'
-                              : 'border-stone-600 hover:border-amber-400 bg-stone-900'
-                          }`}
+                      <button
+                        type="button"
+                        onClick={() => onToggleTaskDone(rec.id)}
+                        title={rec.taskDone ? 'ပြီးစီးပြီး (အမှတ်အသားဖြုတ်ရန် နှိပ်ပါ)' : 'ပြီးစီးကြောင်း အမှတ်အသားပြုရန်'}
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center border transition shrink-0 cursor-pointer ${
+                          rec.taskDone
+                            ? 'bg-emerald-600 border-emerald-500 text-white'
+                            : 'border-stone-600 hover:border-amber-400 bg-stone-900 text-transparent'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                      </button>
+
+                      {/* Customer Name */}
+                      <div className="min-w-0 flex-1">
+                        <h3 
+                          onClick={() => onSelectRecord(rec)}
+                          className="font-bold text-base sm:text-lg text-stone-100 hover:text-amber-300 transition truncate cursor-pointer"
+                          title={rec.customerName || 'မမေးသူ (အမည်မသိ)'}
                         >
-                          {rec.taskDone && <CheckCircle2 className="w-3.5 h-3.5" />}
-                        </button>
-                      </td>
+                          {rec.customerName || 'မမေးသူ (အမည်မသိ)'}
+                        </h3>
+                      </div>
+                    </div>
 
-                      {/* ID & Name */}
-                      <td className="py-3 px-3">
-                        <div className="font-semibold text-stone-100 group-hover:text-amber-300 flex items-center gap-1.5 flex-wrap">
-                          <span>{rec.customerName || 'မမေးသူ (အမည်မသိ)'}</span>
-                          {rec.age && <span className="text-xs text-stone-400 font-normal">({rec.age} နှစ်)</span>}
-                          {(() => {
-                            const visitCount = getCustomerVisitCount(rec);
-                            if (visitCount > 3) {
-                              return (
-                                <span 
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-bold tracking-wide shadow-sm"
-                                  title={`ဖောက်သည်ဟောင်း (စုစုပေါင်း ${visitCount} ကြိမ် မေးမြန်းခဲ့သည်)`}
-                                >
-                                  <Sparkles className="w-2.5 h-2.5 text-purple-400" />
-                                  <span>Frequent ({visitCount} ကြိမ်)</span>
-                                </span>
-                              );
-                            }
-                            if (visitCount > 1) {
-                              return (
-                                <span 
-                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 text-[10px] font-medium"
-                                  title={`မေးဖူးသူ (စုစုပေါင်း ${visitCount} ကြိမ်)`}
-                                >
-                                  <UserCheck className="w-2.5 h-2.5 text-blue-400" />
-                                  <span>{visitCount} ကြိမ်မေး</span>
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-stone-400 mt-0.5">
-                          <span className="font-mono text-amber-400/90 font-semibold">{rec.id}</span>
-                          {rec.consultationMode === 'remote' ? (
-                            <span className="px-1.5 py-0.5 rounded-md bg-blue-900/60 text-blue-300 border border-blue-700/60 text-[10px] font-bold">
-                              🌐 Remote
-                            </span>
-                          ) : (
-                            <span className="px-1.5 py-0.5 rounded-md bg-stone-800 text-stone-300 border border-stone-700 text-[10px] font-medium">
-                              🏢 In Person
-                            </span>
-                          )}
-                          {rec.phone && (
-                            <span className="flex items-center gap-0.5">
-                              <Phone className="w-2.5 h-2.5 text-stone-500" />
-                              {rec.phone}
-                            </span>
-                          )}
-                          {rec.socialAccountName && (
-                            <span className="px-1.5 py-0.2 rounded bg-blue-950/80 text-blue-300 border border-blue-800/80 text-[10px] uppercase">
-                              {rec.socialPlatform || 'Social'}: {rec.socialAccountName}
-                            </span>
-                          )}
-                        </div>
-                      </td>
+                    {/* Status Badge */}
+                    <div className="shrink-0">
+                      {getStatusBadge(rec.status, rec.taskDone)}
+                    </div>
+                  </div>
 
-                      {/* Booking & Reading Time */}
-                      <td className="py-3 px-3 whitespace-nowrap">
-                        <div className="text-stone-200 font-medium flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-amber-400" />
-                          <span>{formatDateDDMMYYYY(rec.readingDateTime)}</span>
-                        </div>
-                        <div className="text-xs text-stone-500">
-                          ဘိုကင်: {formatDateDDMMYYYY(rec.bookingDate)}
-                        </div>
-                      </td>
+                  {/* Badges Row: ID, Mode, Frequent Client */}
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    {/* ID */}
+                    <span className="font-mono text-amber-400 font-bold bg-stone-900 px-2 py-0.5 rounded-md border border-stone-800">
+                      {rec.id}
+                    </span>
 
-                      {/* Service Category */}
-                      <td className="py-3 px-3">
-                        <div className="text-stone-200 font-medium">
-                          {getServiceName(rec.serviceCategory)}
-                        </div>
-                        <div className="text-xs text-stone-400">
-                          {formatMMK(rec.serviceFee)}
-                        </div>
-                      </td>
+                    {/* Consultation Mode Badge */}
+                    {rec.consultationMode === 'remote' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-950/90 text-blue-300 border border-blue-800/80 font-semibold text-[11px]">
+                        <Globe className="w-3 h-3 text-blue-400" />
+                        <span>Remote (အွန်လိုင်း)</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-900 text-amber-300/90 border border-stone-700/80 font-medium text-[11px]">
+                        <span>🏢 In Person</span>
+                      </span>
+                    )}
 
-                      {/* Yatra Ritual */}
-                      <td className="py-3 px-3 whitespace-nowrap">
-                        {rec.yatraEnabled || rec.yatraName || (rec.yatraFee && rec.yatraFee > 0) || (rec.navawinType && rec.navawinType !== 'none') ? (
-                          <div>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 font-medium">
-                              <Sparkles className="w-3 h-3 text-amber-400" />
-                              {rec.yatraName || 'ယတြာ အစီအရင်'}
-                            </span>
-                            {(rec.yatraFee && rec.yatraFee > 0) || (rec.navawinFee && rec.navawinFee > 0) ? (
-                              <div className="text-xs text-amber-400/90 font-mono mt-0.5">
-                                +{formatMMK(rec.yatraFee || rec.navawinFee)}
-                              </div>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <span className="text-stone-500 text-xs">- မပါ -</span>
-                        )}
-                      </td>
+                    {/* Visit Count Badge */}
+                    {visitCount > 3 ? (
+                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[11px] font-bold">
+                        <Sparkles className="w-2.5 h-2.5 text-purple-400" />
+                        <span>VIP ({visitCount} ကြိမ်)</span>
+                      </span>
+                    ) : visitCount > 1 ? (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-500/15 text-blue-300 border border-blue-500/30 text-[11px] font-medium">
+                        <UserCheck className="w-3 h-3 text-blue-400" />
+                        <span>{visitCount} ကြိမ်မေး</span>
+                      </span>
+                    ) : null}
 
-                      {/* Amulets Purchased */}
-                      <td className="py-3 px-3">
-                        {rec.amulets && rec.amulets.length > 0 ? (
-                          <div>
-                            <div className="flex items-center gap-1 text-xs text-purple-300 font-medium">
-                              <ShoppingBag className="w-3 h-3 text-purple-400" />
-                              <span>{rec.amulets.length} မျိုး ({rec.amulets.reduce((a, b) => a + b.quantity, 0)} ခု)</span>
-                            </div>
-                            <div className="text-xs text-stone-400 truncate max-w-[130px]" title={rec.amulets.map(a => a.name).join(', ')}>
-                              {rec.amulets.map(a => a.name).join(', ')}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-stone-500 text-xs">- မဝယ်ပါ -</span>
-                        )}
-                      </td>
+                    {isToday && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-amber-500 text-stone-950 font-bold text-[10px]">
+                        ယနေ့
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-                      {/* Total Amount & Payment Status */}
-                      <td className="py-3 px-3 text-right whitespace-nowrap">
-                        <div className="font-bold text-emerald-400 font-mono text-sm">
-                          {formatMMK(rec.totalAmount)}
-                        </div>
-                        <div className="text-xs">
-                          {rec.paymentStatus === 'paid' ? (
-                            <span className="text-emerald-400 font-medium">ရှင်းပြီး ({rec.paymentMethod.toUpperCase()})</span>
-                          ) : rec.paymentStatus === 'partial' ? (
-                            <span className="text-amber-400 font-medium">
-                              စရန် {formatMMK(rec.paidAmount)} (ကျန် {formatMMK(rec.totalAmount - rec.paidAmount)})
-                            </span>
-                          ) : (
-                            <span className="text-rose-400 font-medium">မရှင်းရသေး</span>
-                          )}
-                        </div>
-                      </td>
+                {/* Middle Info Section */}
+                <div className="bg-stone-900/70 rounded-xl p-3 border border-stone-800/80 space-y-2 text-xs">
+                  {/* Phone & Social Account */}
+                  <div className="flex flex-wrap items-center justify-between gap-1 text-stone-300">
+                    <div className="flex items-center gap-1 font-mono">
+                      <Phone className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+                      <span>{rec.phone && rec.phone.trim() !== '09-' ? rec.phone : (rec.phone === '09-' ? '09- (မဖြည့်ရသေး)' : 'ဖုန်းနံပါတ်မပါ')}</span>
+                    </div>
 
-                      {/* Status Badge */}
-                      <td className="py-3 px-3 text-center whitespace-nowrap">
-                        {getStatusBadge(rec.status, rec.taskDone)}
-                      </td>
+                    {rec.socialAccountName && (
+                      <div className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/80 text-[11px]">
+                        {rec.socialPlatform || 'Social'}: {rec.socialAccountName}
+                      </div>
+                    )}
+                  </div>
 
-                      {/* Actions */}
-                      <td className="py-3 px-3 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => onPrintRecord(rec)}
-                            title="ပြေစာ/ဟောစာတမ်း ပရင့်ထုတ်ရန် / PDF / PNG ဒေါင်းလုဒ်ဆွဲရန်"
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/50 transition cursor-pointer font-bold text-xs shadow"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                            <span>Print / PDF</span>
-                          </button>
-                          <button
-                            onClick={() => onSelectRecord(rec)}
-                            title="ဟောချက်နှင့် ကိုယ်ရေးအချက်အလက် ကြည့်ရန်"
-                            className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-amber-300 hover:text-amber-200 transition cursor-pointer"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => onEditRecord(rec)}
-                            title="ပြင်ဆင်ရန်"
-                            className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-blue-300 hover:text-blue-200 transition cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`"${rec.customerName}" ၏ ဗေဒင်မှတ်တမ်းကို ဖျက်ပစ်ရန် သေချာပါသလား?`)) {
-                                onDeleteRecord(rec.id);
-                              }
-                            }}
-                            title="ဖျက်ရန်"
-                            className="p-1.5 rounded-lg bg-stone-800 hover:bg-rose-950 text-stone-400 hover:text-rose-300 transition cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                  {/* Reading Date & Time, Booking Date & Payment Date */}
+                  <div className="flex flex-wrap items-center justify-between gap-1 text-stone-300 pt-1 border-t border-stone-800/60">
+                    <div className="flex items-center gap-1.5 font-medium text-stone-200">
+                      <Clock className="w-3.5 h-3.5 text-amber-400" />
+                      <span>ဟောမည့်ရက်: <strong className="text-amber-300">{formatDateDDMMYYYY(rec.readingDateTime)}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-stone-400 flex-wrap">
+                      <span>ဘိုကင်: {formatDateDDMMYYYY(rec.bookingDate)}</span>
+                      {recPaid > 0 && (
+                        <span className="text-emerald-400 font-semibold bg-emerald-950/40 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                          ငွေရှင်း: {formatDateDDMMYYYY(getRecordPaymentDate(rec))}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Service, Yatra & Amulets Row */}
+                  <div className="space-y-1.5 pt-1 border-t border-stone-800/60">
+                    <div className="flex items-center justify-between text-stone-300">
+                      <span className="font-semibold text-stone-200">{serviceName}</span>
+                      <span className="font-mono text-stone-400">{formatMMK(rec.serviceFee)}</span>
+                    </div>
+
+                    {hasYatra && (
+                      <div className="flex items-center justify-between text-amber-300 bg-amber-950/30 px-2 py-1 rounded-lg border border-amber-500/20">
+                        <span className="flex items-center gap-1 font-medium truncate">
+                          <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+                          <span className="truncate">{rec.yatraName || 'ယတြာ အစီအရင်'}</span>
+                        </span>
+                        {(rec.yatraFee && rec.yatraFee > 0) || (rec.navawinFee && rec.navawinFee > 0) ? (
+                          <span className="font-mono text-amber-400 shrink-0 ml-2">
+                            +{formatMMK(rec.yatraFee || rec.navawinFee)}
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
+
+                    {hasAmulets && (
+                      <div className="flex items-center justify-between text-purple-300 bg-purple-950/20 px-2 py-1 rounded-lg border border-purple-500/20">
+                        <span className="flex items-center gap-1 font-medium truncate">
+                          <ShoppingBag className="w-3 h-3 text-purple-400 shrink-0" />
+                          <span className="truncate">{rec.amulets!.map(a => a.name).join(', ')}</span>
+                        </span>
+                        <span className="font-mono text-purple-300 shrink-0 ml-2">
+                          +{formatMMK(rec.amuletsTotal || 0)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bottom Row: Total & Payment + Touch-friendly Action Buttons */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1 border-t border-stone-800/80">
+                  {/* Total & Payment Badge */}
+                  <div className="flex items-center gap-2">
+                    <div className="font-bold text-emerald-400 font-mono text-base">
+                      {formatMMK(recTotal)}
+                    </div>
+                    {isFullyPaid ? (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-semibold">
+                        ရှင်းပြီး ({(rec.paymentMethod || 'kpay').toUpperCase()})
+                      </span>
+                    ) : isPartial ? (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-semibold">
+                        စရန် {formatMMK(recPaid)} (ကျန် {formatMMK(recTotal - recPaid)})
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[11px] font-semibold">
+                        မရှင်းရသေး
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions Group */}
+                  <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                    {/* Print / PDF Button */}
+                    <button
+                      onClick={() => onPrintRecord(rec)}
+                      title="ပြေစာ/ဟောစာတမ်း ပရင့်ထုတ်ရန် / PDF / PNG ဒေါင်းလုဒ်ဆွဲရန်"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Print / ပြေစာ</span>
+                    </button>
+
+                    {/* View Details */}
+                    <button
+                      onClick={() => onSelectRecord(rec)}
+                      title="ဟောချက်နှင့် အချက်အလက် အပြည့်အစုံ ကြည့်ရန်"
+                      className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 transition cursor-pointer border border-stone-700"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+
+                    {/* Edit */}
+                    <button
+                      onClick={() => onEditRecord(rec)}
+                      title="ပြင်ဆင်ရန်"
+                      className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-blue-300 transition cursor-pointer border border-stone-700"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+
+                    {/* Delete */}
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`"${rec.customerName}" ၏ ဗေဒင်မှတ်တမ်းကို ဖျက်ပစ်ရန် သေချာပါသလား?`)) {
+                          onDeleteRecord(rec.id);
+                        }
+                      }}
+                      title="ဖျက်ရန်"
+                      className="p-2 rounded-xl bg-stone-800 hover:bg-rose-950 text-stone-400 hover:text-rose-300 transition cursor-pointer border border-stone-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 };

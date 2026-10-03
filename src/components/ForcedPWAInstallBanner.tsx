@@ -15,12 +15,27 @@ import { usePWAInstall } from '../hooks/usePWAInstall';
 export const ForcedPWAInstallBanner: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showGuideModal, setShowGuideModal] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(() => {
+    try {
+      const dismissedUntil = localStorage.getItem('pwa_banner_dismissed_until');
+      if (dismissedUntil && Number(dismissedUntil) > Date.now()) {
+        return true;
+      }
+    } catch {}
+    return false;
+  });
 
   // If already installed as standalone PWA or manually dismissed in session, don't show
   if (isInstalled || isDismissed) {
     return null;
   }
+
+  const handleDismiss = () => {
+    setIsDismissed(true);
+    try {
+      localStorage.setItem('pwa_banner_dismissed_until', String(Date.now() + 24 * 3600 * 1000));
+    } catch {}
+  };
 
   const handleInstallClick = async () => {
     if (isInstallable) {
@@ -35,27 +50,27 @@ export const ForcedPWAInstallBanner: React.FC = () => {
 
   return (
     <>
-      {/* Forced Floating Install Banner at bottom */}
+      {/* Floating Install Banner at bottom */}
       <aside 
         aria-label="PWA Application Installation Prompt"
-        className="fixed bottom-3 inset-x-3 sm:left-auto sm:right-4 sm:max-w-md z-40 bg-stone-900/95 backdrop-blur-md border border-amber-500/50 rounded-3xl p-3.5 shadow-2xl shadow-amber-950/40 text-stone-100 animate-in slide-in-from-bottom-5 duration-300"
+        className="fixed bottom-3 inset-x-2.5 sm:left-auto sm:right-4 sm:max-w-md z-40 bg-stone-900/95 backdrop-blur-md border border-amber-500/50 rounded-2xl p-3 shadow-2xl shadow-amber-950/40 text-stone-100"
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-stone-950 font-bold shrink-0 shadow-md">
-              <Smartphone className="w-5 h-5 animate-bounce" />
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-stone-950 font-bold shrink-0 shadow-md">
+              <Smartphone className="w-4 h-4" />
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-amber-200 text-xs sm:text-sm truncate">
-                  ဖုန်းတွင် App အဖြစ် သွင်းယူပါ
+            <div className="min-w-0 space-y-0.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-bold text-amber-200 text-xs sm:text-sm">
+                  ဖုန်းတွင် App သွင်းရန်
                 </span>
-                <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/40 shrink-0">
+                <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-extrabold border border-amber-500/40 shrink-0">
                   PWA
                 </span>
               </div>
-              <p className="text-[11px] text-stone-400 truncate">
-                အင်တာနက်မရှိချိန်နှင့် Fullscreen သုံးရန်
+              <p className="text-[11px] text-stone-400 leading-tight">
+                Offline အင်တာနက်မရှိချိန်လည်း သုံးနိုင်သည်
               </p>
             </div>
           </div>
@@ -63,14 +78,14 @@ export const ForcedPWAInstallBanner: React.FC = () => {
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={handleInstallClick}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs shadow transition active:scale-95 cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-extrabold text-xs shadow transition active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Install App</span>
             </button>
             <button
-              onClick={() => setIsDismissed(true)}
-              className="p-1.5 rounded-xl text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition cursor-pointer"
+              onClick={handleDismiss}
+              className="p-1.5 rounded-xl text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition cursor-pointer shrink-0"
               title="ခေတ္တပိတ်မည်"
             >
               <X className="w-4 h-4" />
