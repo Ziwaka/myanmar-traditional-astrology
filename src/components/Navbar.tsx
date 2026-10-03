@@ -101,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-stone-900/95 backdrop-blur-md border-b border-amber-500/20 text-stone-100 shadow-md w-full max-w-full overflow-hidden">
+    <header className="sticky top-0 z-40 bg-stone-900/98 backdrop-blur-md border-b border-amber-500/20 text-stone-100 shadow-lg w-full">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-2.5 sm:py-3 gap-2 w-full min-w-0">
           

@@ -15,28 +15,28 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.8.9';
+export const LOCAL_APP_VERSION = '1.8.10';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
+  {
+    version: '1.8.10',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
+    title: 'Fixed Sticky Top Navbar on Scroll',
+    badge: 'Sticky Navbar',
+    changelog: [
+      'အပေါ်ဘက် Navigation Bar ကို အောက်သို့ Scroll ဆွဲသည့်အခါ အပေါ်သို့ လိုက်ပါပျောက်ကွယ်မသွားဘဲ မျက်နှာပြင်ထိပ်ဆုံးတွင် အမြဲတမ်း ငြိမ်သက်စွာ ကပ်နေစေရန် (Fixed Sticky Navbar) အပြည့်အဝ ပြင်ဆင်ပြီးစီးခြင်း။',
+      'Parent Container များမှ CSS overflow ကန့်သတ်ချက်များကို ရှင်းလင်းပေးပြီး ဖုန်းအမျိုးအစားအားလုံးတွင် ချောမွေ့စွာ ကပ်နေစေရန် ပြုပြင်ခြင်း။'
+    ]
+  },
   {
     version: '1.8.9',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
     title: 'Compact & Space-Efficient Transaction Cards',
     badge: 'Compact UI',
     changelog: [
-      'ငွေစာရင်း Transaction Card များကို အရွယ်အစား အလွန်ကြီးမားနေခြင်းမှ ဖုန်းမျက်နှာပြင်နှင့် ကိုက်ညီအောင် ကျစ်လျစ်သပ်ရပ်သော Compact List စနစ်သို့ ပြောင်းလဲပြင်ဆင်ခြင်း။',
-      'နေ့ရက်ခေါင်းစဉ် Banner နှင့် အသေးစိတ်စာကြောင်းများကို အမြင့်ချုံ့ပြီး တစ်မျက်နှာတည်းတွင် Transaction များစွာကို ရှင်းလင်းစွာ ကြည့်ရှုနိုင်အောင် ပြုပြင်ခြင်း။'
-    ]
-  },
-  {
-    version: '1.8.8',
-    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'Mobile UI & Text Overflow Fixes',
-    badge: 'Mobile UI Fixes',
-    changelog: [
-      'ဖုန်းမျက်နှာပြင်တွင် "အခြေအနေ", "မေးမြန်းမှု", "ယတြာ" filter စာတန်းများ မပြည့်မစုံ ဖြတ်တောက်ခံရခြင်းကို 3-Column Grid စနစ်ဖြင့် ပြင်ဆင်ပြီး အပြည့်အဝ ဖော်ပြပေးခြင်း။'
+      'ငွေစာရင်း Transaction Card များကို အရွယ်အစား အလွန်ကြီးမားနေခြင်းမှ ဖုန်းမျက်နှာပြင်နှင့် ကိုက်ညီအောင် ကျစ်လျစ်သပ်ရပ်သော Compact List စနစ်သို့ ပြောင်းလဲပြင်ဆင်ခြင်း။'
     ]
   }
 ];

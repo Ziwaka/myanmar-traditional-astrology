@@ -10,7 +10,7 @@
     padding: 0;
     width: 100%;
     max-width: 100vw;
-    overflow-x: hidden;
+    overflow-x: clip;
     position: relative;
     font-family: 'Noto Sans Myanmar', 'Padauk', 'Pyidaungsu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -20,7 +20,7 @@
   #root {
     width: 100%;
     max-width: 100vw;
-    overflow-x: hidden;
+    overflow-x: clip;
     position: relative;
   }
 }

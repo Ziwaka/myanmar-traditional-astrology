@@ -586,7 +586,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950 overflow-x-hidden w-full max-w-[100vw]">
+    <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950 overflow-x-clip w-full">
       
       {/* On-Demand Slide-in Sidebar (Only shows when called!) */}
       <Sidebar
@@ -619,9 +619,9 @@ export default function App() {
       />
 
       {/* Main Full-Width Content Container (No permanent sidebar displacement) */}
-      <div className="flex-1 flex flex-col w-full max-w-full overflow-x-hidden transition-all">
+      <div className="flex-1 flex flex-col w-full max-w-full transition-all">
         
-        {/* Top Navigation Bar with Menu Button */}
+        {/* Top Navigation Bar with Menu Button - Stays sticky pinned at top */}
         <Navbar
           onToggleSidebar={() => setIsSidebarOpen(true)}
           activeTab={activeTab}
@@ -664,7 +664,7 @@ export default function App() {
         )}
 
         {/* Main Tab Views */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-x-hidden">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-6">
           {activeTab === 'consultations' && (
             <ConsultationList
               records={consultations}
