@@ -744,12 +744,19 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                         </select>
                       </div>
 
-                      {myanmarBirthDate && (
-                        <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-                          <span className="text-xs text-stone-400 block font-semibold">တွက်ချက်ရရှိသော မြန်မာ မွေးရက်စွဲ:</span>
-                          <span className="text-sm font-bold text-amber-300 block mt-0.5">{myanmarBirthDate}</span>
-                        </div>
-                      )}
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-amber-300">
+                          တွက်ချက်ရရှိသော မြန်မာ မွေးရက်စွဲ (လိုအပ်ပါက စိတ်ကြိုက် ပြင်နိုင်ပါသည်):
+                        </label>
+                        <input
+                          type="text"
+                          value={myanmarBirthDate}
+                          onChange={(e) => setMyanmarBirthDate(e.target.value)}
+                          placeholder="ဥပမာ - ၁၃၅၁ ခု၊ တပေါင်း လဆုတ် ၁၃ ရက် (၆ ကြာ)"
+                          style={{ fontSize: '16px' }}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-stone-900 border border-amber-500/50 text-amber-300 font-bold focus:border-amber-400 shadow-inner"
+                        />
+                      </div>
 
                       <div className="space-y-1">
                         <label className="block text-xs font-bold text-stone-300">တွက်ချက်ရရှိသော မဟာဘုတ်ခွင်:</label>
@@ -799,7 +806,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                       style={{ fontSize: '16px' }}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-amber-200 font-semibold focus:border-amber-400 cursor-pointer"
                     >
-                      {MYANMAR_MONTHS.map((m) => (
+                      {MYANMAR_MONTHS.map((m: string) => (
                         <option key={m} value={m}>
                           {m}
                         </option>
@@ -818,7 +825,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                       style={{ fontSize: '16px' }}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-amber-200 font-semibold focus:border-amber-400 cursor-pointer"
                     >
-                      {MOON_PHASES.map((p) => (
+                      {MOON_PHASES.map((p: string) => (
                         <option key={p} value={p}>
                           {p}
                         </option>

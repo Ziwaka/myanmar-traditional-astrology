@@ -15,32 +15,28 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.5.0';
+export const LOCAL_APP_VERSION = '1.5.4';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
   {
-    version: '1.5.0',
+    version: '1.5.4',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂',
-    title: 'Two-Way Birth Date Syncing & Myanmar Astronomical Calendar Engine',
+    title: 'Complete Historical Watat Exception Table (ceMmDateTime Algorithm)',
     badge: 'Latest Release',
     changelog: [
-      'မွေးနေ့အချက်အလက် ထည့်သွင်းမှုကို အပေါ်ဆုံးသို့ ရွှေ့ဆိုင်းပြီး Mode ၃ မျိုး (အင်္ဂလိပ်မွေးနေ့ / မြန်မာမွေးနေ့ / မွေးနံသီးသန့်) အဖြစ် ပြင်ဆင်ခြင်း။',
-      'အင်္ဂလိပ် မွေးရက်စွဲ (Gregorian Date) ထည့်လိုက်သည်နှင့် မွေးနံ (Day of Week)၊ မဟာဘုတ်ခွင်နှင့် မြန်မာမွေးရက်စွဲ (၁၃၈၈ ခု၊ သီတင်းကျွတ် လဆန်း ၅ ရက်) အား အလိုအလျောက် တွက်ချက်ပေးခြင်း။',
-      'မြန်မာ သက္ကရာဇ်၊ လ၊ လဆန်း/လဆုတ်၊ ရက်များ ရွေးချယ်ပါကလည်း အင်္ဂလိပ် မွေးရက်စွဲ၊ မွေးနံနှင့် မဟာဘုတ်အား နှစ်ဖက်အပြန်အလှန် (Two-way Sync) အလိုအလျောက် တွက်ထုတ်ပေးခြင်း။',
-      'မွေးနေ့ မထည့်ဘဲ မွေးနံ သီးသန့် ရွေးချယ်လိုသူများအတွက်လည်း လွတ်လပ်စွာ ရွေးချယ်နိုင်စေခြင်း။'
+      'မြန်မာနိုင်ငံ သမိုင်းဝင်ပြက္ခဒိန် အကြွင်းဇယားနှင့် ဝါထပ်ကိန်းများ (၁၃၄၄၊ ၁၃၄၅ ဝါထပ်ကိန်းများ အပါအဝင်) အား အပြည့်အစုံ ထည့်သွင်းခြင်း။',
+      '၄-၁၀-၁၉၈၂ (4 October 1982) ရက်စွဲအတွက် "၁၃၄၄ ခု၊ တော်သလင်း လဆုတ် ၂ ရက် (၂ လာ)" နှင့် မဟာဘုတ် "ပုတိ" အဖြစ် မြန်မာပြက္ခဒိန် အစစ်အမှန်နှင့် ၁၀၀% တထပ်တည်း တိကျစွာ တွက်ထုတ်ပြသခြင်း။',
+      '၂၃-၃-၁၉၉၀ (23 March 1990) ရက်စွဲအတွက် "၁၃၅၁ ခု၊ တပေါင်း လဆုတ် ၁၃ ရက် (၆ ကြာ)" နှင့် မဟာဘုတ် "အထွန်း" အဖြစ် ၁၀၀% တထပ်တည်း တိကျစွာ တွက်ထုတ်ပြသခြင်း။'
     ]
   },
   {
-    version: '1.4.9',
+    version: '1.5.3',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂',
-    title: 'Single-line Per Item Form Layout, Zero-Zoom Mobile Focus, Calendar Picker (DD/MM/YYYY) & AM/PM Time Selector',
+    title: 'Precise Waning Moon Formatting (လဆုတ် ၁၃ ရက်) & Editable Myanmar Birth Date Field',
     changelog: [
-      '၁ ကြောင်းလျှင် Item ၁ ခုနှုန်းဖြင့် စာရိုက်ရမည့် Input ကွက်များအားလုံးကို သန့်ရှင်းသပ်ရပ်စွာ Single-line Layout သို့ ပြင်ဆင်ပြောင်းလဲခြင်း။',
-      'ဖုန်းမျက်နှာပြင်တွင် Input ကွက်များအား နှိပ်လိုက်သည့်အခါ မျက်နှာပြင် ကြီးထွက်မသွားစေရန်နှင့် Horizontal Scroll မဖြစ်စေရန် 16px Font Size & Viewport Config။',
-      'မွေးသက္ကရာဇ်နှင့် ရက်စွဲများ ရွေးချယ်ရာတွင် အမြဲတမ်း ပြက္ခဒိန် (Calendar Picker) ပေါ်စေပြီး ရက်စွဲပြသမှုကို DD / MM / YYYY ပုံစံဖြင့်သာ ပြသပေးခြင်း။',
-      'အချိန် (Time) ရွေးချယ်မှုများတွင် AM / PM ရှင်းလင်းစွာ ရွေးချယ်နိုင်သော စနစ်။'
+      'တွက်ချက်ရရှိသော မြန်မာ မွေးရက်စွဲ (myanmarBirthDate) အား လိုအပ်ပါက သုံးစွဲသူစိတ်ကြိုက် တိုက်ရိုက် ပြင်ဆင်ရိုက်ထည့်နိုင်သော Editable Input Field ပြုလုပ်ပေးခြင်း။'
     ]
   }
 ];
