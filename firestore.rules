@@ -3,25 +3,39 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Myanmar Traditional Astrology & POS - Multi-User Real-time Sync
 
+    // Consultations & Astrological Readings
     match /consultations/{consultationId} {
       allow read, write: if true;
     }
 
+    // Operating Expenses
     match /expenses/{expenseId} {
       allow read, write: if true;
     }
 
+    // Astrologers (ဗေဒင်ဟောသူများ) & User Accounts
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // Sacred Amulets Catalog
     match /amulets/{amuletId} {
       allow read, write: if true;
     }
 
+    // Expense Categories
+    match /expense_categories/{categoryId} {
+      allow read, write: if true;
+    }
+
+    // System Signals & Connectivity Heartbeats
     match /system/{systemId} {
       allow read, write: if true;
     }
 
-    // Default deny for unmapped paths
+    // Fallback rule for application sub-documents and collections
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }

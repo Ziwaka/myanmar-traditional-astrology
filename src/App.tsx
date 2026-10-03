@@ -76,6 +76,7 @@ import {
   testFirestoreConnection,
   subscribeToConsultations, 
   subscribeToExpenses, 
+  subscribeToUsers,
   subscribeToAmulets, 
   subscribeToExpenseCategories,
   saveConsultationToCloud, 
@@ -87,6 +88,7 @@ import {
   seedOrMigrateLocalToCloud
 } from './utils/firebase';
 import { loadExpenseCategories, saveExpenseCategories } from './utils/storage';
+import { loadUserAccounts, saveUserAccounts } from './utils/auth';
 import { getDeviceId, getDeviceName } from './utils/deviceProfile';
 
 export default function App() {
@@ -229,25 +231,59 @@ export default function App() {
 
     // Test Firestore connection & seed if cloud is empty
     testFirestoreConnection().then(() => {
-      seedOrMigrateLocalToCloud(localC, localE, localA);
+      seedOrMigrateLocalToCloud(localC, localE, localA, loadUserAccounts());
     }).catch(err => {
       console.warn('Initial cloud sync check:', err);
     });
 
-    // Real-time Firestore subscriptions for 2-user / multi-device instant sync
+    // Real-time Firestore subscriptions for multi-user / multi-device instant sync
     const unsubConsultations = subscribeToConsultations((cloudRecords) => {
       if (cloudRecords && cloudRecords.length > 0) {
-        setConsultations(cloudRecords);
-        saveConsultations(cloudRecords);
+        setConsultations(prevLocal => {
+          // Robust merge: cloud records are primary, but preserve any newly added local records
+          const cloudIds = new Set(cloudRecords.map(c => c.id));
+          const localOnly = prevLocal.filter(l => !cloudIds.has(l.id));
+
+          // Background push any local-only records to cloud to ensure zero data loss
+          if (localOnly.length > 0) {
+            localOnly.forEach(l => {
+              saveConsultationToCloud(l).catch(err => console.warn('Background sync error:', err));
+            });
+          }
+
+          const merged = [...cloudRecords, ...localOnly];
+          merged.sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime());
+          saveConsultations(merged);
+          return merged;
+        });
         refreshDatabaseQuota();
       }
     });
 
     const unsubExpenses = subscribeToExpenses((cloudExpenses) => {
       if (cloudExpenses && cloudExpenses.length > 0) {
-        setExpenses(cloudExpenses);
-        saveExpenses(cloudExpenses);
+        setExpenses(prevLocal => {
+          const cloudIds = new Set(cloudExpenses.map(e => e.id));
+          const localOnly = prevLocal.filter(l => !cloudIds.has(l.id));
+
+          if (localOnly.length > 0) {
+            localOnly.forEach(l => {
+              saveExpenseToCloud(l).catch(err => console.warn('Background sync error:', err));
+            });
+          }
+
+          const merged = [...cloudExpenses, ...localOnly];
+          merged.sort((a, b) => new Date(b.createdAt || b.date || '').getTime() - new Date(a.createdAt || a.date || '').getTime());
+          saveExpenses(merged);
+          return merged;
+        });
         refreshDatabaseQuota();
+      }
+    });
+
+    const unsubUsers = subscribeToUsers((cloudUsers) => {
+      if (cloudUsers && cloudUsers.length > 0) {
+        saveUserAccounts(cloudUsers);
       }
     });
 
@@ -293,6 +329,7 @@ export default function App() {
       clearInterval(versionInterval);
       unsubConsultations();
       unsubExpenses();
+      unsubUsers();
       unsubAmulets();
       unsubExpenseCategories();
       window.removeEventListener('online', handleOnline);

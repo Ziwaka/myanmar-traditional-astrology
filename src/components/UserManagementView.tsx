@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   UserPlus, 
@@ -29,6 +29,7 @@ import {
   saveRolePermissions,
   getCurrentUser
 } from '../utils/auth';
+import { saveUserToCloud, deleteUserFromCloud, subscribeToUsers } from '../utils/firebase';
 
 interface UserManagementViewProps {
   currentUser: UserAccount;
@@ -41,6 +42,17 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
 }) => {
   const [users, setUsers] = useState<UserAccount[]>(loadUserAccounts());
   const [rolePermissions, setRolePermissions] = useState<Record<UserRole, RolePermissions>>(loadRolePermissions());
+
+  // Real-time synchronization with Cloud Firestore
+  useEffect(() => {
+    const unsub = subscribeToUsers((cloudUsers) => {
+      if (cloudUsers && cloudUsers.length > 0) {
+        setUsers(cloudUsers);
+        saveUserAccounts(cloudUsers);
+      }
+    });
+    return () => unsub();
+  }, []);
   
   // Modal states
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
@@ -94,9 +106,10 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
 
     if (editingUser) {
       // Update existing user
+      let updatedUserObj: UserAccount | null = null;
       const updatedList = currentList.map(u => {
         if (u.id === editingUser.id) {
-          return {
+          const mod = {
             ...u,
             username: formUsername.trim(),
             password: formPassword.trim(),
@@ -105,12 +118,17 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
             phone: formPhone.trim(),
             role: formRole,
           };
+          updatedUserObj = mod;
+          return mod;
         }
         return u;
       });
 
       saveUserAccounts(updatedList);
       setUsers(updatedList);
+      if (updatedUserObj) {
+        saveUserToCloud(updatedUserObj).catch(err => console.warn('Cloud save user error:', err));
+      }
       showNotification(`အကောင့် "${formUsername}" ကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။`);
     } else {
       // Create new user
@@ -144,7 +162,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
       const updatedList = [...currentList, newUser];
       saveUserAccounts(updatedList);
       setUsers(updatedList);
-      showNotification(`အကောင့်သစ် "${newUser.username}" (${newUser.name}) ကို အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ။`);
+      saveUserToCloud(newUser).catch(err => console.warn('Cloud save user error:', err));
+      showNotification(`အကောင့်သစ် "${newUser.username}" (${newUser.name}) ကို အောင်မြင်စွာ ဖန်တီးပြီး Cloud သို့ သိမ်းဆည်းလိုက်ပါပြီ။`);
     }
 
     setIsAddUserModalOpen(false);
@@ -159,15 +178,21 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
     }
 
     const currentList = loadUserAccounts();
+    let toggledObj: UserAccount | null = null;
     const updatedList = currentList.map(u => {
       if (u.id === user.id) {
-        return { ...u, isActive: !u.isActive };
+        const mod = { ...u, isActive: !u.isActive };
+        toggledObj = mod;
+        return mod;
       }
       return u;
     });
 
     saveUserAccounts(updatedList);
     setUsers(updatedList);
+    if (toggledObj) {
+      saveUserToCloud(toggledObj).catch(err => console.warn('Cloud save user error:', err));
+    }
     showNotification(`အကောင့် "${user.username}" ကို ${!user.isActive ? 'ပြန်လည်ဖွင့်လှစ်ပြီး' : 'ပိတ်သိမ်းပြီး'} ပါပြီ။`);
     onUserChanged?.();
   };
@@ -183,6 +208,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
       const updatedList = currentList.filter(u => u.id !== user.id);
       saveUserAccounts(updatedList);
       setUsers(updatedList);
+      deleteUserFromCloud(user.id).catch(err => console.warn('Cloud delete user error:', err));
       showNotification(`အကောင့် "${user.username}" ကို ဖျက်ပစ်ပြီးပါပြီ။`);
       onUserChanged?.();
     }

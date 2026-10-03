@@ -47,6 +47,7 @@ import {
   CustomerHistoryProfile
 } from '../utils/storage';
 import { loadUserAccounts, getCurrentUser, UserAccount } from '../utils/auth';
+import { subscribeToUsers } from '../utils/firebase';
 
 interface ConsultationFormModalProps {
   isOpen: boolean;
@@ -121,9 +122,19 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
 
   const [gender, setGender] = useState<'male' | 'female' | 'other'>(initialData?.gender || 'female');
 
-  // Current user & all user accounts for assignment
-  const allUserAccounts = useMemo(() => loadUserAccounts(), []);
+  // Current user & all user accounts for assignment (astrologers / readers)
+  const [allUserAccounts, setAllUserAccounts] = useState<UserAccount[]>(loadUserAccounts());
   const activeUser = useMemo(() => getCurrentUser(), []);
+
+  useEffect(() => {
+    setAllUserAccounts(loadUserAccounts());
+    const unsub = subscribeToUsers((cloudUsers) => {
+      if (cloudUsers && cloudUsers.length > 0) {
+        setAllUserAccounts(cloudUsers);
+      }
+    });
+    return () => unsub();
+  }, [isOpen]);
 
   // Booking & status
   const [bookingDate, setBookingDate] = useState(initialData?.bookingDate || todayStr);
@@ -143,7 +154,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
     initialData?.serviceCategory || 'ဗေဒင်ဟောစာတမ်း'
   );
   const [serviceFee, setServiceFee] = useState<number>(
-    initialData?.serviceFee !== undefined ? initialData.serviceFee : 20000
+    initialData?.serviceFee !== undefined ? initialData.serviceFee : 30000
   );
 
   // Custom Yatra with Memory & Catalog link
@@ -273,7 +284,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
     return {
       id: id || nextId,
       customerName: customerName.trim() || 'မမေးသူ (အမည်မသိ)',
-      phone: phone.trim() || '09-',
+      phone: phone.trim() || '-',
       consultationMode,
       socialPlatform: consultationMode === 'remote' ? socialPlatform : undefined,
       socialAccountName: consultationMode === 'remote' ? socialAccountName.trim() : undefined,
@@ -555,18 +566,6 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="block text-sm font-semibold text-stone-200">ဖုန်းနံပါတ်</label>
-                <input
-                  type="text"
-                  placeholder="09-xxxxxxxxx"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-3 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500 font-mono shadow-inner"
-                />
-              </div>
-
-              <div className="space-y-1">
                 <label className="block text-sm font-semibold text-stone-200">ကျား/မ</label>
                 <select
                   value={gender}
@@ -736,69 +735,91 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
             </div>
           </div>
 
-          {/* Section 3: Purely Custom Service Name & Fee */}
-          <div className="bg-stone-850 p-3.5 rounded-2xl border border-stone-800 space-y-3">
+          {/* Section 3: Purely Custom Service Name & ဉာဏ်ပူဇော်ခ */}
+          <div className="bg-stone-850 p-3.5 rounded-2xl border border-stone-800 space-y-3.5">
             <div className="flex items-center justify-between border-b border-stone-800 pb-1.5">
               <div className="flex items-center gap-2 text-amber-400 font-semibold">
                 <Calculator className="w-4 h-4" />
-                <span>၃။ ဗေဒင်ဝန်ဆောင်မှု အမည်နှင့် ဟောခ (စိတ်ကြိုက်)</span>
+                <span>၃။ ဗေဒင်ဝန်ဆောင်မှု အမည်နှင့် ဉာဏ်ပူဇော်ခ</span>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="bg-stone-900/80 p-3 rounded-xl border border-stone-800 space-y-1">
-                <label className="block text-stone-300 font-semibold text-xs">
-                  ဗေဒင်ဝန်ဆောင်မှု အမည် (ရိုက်ထည့်ပါ)
-                </label>
-                <input
-                  type="text"
-                  placeholder="ဥပမာ - ဗေဒင်ဟောစာတမ်း၊ မဟာဘုတ်ဟောချက်၊ ဇာတာစစ်"
-                  value={serviceName}
-                  onChange={(e) => setServiceName(e.target.value)}
-                  style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-amber-500/40 text-stone-100 focus:border-amber-400 font-medium"
-                  required
-                />
-              </div>
+            {/* ဗေဒင်ဝန်ဆောင်မှု အမည် */}
+            <div className="space-y-1.5">
+              <label className="block text-stone-300 font-semibold text-xs">
+                ဗေဒင်ဝန်ဆောင်မှု အမည်
+              </label>
+              <input
+                type="text"
+                placeholder="ဗေဒင်ဟောစာတမ်း"
+                value={serviceName}
+                onChange={(e) => setServiceName(e.target.value)}
+                style={{ fontSize: '15px' }}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-stone-950 border border-amber-500/40 text-stone-100 focus:border-amber-400 font-medium text-xs sm:text-sm"
+                required
+              />
+            </div>
 
-              <div className="bg-stone-900/80 p-3 rounded-xl border border-stone-800 flex items-center justify-between">
+            {/* ဉာဏ်ပူဇော်ခ (၃၀၀၀၀ / ၅၀၀၀၀ Tick Boxes) */}
+            <div className="bg-stone-900/90 p-3 rounded-xl border border-stone-800 space-y-2.5">
+              <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-stone-300 font-semibold block text-xs">ဗေဒင်ဟောခ (ကျပ်)</span>
-                  <span className="text-[10px] text-stone-500">စိတ်ကြိုက် သတ်မှတ်ပါ</span>
+                  <span className="text-stone-200 font-bold block text-xs sm:text-sm">ဉာဏ်ပူဇော်ခ (ကျပ်)</span>
+                  <span className="text-[10px] text-stone-500">Tick Box နှိပ်၍ အလွယ်ရွေးနိုင်ပါသည်</span>
                 </div>
-                <input
-                  type="number"
-                  value={serviceFee}
-                  onChange={(e) => setServiceFee(Number(e.target.value))}
-                  style={{ fontSize: '16px' }}
-                  className="w-36 px-3 py-2 text-right rounded-xl bg-stone-950 border border-amber-500/40 text-amber-300 font-mono font-bold focus:border-amber-400"
-                />
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    value={serviceFee}
+                    onChange={(e) => setServiceFee(Number(e.target.value))}
+                    style={{ fontSize: '16px' }}
+                    className="w-32 px-3 py-1.5 text-right rounded-xl bg-stone-950 border border-amber-500/50 text-amber-300 font-mono font-bold focus:border-amber-400 text-sm"
+                  />
+                  <span className="text-stone-400 text-xs font-semibold">ကျပ်</span>
+                </div>
+              </div>
+
+              {/* Tick Boxes for 30,000 and 50,000 */}
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
+                <label
+                  onClick={() => setServiceFee(30000)}
+                  className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition cursor-pointer select-none ${
+                    serviceFee === 30000
+                      ? 'bg-emerald-950/40 border-emerald-500 text-emerald-300 font-bold ring-1 ring-emerald-500/40 shadow-sm'
+                      : 'bg-stone-950/60 border-stone-700 text-stone-300 hover:border-stone-600'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={serviceFee === 30000}
+                    onChange={() => setServiceFee(30000)}
+                    className="w-4 h-4 rounded text-emerald-500 focus:ring-0 cursor-pointer accent-emerald-500"
+                  />
+                  <span className="text-xs sm:text-sm font-semibold">
+                    ၃၀,၀၀၀ ကျပ်
+                  </span>
+                </label>
+
+                <label
+                  onClick={() => setServiceFee(50000)}
+                  className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition cursor-pointer select-none ${
+                    serviceFee === 50000
+                      ? 'bg-emerald-950/40 border-emerald-500 text-emerald-300 font-bold ring-1 ring-emerald-500/40 shadow-sm'
+                      : 'bg-stone-950/60 border-stone-700 text-stone-300 hover:border-stone-600'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={serviceFee === 50000}
+                    onChange={() => setServiceFee(50000)}
+                    className="w-4 h-4 rounded text-emerald-500 focus:ring-0 cursor-pointer accent-emerald-500"
+                  />
+                  <span className="text-xs sm:text-sm font-semibold">
+                    ၅၀,၀၀၀ ကျပ်
+                  </span>
+                </label>
               </div>
             </div>
-
-            {savedServices.length > 0 && (
-              <div className="space-y-1 pt-0.5">
-                <span className="text-[11px] text-stone-400 font-medium block">
-                  ယခင်ထည့်ထားသော ဝန်ဆောင်မှုများ (၁ ချက်နှိပ်ရွေးရန်):
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {savedServices.map((srv) => (
-                    <button
-                      key={srv.id}
-                      type="button"
-                      onClick={() => handleSelectSavedService(srv.name, srv.defaultFee)}
-                      className={`px-2.5 py-1 rounded-lg text-xs border transition cursor-pointer ${
-                        serviceName === srv.name
-                          ? 'bg-amber-500/30 text-amber-300 border-amber-500 font-bold'
-                          : 'bg-stone-900 hover:bg-stone-800 text-stone-300 border-stone-700'
-                      }`}
-                    >
-                      {srv.name} ({formatMMK(srv.defaultFee)})
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Section 4: Purely Custom Yatra with Yatra Catalog Integration */}

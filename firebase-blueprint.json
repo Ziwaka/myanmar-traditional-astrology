@@ -8,20 +8,31 @@
         "id": { "type": "string" },
         "customerName": { "type": "string" },
         "phone": { "type": "string" },
+        "consultationMode": { "type": "string" },
+        "socialPlatform": { "type": "string" },
+        "socialAccountName": { "type": "string" },
+        "gender": { "type": "string" },
         "birthDayOfWeek": { "type": "string" },
         "birthDate": { "type": "string" },
         "age": { "type": "number" },
         "mahabote": { "type": "string" },
         "bookingDate": { "type": "string" },
         "readingDateTime": { "type": "string" },
+        "assignedUserId": { "type": "string" },
+        "assignedUserName": { "type": "string" },
         "serviceCategory": { "type": "string" },
         "serviceFee": { "type": "number" },
+        "yatraEnabled": { "type": "boolean" },
+        "yatraType": { "type": "string" },
+        "yatraName": { "type": "string" },
+        "yatraFee": { "type": "number" },
         "navawinType": { "type": "string" },
         "navawinFee": { "type": "number" },
         "amulets": { "type": "array" },
         "amuletsTotal": { "type": "number" },
         "totalAmount": { "type": "number" },
         "paidAmount": { "type": "number" },
+        "paidDate": { "type": "string" },
         "paymentStatus": { "type": "string" },
         "paymentMethod": { "type": "string" },
         "status": { "type": "string" },
@@ -29,10 +40,14 @@
         "predictions": { "type": "string" },
         "yatraInstructions": { "type": "string" },
         "notes": { "type": "string" },
+        "recordedBy": { "type": "string" },
+        "updatedBy": { "type": "string" },
+        "deviceId": { "type": "string" },
+        "version": { "type": "number" },
         "createdAt": { "type": "string" },
         "updatedAt": { "type": "string" }
       },
-      "required": ["id", "customerName", "phone", "birthDayOfWeek", "bookingDate", "totalAmount"]
+      "required": ["id", "bookingDate", "totalAmount"]
     },
     "ExpenseRecord": {
       "title": "ExpenseRecord",
@@ -50,6 +65,26 @@
       },
       "required": ["id", "title", "amount", "category", "date"]
     },
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "System user account, astrologer (ဗေဒင်ဟောသူ), and staff profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "phone": { "type": "string" },
+        "sanctuaryName": { "type": "string" },
+        "role": { "type": "string" },
+        "avatarEmoji": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "lastLogin": { "type": "string" }
+      },
+      "required": ["id", "username", "name", "role", "isActive"]
+    },
     "AmuletCatalogItem": {
       "title": "AmuletCatalogItem",
       "description": "Consecrated amulet, yantra, or gemstones merchandise item",
@@ -64,6 +99,19 @@
         "image": { "type": "string" }
       },
       "required": ["id", "name", "price", "category", "inStock"]
+    },
+    "ExpenseCategoryConfig": {
+      "title": "ExpenseCategoryConfig",
+      "description": "Configured expense categories",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "icon": { "type": "string" },
+        "color": { "type": "string" },
+        "isCustom": { "type": "boolean" }
+      },
+      "required": ["id", "label"]
     },
     "SystemInfo": {
       "title": "SystemInfo",
@@ -86,9 +134,17 @@
       "schema": "ExpenseRecord",
       "description": "Collection of business operating expense items"
     },
+    "/users/{userId}": {
+      "schema": "UserAccount",
+      "description": "Collection of astrologers (ဗေဒင်ဟောသူများ) and system users"
+    },
     "/amulets/{amuletId}": {
       "schema": "AmuletCatalogItem",
       "description": "Collection of amulets and sacred merchandise"
+    },
+    "/expense_categories/{categoryId}": {
+      "schema": "ExpenseCategoryConfig",
+      "description": "Collection of custom expense categories"
     },
     "/system/{systemId}": {
       "schema": "SystemInfo",

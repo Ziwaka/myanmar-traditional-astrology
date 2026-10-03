@@ -1,29 +1,29 @@
 {
-  "version": "1.8.10",
+  "version": "1.8.13",
   "releaseDate": "2026-10-03",
-  "title": "Fixed Sticky Top Navbar on Scroll",
+  "title": "Streamline Service to ဗေဒင်ဟောစာတမ်း",
   "isCloudAuthoritative": true,
   "changelog": [
-    "အပေါ်ဘက် Navigation Bar ကို အောက်သို့ Scroll ဆွဲသည့်အခါ အပေါ်သို့ လိုက်ပါပျောက်ကွယ်မသွားဘဲ မျက်နှာပြင်ထိပ်ဆုံးတွင် အမြဲတမ်း ငြိမ်သက်စွာ ကပ်နေစေရန် (Fixed Sticky Navbar) အပြည့်အဝ ပြင်ဆင်ပြီးစီးခြင်း။",
-    "Parent Container များမှ CSS overflow ကန့်သတ်ချက်များကို ရှင်းလင်းပေးပြီး ဖုန်းအမျိုးအစားအားလုံးတွင် ချောမွေ့စွာ ကပ်နေစေရန် ပြုပြင်ခြင်း။"
+    "ဇာတာဖွဲ့/အထူးဟောစာတမ်း ကို ဖြုတ်ပယ်ပြီး ပုံသေ ဗေဒင်ဟောစာတမ်း အမည်ဖြင့်သာ သန့်ရှင်းစွာ ထားရှိပေးခြင်း။",
+    "ဉာဏ်ပူဇော်ခ အား ၃၀,၀၀၀ ကျပ် နှင့် ၅၀,၀၀၀ ကျပ် Tick Boxes ဖြင့် လျင်မြန်စွာ ရွေးချယ်နိုင်အောင် ထားရှိပေးခြင်း။"
   ],
   "history": [
     {
-      "version": "1.8.10",
+      "version": "1.8.13",
       "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃",
-      "title": "Sticky Top Navbar on Scroll",
-      "badge": "Sticky Navbar",
+      "title": "Streamline Service to ဗေဒင်ဟောစာတမ်း",
+      "badge": "Service Streamlined",
       "changelog": [
-        "Scroll ဆွဲရာတွင် Navbar အပေါ်လိုက်မသွားဘဲ ထိပ်ဆုံး၌ အမြဲကပ်နေစေရန် ပြင်ဆင်ခြင်း"
+        "ဇာတာဖွဲ့/အထူးဟောစာတမ်း ဖြုတ်ပယ်ခြင်းနှင့် ဗေဒင်ဟောစာတမ်း သီးသန့်ထားရှိခြင်း"
       ]
     },
     {
-      "version": "1.8.9",
+      "version": "1.8.12",
       "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃",
-      "title": "Compact Transaction Cards",
-      "badge": "Compact UI",
+      "title": "Service Fee to ဉာဏ်ပူဇော်ခ & Quick Tick Boxes",
+      "badge": "UI & Service Update",
       "changelog": [
-        "Transaction Card များ အမြင့်ချုံ့ပြီး ကျစ်လျစ်သပ်ရပ်အောင် ပြင်ဆင်ခြင်း"
+        "ဖုန်းနံပါတ် Field ဖြုတ်ခြင်းနှင့် ဉာဏ်ပူဇော်ခ (၃၀၀၀၀/၅၀၀၀၀) Tick Boxes ထည့်သွင်းခြင်း"
       ]
     }
   ]

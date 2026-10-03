@@ -15,28 +15,29 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.8.10';
+export const LOCAL_APP_VERSION = '1.8.13';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
   {
-    version: '1.8.10',
+    version: '1.8.13',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'Fixed Sticky Top Navbar on Scroll',
-    badge: 'Sticky Navbar',
+    title: 'Streamline Service to ဗေဒင်ဟောစာတမ်း',
+    badge: 'Service Streamlined',
     changelog: [
-      'အပေါ်ဘက် Navigation Bar ကို အောက်သို့ Scroll ဆွဲသည့်အခါ အပေါ်သို့ လိုက်ပါပျောက်ကွယ်မသွားဘဲ မျက်နှာပြင်ထိပ်ဆုံးတွင် အမြဲတမ်း ငြိမ်သက်စွာ ကပ်နေစေရန် (Fixed Sticky Navbar) အပြည့်အဝ ပြင်ဆင်ပြီးစီးခြင်း။',
-      'Parent Container များမှ CSS overflow ကန့်သတ်ချက်များကို ရှင်းလင်းပေးပြီး ဖုန်းအမျိုးအစားအားလုံးတွင် ချောမွေ့စွာ ကပ်နေစေရန် ပြုပြင်ခြင်း။'
+      'ဇာတာဖွဲ့/အထူးဟောစာတမ်း ကို ဖြုတ်ပယ်ပြီး ပုံသေ ဗေဒင်ဟောစာတမ်း အမည်ဖြင့်သာ သန့်ရှင်းစွာ ထားရှိပေးခြင်း။',
+      'ဉာဏ်ပူဇော်ခ အား ၃၀,၀၀၀ ကျပ် နှင့် ၅၀,၀၀၀ ကျပ် Tick Boxes ဖြင့် လျင်မြန်စွာ ရွေးချယ်နိုင်အောင် ထားရှိပေးခြင်း။'
     ]
   },
   {
-    version: '1.8.9',
+    version: '1.8.12',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'Compact & Space-Efficient Transaction Cards',
-    badge: 'Compact UI',
+    title: 'Service Fee to ဉာဏ်ပူဇော်ခ & Quick Tick Boxes',
+    badge: 'UI & Service Update',
     changelog: [
-      'ငွေစာရင်း Transaction Card များကို အရွယ်အစား အလွန်ကြီးမားနေခြင်းမှ ဖုန်းမျက်နှာပြင်နှင့် ကိုက်ညီအောင် ကျစ်လျစ်သပ်ရပ်သော Compact List စနစ်သို့ ပြောင်းလဲပြင်ဆင်ခြင်း။'
+      'ဗေဒင်မေးသူ စာရင်းသွင်းပုံစံမှ ဖုန်းနံပါတ် Field အား လုံးဝ ဖြုတ်ပယ်ပေးခြင်း။',
+      'အမည်အား "ဉာဏ်ပူဇော်ခ" သို့ ပြောင်းလဲပြီး ၃၀,၀၀၀ ကျပ် နှင့် ၅၀,၀၀၀ ကျပ် Tick Box များ ထည့်သွင်းပေးထားခြင်း။'
     ]
   }
 ];
