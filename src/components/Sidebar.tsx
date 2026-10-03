@@ -21,7 +21,8 @@ import {
   WifiOff,
   Users,
   Activity,
-  Bell
+  Bell,
+  BookOpen
 } from 'lucide-react';
 import { ActiveTab } from './Navbar';
 import { UserAccount, getEffectivePermissions } from '../utils/auth';
@@ -79,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       key: 'monthly_report',
-      label: 'လစဉ် စာရင်းဇယား (အစီရင်ခံစာ)',
+      label: 'Data Insight Dashboard',
       icon: <TrendingUp className="w-4 h-4 text-emerald-400" />,
       hide: !perms.canViewMonthlyReports,
     },
@@ -124,6 +125,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <Database className="w-4 h-4 text-amber-400" />,
       badge: '5 MB',
     },
+    {
+      key: 'system_guide',
+      label: 'စနစ်လမ်းညွှန် & Features',
+      icon: <BookOpen className="w-4 h-4 text-sky-400" />,
+    },
   ];
 
   return (
@@ -138,7 +144,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Slide-in Drawer - ONLY appears when called (isOpen === true) */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-72 sm:w-80 bg-stone-900 border-r border-amber-500/30 text-stone-100 flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 sm:w-80 bg-stone-900 border-r border-amber-500/30 text-stone-100 flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-in-out pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

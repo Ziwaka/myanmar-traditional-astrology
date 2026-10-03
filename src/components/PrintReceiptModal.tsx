@@ -242,10 +242,6 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                   မြန်မာ့ရိုးရာဗေဒင်ပညာ ဟောစာတမ်းနှင့် ဝန်ဆောင်မှုပြေစာ
                 </h1>
               </div>
-
-              <p className="text-xs text-stone-600 mt-1 font-medium">
-                မွေးဇာတာစစ်ဆေးချက် • နဝင်းယတြာ အစီအရင် • မင်္ဂလာအဆောင်ပစ္စည်း POS
-              </p>
             </div>
 
             {/* Section 1: မေးသူ အချက်အလက်များ (Client Profile) */}
@@ -260,30 +256,34 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs text-stone-800">
-                <div>
-                  <span className="text-stone-500 block text-[11px]">ဗေဒင်မေးသူ အမည်:</span>
-                  <strong className="text-stone-950 text-sm">{record.customerName || 'မမေးသူ'}</strong>
-                  <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-900">
-                    {record.consultationMode === 'remote' ? '🌐 Remote (အွန်လိုင်း)' : '🏢 In Person (လူကိုယ်တိုင်)'}
-                  </span>
+              <div className="flex flex-col gap-y-2.5 text-xs text-stone-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-amber-200/40 pb-1.5">
+                  <span className="text-stone-500 text-[11px] font-medium">ဗေဒင်မေးသူ အမည်:</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <strong className="text-stone-950 text-sm">{record.customerName || 'မမေးသူ'}</strong>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-900">
+                      {record.consultationMode === 'remote' ? '🌐 Remote (အွန်လိုင်း)' : '🏢 In Person (လူကိုယ်တိုင်)'}
+                    </span>
+                  </div>
                 </div>
 
-                <div>
-                  <span className="text-stone-500 block text-[11px]">ဖုန်းနံပါတ် / Social:</span>
-                  <strong className="font-mono text-stone-900">
-                    {record.phone || '-'}
-                    {record.socialAccountName ? ` (${record.socialPlatform || 'Social'}: ${record.socialAccountName})` : ''}
-                  </strong>
+                {record.phone && record.phone !== '-' && record.phone !== '09-' && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-amber-200/40 pb-1.5">
+                    <span className="text-stone-500 text-[11px] font-medium">ဖုန်းနံပါတ် / Social:</span>
+                    <strong className="font-mono text-stone-900">
+                      {record.phone}
+                      {record.socialAccountName ? ` (${record.socialPlatform || 'Social'}: {record.socialAccountName})` : ''}
+                    </strong>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-amber-200/40 pb-1.5">
+                  <span className="text-stone-500 text-[11px] font-medium">ဘိုကင်ရက်စွဲ:</span>
+                  <span className="font-mono text-stone-900">{formatDateDDMMYYYY(record.bookingDate)}</span>
                 </div>
 
-                <div>
-                  <span className="text-stone-500 block text-[11px]">ဘိုကင်ရက်စွဲ:</span>
-                  <span className="font-mono">{formatDateDDMMYYYY(record.bookingDate)}</span>
-                </div>
-
-                <div>
-                  <span className="text-stone-500 block text-[11px]">ဟောကြားသည့် ရက်စွဲနှင့် အချိန်:</span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-0.5">
+                  <span className="text-stone-500 text-[11px] font-medium">ဟောကြားသည့် ရက်စွဲနှင့် အချိန်:</span>
                   <strong className="font-mono text-amber-950">{formatDateDDMMYYYY(record.readingDateTime)}</strong>
                 </div>
               </div>

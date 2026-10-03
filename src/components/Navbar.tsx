@@ -29,7 +29,8 @@ export type ActiveTab =
   | 'amulets'
   | 'users'
   | 'sync_monitor'
-  | 'quota_monitor';
+  | 'quota_monitor'
+  | 'system_guide';
 
 interface NavbarProps {
   onToggleSidebar: () => void;
@@ -77,7 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const getTabTitle = () => {
     switch (activeTab) {
       case 'consultations': return 'ဗေဒင်မေးသူများ & POS';
-      case 'monthly_report': return 'လစဉ် စာရင်းဇယား အစီရင်ခံစာ';
+      case 'monthly_report': return 'Data Insight Dashboard';
       case 'royal_customers': return 'ဖောက်သည်ကြီးများ (Royal VIP)';
       case 'expenses': return 'အသုံးစရိတ် စီမံခန့်ခွဲမှု';
       case 'yatra_catalog': return 'ယတြာ ကတ်တလောက် (Yatra Rituals)';
@@ -86,6 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       case 'users': return 'အသုံးပြုသူ အကောင့်များနှင့် လုပ်ပိုင်ခွင့်များ';
       case 'sync_monitor': return 'Sync Monitor Dashboard (Live Monitor)';
       case 'quota_monitor': return 'Quota Monitor Dashboard (Storage Analytics)';
+      case 'system_guide': return 'စနစ်အသုံးပြုပုံ လမ်းညွှန်ချက်များ (User Guide)';
       default: return 'မြန်မာ့ရိုးရာဗေဒင်ပညာ';
     }
   };
@@ -93,7 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const getMobileTabTitle = () => {
     switch (activeTab) {
       case 'consultations': return 'ဗေဒင်မှတ်တမ်း';
-      case 'monthly_report': return 'လစဉ်ရှင်းတမ်း';
+      case 'monthly_report': return 'Data Insights';
       case 'royal_customers': return 'VIP ဖောက်သည်';
       case 'expenses': return 'အသုံးစရိတ်';
       case 'yatra_catalog': return 'ယတြာ ကတ်တလောက်';
@@ -102,12 +104,13 @@ export const Navbar: React.FC<NavbarProps> = ({
       case 'users': return 'အကောင့်များ';
       case 'sync_monitor': return 'Sync Monitor';
       case 'quota_monitor': return 'Quota Monitor';
+      case 'system_guide': return 'အသုံးပြုပုံလမ်းညွှန်';
       default: return 'ဗေဒင်မှတ်တမ်း';
     }
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-stone-900/98 backdrop-blur-md border-b border-amber-500/20 text-stone-100 shadow-lg w-full">
+    <header className="sticky top-0 z-40 bg-stone-900/98 backdrop-blur-md border-b border-amber-500/20 text-stone-100 shadow-lg w-full pt-[env(safe-area-inset-top,0px)]">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-2.5 sm:py-3 gap-2 w-full min-w-0">
           

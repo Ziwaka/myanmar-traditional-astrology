@@ -48,6 +48,7 @@ import { CatalogsManagerView } from './components/CatalogsManagerView';
 import { UserManagementView } from './components/UserManagementView';
 import { SyncMonitorDashboard } from './components/SyncMonitorDashboard';
 import { QuotaMonitorDashboard } from './components/QuotaMonitorDashboard';
+import { SystemGuideView } from './components/SystemGuideView';
 import { PrintReceiptModal } from './components/PrintReceiptModal';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { VersionUpdateModal } from './components/VersionUpdateModal';
@@ -818,6 +819,10 @@ export default function App() {
                 refreshDatabaseQuota();
               }}
             />
+          )}
+
+          {activeTab === 'system_guide' && (
+            <SystemGuideView />
           )}
         </main>
 

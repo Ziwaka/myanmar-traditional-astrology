@@ -439,18 +439,24 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                 {/* Middle Info Section */}
                 <div className="bg-stone-900/70 rounded-xl p-3 border border-stone-800/80 space-y-2 text-xs">
                   {/* Phone & Social Account */}
-                  <div className="flex flex-wrap items-center justify-between gap-1 text-stone-300">
-                    <div className="flex items-center gap-1 font-mono">
-                      <Phone className="w-3.5 h-3.5 text-stone-500 shrink-0" />
-                      <span>{rec.phone && rec.phone.trim() !== '09-' ? rec.phone : (rec.phone === '09-' ? '09- (မဖြည့်ရသေး)' : 'ဖုန်းနံပါတ်မပါ')}</span>
-                    </div>
+                  {((rec.phone && rec.phone.trim() !== '-' && rec.phone.trim() !== '09-') || rec.socialAccountName) ? (
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-stone-300">
+                      {rec.phone && rec.phone.trim() !== '-' && rec.phone.trim() !== '09-' ? (
+                        <div className="flex items-center gap-1 font-mono">
+                          <Phone className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+                          <span>{rec.phone}</span>
+                        </div>
+                      ) : (
+                        <div />
+                      )}
 
-                    {rec.socialAccountName && (
-                      <div className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/80 text-[11px]">
-                        {rec.socialPlatform || 'Social'}: {rec.socialAccountName}
-                      </div>
-                    )}
-                  </div>
+                      {rec.socialAccountName && (
+                        <div className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/80 text-[11px]">
+                          {rec.socialPlatform || 'Social'}: {rec.socialAccountName}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
 
                   {/* Reading Date & Time, Booking Date & Payment Date */}
                   <div className="flex flex-wrap items-center justify-between gap-1 text-stone-300 pt-1 border-t border-stone-800/60">

@@ -786,6 +786,124 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
         </div>
 
       </div>
+
+      {/* NEW: Data Insight Trend Report, Business Health Check & Consultation Mode Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
+        
+        {/* Left: Consultation Modes Analysis (In Person vs Remote) */}
+        <div className="lg:col-span-5 bg-stone-850 p-5 rounded-2xl border border-stone-800 shadow-xl space-y-3.5">
+          <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+            <h4 className="font-bold text-cyan-300 text-sm flex items-center gap-2">
+              <Users className="w-4 h-4 text-cyan-400" />
+              <span>မေးမြန်းမှု ပုံစံ သုံးသပ်ချက် (Consultation Mode)</span>
+            </h4>
+          </div>
+
+          {(() => {
+            const inPerson = currentMonthConsultations.filter(c => c.consultationMode === 'in_person').length;
+            const remote = currentMonthConsultations.filter(c => c.consultationMode === 'remote').length;
+            const total = inPerson + remote;
+            const inPersonPercent = total > 0 ? Math.round((inPerson / total) * 100) : 0;
+            const remotePercent = total > 0 ? Math.round((remote / total) * 100) : 0;
+
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="bg-stone-900/70 p-3 rounded-xl border border-stone-800 text-center">
+                    <span className="text-[10px] text-stone-400 uppercase font-semibold">လူကိုယ်တိုင် (In-Person)</span>
+                    <div className="text-xl font-bold text-stone-200 mt-1">{inPerson} ဦး</div>
+                    <span className="text-xs text-emerald-400 font-bold font-mono">{inPersonPercent}%</span>
+                  </div>
+                  <div className="bg-stone-900/70 p-3 rounded-xl border border-stone-800 text-center">
+                    <span className="text-[10px] text-stone-400 uppercase font-semibold">အွန်လိုင်း (Remote Mode)</span>
+                    <div className="text-xl font-bold text-stone-200 mt-1">{remote} ဦး</div>
+                    <span className="text-xs text-sky-400 font-bold font-mono">{remotePercent}%</span>
+                  </div>
+                </div>
+
+                {/* Progress bar ratio for modes */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[11px] text-stone-500 font-mono">
+                    <span>လူကိုယ်တိုင် ({inPersonPercent}%)</span>
+                    <span>အဝေးရောက် ({remotePercent}%)</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-stone-900 rounded-full overflow-hidden flex border border-stone-800">
+                    <div className="bg-emerald-500 h-full" style={{ width: `${inPersonPercent}%` }} />
+                    <div className="bg-sky-400 h-full" style={{ width: `${remotePercent}%` }} />
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-stone-400 leading-relaxed bg-stone-900/40 p-2.5 rounded-xl border border-stone-800/60">
+                  {inPersonPercent > remotePercent 
+                    ? "💡 လူကိုယ်တိုင် လာရောက်မေးမြန်းမှု ပိုမိုများပြားသဖြင့် အဆောင်ပစ္စည်း POS ရောင်းအား တက်လာစေရန် ဟောခန်း၌ အဆောင်ပစ္စည်းများကို ပိုမိုခင်းကျင်းပြသရန် အကြံပြုအပ်ပါသည်။"
+                    : "💡 အွန်လိုင်းမှ မေးမြန်းသူ ပိုမိုများပြားသဖြင့် ဟောစာတမ်းနှင့် ယတြာလမ်းညွှန်ချက်များကို PDF/ဘောက်ချာပုံစံဖြင့် စနစ်တကျ Viber/Messenger သို့ ပို့ဆောင်ပေးခြင်းဖြင့် ဝန်ဆောင်မှု ပိုမိုကောင်းမွန်စေပါသည်။"
+                  }
+                </p>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Right: Smart Business Suggestions & Health Audit */}
+        <div className="lg:col-span-7 bg-stone-850 p-5 rounded-2xl border border-stone-800 shadow-xl space-y-3.5">
+          <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+            <h4 className="font-bold text-amber-300 text-sm flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>စီးပွားရေး ကျန်းမာမှု သုံးသပ်ချက် နှင့် အကြံပြုချက်များ</span>
+            </h4>
+            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+              Auto Analysis
+            </span>
+          </div>
+
+          <div className="space-y-3 text-xs leading-relaxed text-stone-300">
+            {(() => {
+              const avgTicketSize = metrics.readingsCount > 0 ? Math.round(metrics.totalIncome / metrics.readingsCount) : 0;
+              const expenseRatio = metrics.totalIncome > 0 ? (metrics.totalExpense / metrics.totalIncome) * 100 : 0;
+              const amuletRatio = metrics.totalIncome > 0 ? (metrics.amuletsRevenue / metrics.totalIncome) * 100 : 0;
+              const yatraRatio = metrics.totalIncome > 0 ? (metrics.yatraRevenue / metrics.totalIncome) * 100 : 0;
+
+              return (
+                <div className="space-y-3">
+                  {/* Dynamic Metric Box 1 */}
+                  <div className="p-3 bg-stone-900/50 rounded-xl border border-stone-800 flex items-start gap-2.5">
+                    <div className="w-5 h-5 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold font-mono">1</div>
+                    <div className="space-y-0.5">
+                      <span className="font-bold text-stone-200">တစ်ဦးချင်း ပျမ်းမျှ ဉာဏ်ပူဇော်ခ (Avg Ticket Size):</span>
+                      <p className="text-[11px] text-stone-400">
+                        မေးသူတစ်ဦးလျှင် ပျမ်းမျှ <strong className="text-emerald-300 font-mono">{formatMMK(avgTicketSize)}</strong> သုံးစွဲထားပါသည်။ {avgTicketSize < 40000 ? "ယတြာ ကတ်တလောက်မှ အစီအစဉ်များအား တိုက်တွန်းခြင်းဖြင့် ဝင်ငွေတိုးတက်စေနိုင်ပါသည်။" : "ဖောက်သည်များ၏ သုံးစွဲနိုင်စွမ်း ကောင်းမွန်သော အခြေအနေ ဖြစ်ပါသည်။"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Dynamic Metric Box 2 */}
+                  <div className="p-3 bg-stone-900/50 rounded-xl border border-stone-800 flex items-start gap-2.5">
+                    <div className="w-5 h-5 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold font-mono">2</div>
+                    <div className="space-y-0.5">
+                      <span className="font-bold text-stone-200">အသုံးစရိတ် ကာကွယ်မှုနှုန်း (Expense Health):</span>
+                      <p className="text-[11px] text-stone-400">
+                        ဝင်ငွေအပေါ် အသုံးစရိတ်အချိုးသည် <strong className="text-amber-300 font-mono">{expenseRatio.toFixed(0)}%</strong> ရှိပါသည်။ {expenseRatio > 40 ? "⚠️ အသုံးစရိတ်အချိုး ၄၀% ထက် ကျော်လွန်နေသဖြင့် အသုံးစရိတ်များကို ပိုမိုစိစစ်ရန် လိုအပ်ပါသည်။" : "✅ ဝင်ငွေနှင့်အသုံးစရိတ်အချိုးသည် အန္တရာယ်ကင်းသော ကောင်းမွန်သည့်ဘောင်အတွင်း တည်ရှိနေပါသည်။"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Dynamic Metric Box 3 */}
+                  <div className="p-3 bg-stone-900/50 rounded-xl border border-stone-800 flex items-start gap-2.5">
+                    <div className="w-5 h-5 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold font-mono">3</div>
+                    <div className="space-y-0.5">
+                      <span className="font-bold text-stone-200">အဆောင်ပစ္စည်း POS ရောင်းအား အချိုး:</span>
+                      <p className="text-[11px] text-stone-400">
+                        စုစုပေါင်းဝင်ငွေ၏ <strong className="text-purple-300 font-mono">{amuletRatio.toFixed(0)}%</strong> သည် အဆောင်ရောင်းအားမှ ဖြစ်သည်။ {amuletRatio < 15 ? "အဆောင်ပစ္စည်းများကို ဟောခန်းတွင် ပိုမိုမိတ်ဆက်ပေးခြင်းဖြင့် အပိုဆောင်းဝင်ငွေကို မြှင့်တင်နိုင်ပါသည်။" : "အဆောင်ပစ္စည်း POS ရောင်းအားသည် လုပ်ငန်းအတွက် အဓိကအားထားရသော မဏ္ဍိုင်ဖြစ်နေပါပြီ။"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };

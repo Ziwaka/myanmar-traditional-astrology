@@ -15,32 +15,32 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.8.15';
+export const LOCAL_APP_VERSION = '1.8.18';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
   {
-    version: '1.8.15',
+    version: '1.8.18',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'Quantity Multipliers & Auto-Calculators in Entry Form',
-    badge: 'Quantity Multipliers',
+    title: 'Print Receipt & Customer Card UI Refinements',
+    badge: 'UI Refinements',
     changelog: [
-      'ယတြာများအတွက် အကြိမ်အရေအတွက် (၁ ကြိမ် ၊ ၂ ကြိမ် ၊ ၃ ကြိမ် စသည်) ကို လျင်မြန်စွာ ရွေးချယ်နိုင်သော စနစ် ထည့်သွင်းပေးခြင်း။',
-      'အဆောင်ပစ္စည်းများအတွက် ဝယ်ယူပြီးစာရင်းတွင် တိုက်ရိုက် အရေအတွက် အတိုး/အလျော့ ပြုလုပ်နိုင်သော (+ / -) ခလုတ်များ တည်ဆောက်ခြင်း။',
-      'ရွေးချယ်လိုက်သည့် အရေအတွက်အပေါ် မူတည်၍ ကျသင့်ငွေများကို စက္ကန့်ပိုင်းအတွင်း အလိုအလျောက် တိကျစွာ တွက်ချက်ပေးခြင်း။'
+      'ဘောက်ချာ (Print Receipt) ထိပ်ရှိ မလိုလားအပ်သော စာသားအပိုများအား ဖျက်ထုတ်ပေးခြင်း။',
+      'ဘောက်ချာရှိ မေးသူအချက်အလက် (Client Profile) များအား ဖုန်းမျက်နှာပြင်ငယ်များတွင် ဘေးဘက်သို့လိပ်မထွက်စေဘဲ ၁ ခုလျှင် ၁ ကြောင်းစီ သန့်ရှင်းသပ်ရပ်စွာ ပြသပေးခြင်း။',
+      'ပင်မစာရင်း ကတ်ပြားများတွင် ဖုန်းနံပါတ် မဖြည့်ထားပါက မလိုလားအပ်သော \'09- (မဖြည့်ရသေး)\' စာသားအား လုံးဝဖျက်သိမ်းကာ ဖုံးကွယ်ပေးခြင်း။'
     ]
   },
   {
-    version: '1.8.14',
+    version: '1.8.17',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'Separate Yatra & Amulet Catalogs & Cloud Sync Integration',
-    badge: 'Database & UI Split',
+    title: 'Business Intelligence Data Insight Dashboard & System Guide',
+    badge: 'Business Insights',
     changelog: [
-      'ယတြာ ကတ်တလောက် (Yatra Catalog) နှင့် အဆောင် ကတ်တလောက် (Amulet Catalog) အား တက်ဘ်များနှင့် ဘေးဘားမီနူးတွင် သီးခြားစီ ခွဲထုတ်ပြီးစနစ်တကျ ပြင်ဆင်ခြင်း။',
-      'Firebase Firestore တွင် \'yatras\' collection အသစ်တည်ဆောက်၍ Real-time Sync စနစ် အပြည့်အဝ ချိတ်ဆက်ခြင်း။',
-      'ယခင်အမှားအယွင်းကြောင့် အဆောင်စုဆောင်းမှုထဲ ရောက်ရှိနေသည့် ယတြာမှတ်တမ်းများအား Cloud နှင့် local storage နှစ်ဖက်စလုံးတွင် အလိုအလျောက် ရွေးထုတ်ပြောင်းရွှေ့ပေးသည့် (Automatic Migration) စနစ်ထည့်သွင်းခြင်း။',
-      'ဗေဒင်မေးသူစာရင်းသွင်းပုံစံ (Entry Form) တွင် ယတြာကတ်တလောက်မှ ရွေးချယ်မှုများကို အလွယ်တကူ ကလစ်တစ်ချက်နှိပ်ရုံဖြင့် အလိုအလျောက် ဖြည့်သွင်းနိုင်စေခြင်း။'
+      'လစဉ်အစီရင်ခံစာဟောင်းအား အဆင့်မြှင့်တင်ပြီး ပိုမိုပြည့်စုံစုံလင်သော \'Data Insight Dashboard\' သစ်အဖြစ် ပြောင်းလဲတည်ဆောက်ပေးခြင်း။',
+      'လစဉ် ဝင်ငွေ၊ အသုံးစရိတ် နှင့် အသားတင်အမြတ်ငွေ တိုးတက်ပြောင်းလဲမှု လမ်းကြောင်းများကို လှပသော Interactive Trend Lines (Area Charts) များဖြင့် ဆွဲပြပေးခြင်း။',
+      'မေးမြန်းသူတစ်ဦးချင်းစီ၏ ပျမ်းမျှဉာဏ်ပူဇော်ခ၊ အသုံးစရိတ်ကျန်းမာမှုအချိုးနှင့် အဆောင်ရောင်းအားအချိုးများအပေါ် မူတည်ပြီး စနစ်မှ အလိုအလျောက် စီးပွားရေးအကြံပြုချက်များပေးသည့် \'Smart Business Suggestion Analysis\' ထည့်သွင်းခြင်း။',
+      'စနစ်တစ်ခုလုံး၏ Features များနှင့် အသေးစိတ်သုံးစွဲပုံတစ်ဆင့်ချင်းစီကို ရှင်းပြပေးထားသော \'စနစ်လမ်းညွှန် & Features (System Guide)\' Tab အသစ် ထည့်သွင်းပေးခြင်း။'
     ]
   }
 ];
