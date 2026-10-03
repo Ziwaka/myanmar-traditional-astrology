@@ -1,4 +1,14 @@
-import { DayOfWeekBurmese, MahaboteHouse, NavawinCountType } from '../types';
+import { DayOfWeekBurmese, MahaboteHouse, NavawinCountType, ServiceCategory } from '../types';
+
+export const SERVICE_CATEGORIES: { key: ServiceCategory; label: string; defaultFee: number }[] = [
+  { key: 'general_reading', label: 'အထွေထွေ ဗေဒင်ဟောစာတမ်း', defaultFee: 20000 },
+  { key: 'detailed_horoscope', label: 'ဇာတာဖွဲ့ / လက်ခဏာစစ်တမ်း', defaultFee: 30000 },
+  { key: 'navawin_ritual', label: 'နဝင်းယတြာ အစီအရင်', defaultFee: 30000 },
+  { key: 'name_naming', label: 'အမည်ပေး မင်္ဂလာ / နာမည်ပြောင်း', defaultFee: 25000 },
+  { key: 'marriage_match', label: 'အိမ်ထောင်ဖက် ဓာတ်စစ် / မင်္ဂလာရက်ရွေး', defaultFee: 35000 },
+  { key: 'business_prosperity', label: 'စီးပွားလာဘ်ရွှင် ယတြာ အစီအရင်', defaultFee: 30000 },
+  { key: 'health_protection', label: 'ကျန်းမာရေး / ဘေးဥပဒ်ကင်း ယတြာ', defaultFee: 25000 },
+];
 
 export const BURMESE_DAYS: { key: DayOfWeekBurmese; shorthand: string; label: string; planet: string; number: number; animal: string }[] = [
   { key: 'တနင်္ဂနွေ', shorthand: '၁ နွေ', label: '၁ နွေ', planet: 'နွေ', number: 1, animal: 'ဂဠုန်' },

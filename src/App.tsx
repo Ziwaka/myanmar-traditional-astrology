@@ -56,9 +56,17 @@ import { ForcedPWAInstallBanner } from './components/ForcedPWAInstallBanner';
 import { DatabaseQuotaModal } from './components/DatabaseQuotaModal';
 import { CloudSyncModal } from './components/CloudSyncModal';
 import { CloudSyncReminderBanner } from './components/CloudSyncReminderBanner';
+import { NotificationCenterModal } from './components/NotificationCenterModal';
+import { AppointmentAlertPopup } from './components/AppointmentAlertPopup';
 import { LoginScreen } from './components/LoginScreen';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { getDatabaseQuotaReport } from './utils/databaseQuota';
+import { 
+  checkUpcomingAppointments, 
+  UpcomingAppointmentAlert, 
+  getTodayAppointments, 
+  loadStoredNotifications 
+} from './utils/notifications';
 import { 
   shouldShowSyncReminderBanner, 
   isCloudSyncOverdue, 
@@ -130,6 +138,46 @@ export default function App() {
   const [selectedRecord, setSelectedRecord] = useState<ConsultationRecord | null>(null);
   const [printingRecord, setPrintingRecord] = useState<ConsultationRecord | null>(null);
   const [isUpdatePromptModalOpen, setIsUpdatePromptModalOpen] = useState(false);
+
+  // Notification Center & Real-time Alarm Alert States
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState<boolean>(false);
+  const [activeAlertPopup, setActiveAlertPopup] = useState<UpcomingAppointmentAlert | null>(null);
+  const [notificationRefreshTrigger, setNotificationRefreshTrigger] = useState<number>(0);
+
+  // User-scoped Today's Appointments & Unread Notification Counts
+  const todayAppointments = useMemo(() => {
+    return getTodayAppointments(consultations, currentUser);
+  }, [consultations, currentUser]);
+
+  const unreadNotificationCount = useMemo(() => {
+    const allNotis = loadStoredNotifications();
+    return allNotis.filter(n => !n.isRead && (
+      currentUser.role === 'super_admin' || 
+      currentUser.role === 'admin' || 
+      n.assignedUserId === currentUser.id ||
+      !n.assignedUserId
+    )).length;
+  }, [currentUser, notificationRefreshTrigger]);
+
+  // Periodic Watcher for 30m, 15m, 5m, 0m Consultation Alarms (Every 5 seconds)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    // Run check immediately
+    checkUpcomingAppointments(consultations, currentUser, (alert) => {
+      setActiveAlertPopup(alert);
+      setNotificationRefreshTrigger((prev) => prev + 1);
+    });
+
+    const intervalId = setInterval(() => {
+      checkUpcomingAppointments(consultations, currentUser, (alert) => {
+        setActiveAlertPopup(alert);
+        setNotificationRefreshTrigger((prev) => prev + 1);
+      });
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [consultations, currentUser, isAuthenticated]);
 
   // Check Cloud Version vs Local Version
   const checkCloudVersion = useCallback(async (autoOpenModalOnDiff = false) => {
@@ -564,6 +612,7 @@ export default function App() {
         }}
         onOpenCloudSyncModal={() => setIsCloudSyncModalOpen(true)}
         onOpenDatabaseQuotaModal={() => setIsDatabaseQuotaModalOpen(true)}
+        onOpenNotificationCenter={() => setIsNotificationCenterOpen(true)}
         onOpenNewConsultation={() => {
           setEditingRecord(null);
           setIsFormOpen(true);
@@ -594,6 +643,7 @@ export default function App() {
           }}
           onOpenCloudSyncModal={() => setIsCloudSyncModalOpen(true)}
           onOpenDatabaseQuotaModal={() => setIsDatabaseQuotaModalOpen(true)}
+          onOpenNotificationCenter={() => setIsNotificationCenterOpen(true)}
           onOpenNewConsultation={() => {
             setEditingRecord(null);
             setIsFormOpen(true);
@@ -604,6 +654,8 @@ export default function App() {
           onLogout={handleLogout}
           totalIncomeToday={totalIncomeToday}
           todayCount={todayConsultations.length}
+          unreadNotificationCount={unreadNotificationCount}
+          todayAppointmentsCount={todayAppointments.length}
           cloudVersion={cloudInfo?.version || LOCAL_APP_VERSION}
           isNewVersionAvailable={isNewVersionAvailable}
           storageQuotaPercentage={storageQuotaPercentage}
@@ -821,6 +873,33 @@ export default function App() {
           }}
         />
       )}
+
+      {/* Modal 7: Notification Center Drawer (Today's Schedule & Alerts History) */}
+      <NotificationCenterModal
+        isOpen={isNotificationCenterOpen}
+        onClose={() => setIsNotificationCenterOpen(false)}
+        records={consultations}
+        currentUser={currentUser}
+        onOpenConsultation={(cId) => {
+          const matched = consultations.find(c => c.id === cId);
+          if (matched) {
+            setSelectedRecord(matched);
+          }
+        }}
+        onNotificationsUpdated={() => setNotificationRefreshTrigger(prev => prev + 1)}
+      />
+
+      {/* Modal 8: Interactive Appointment Alert Popup (30m, 15m, 5m, 0m with Chime Sound) */}
+      <AppointmentAlertPopup
+        alert={activeAlertPopup}
+        onClose={() => setActiveAlertPopup(null)}
+        onOpenConsultation={(cId) => {
+          const matched = consultations.find(c => c.id === cId);
+          if (matched) {
+            setSelectedRecord(matched);
+          }
+        }}
+      />
 
       {/* Forced PWA Install Prompt Banner at bottom */}
       <ForcedPWAInstallBanner />

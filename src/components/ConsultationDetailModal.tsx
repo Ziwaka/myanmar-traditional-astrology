@@ -92,8 +92,14 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
   }, [previousAppointments]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-stone-900 border border-amber-500/30 rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+    <div 
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+      style={{
+        paddingTop: 'max(env(safe-area-inset-top, 2.75rem), 2.75rem)',
+        paddingBottom: 'max(env(safe-area-inset-bottom, 1.25rem), 1.25rem)',
+      }}
+    >
+      <div className="bg-stone-900 border border-amber-500/30 rounded-3xl w-full max-w-3xl max-h-[calc(100dvh-5.5rem)] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-800 bg-stone-950/80">

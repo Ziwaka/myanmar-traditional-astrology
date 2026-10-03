@@ -12,7 +12,8 @@ import {
   Wifi,
   WifiOff,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Bell
 } from 'lucide-react';
 import { UserAccount, UserRole } from '../utils/auth';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -35,11 +36,14 @@ interface NavbarProps {
   onOpenVersionModal: () => void;
   onOpenCloudSyncModal?: () => void;
   onOpenDatabaseQuotaModal?: () => void;
+  onOpenNotificationCenter?: () => void;
   onOpenNewConsultation: () => void;
   onOpenNewExpense: () => void;
   onLogout: () => void;
   totalIncomeToday: number;
   todayCount: number;
+  unreadNotificationCount?: number;
+  todayAppointmentsCount?: number;
   cloudVersion?: string;
   isNewVersionAvailable?: boolean;
   storageQuotaPercentage?: number;
@@ -53,11 +57,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenVersionModal,
   onOpenCloudSyncModal,
   onOpenDatabaseQuotaModal,
+  onOpenNotificationCenter,
   onOpenNewConsultation,
   onOpenNewExpense,
   onLogout,
   totalIncomeToday,
   todayCount,
+  unreadNotificationCount = 0,
+  todayAppointmentsCount = 0,
   cloudVersion = '1.3.5',
   isNewVersionAvailable = false,
   storageQuotaPercentage,
@@ -168,6 +175,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               )}
             </div>
+
+            {/* Notification Center Trigger Bell */}
+            {onOpenNotificationCenter && (
+              <button
+                onClick={onOpenNotificationCenter}
+                title="အသိပေးချက် စင်တာ / ယနေ့ ရက်ချိန်းများ (နှိပ်ပါ)"
+                className="relative p-2 rounded-2xl bg-stone-850 hover:bg-stone-800 text-amber-300 border border-amber-500/30 transition cursor-pointer active:scale-95 shrink-0"
+              >
+                <Bell className={`w-5 h-5 ${todayAppointmentsCount > 0 ? 'text-amber-400 animate-pulse' : 'text-stone-300'}`} />
+                {(unreadNotificationCount > 0 || todayAppointmentsCount > 0) && (
+                  <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white shadow-md border-2 border-stone-900">
+                    {unreadNotificationCount > 0 ? unreadNotificationCount : todayAppointmentsCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* + New Consultation Primary Action Button */}
             <button

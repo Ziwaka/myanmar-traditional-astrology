@@ -97,11 +97,31 @@ export interface ConsultationRecord {
   
   recordedBy?: string;         // သွင်းသည့် စက်/တာဝန်ခံ (e.g. ကောင်တာ ၁, ဆရာ့အခန်း)
   updatedBy?: string;          // နောက်ဆုံး ပြင်ဆင်သည့် စက်/တာဝန်ခံ
+  assignedUserId?: string;     // ဟောမည့်သူ/တာဝန်ခံ User ID (e.g. user-super-admin, all)
+  assignedUserName?: string;   // ဟောမည့်သူ အမည် (e.g. ဆရာကြီး Amt)
   deviceId?: string;           // စက် ခွဲခြားသတ်မှတ်မှုကုဒ်
   version?: number;            // Concurrency tracking version counter
 
   createdAt: string;
   updatedAt: string;
+}
+
+export type ReminderCheckpoint = '30_min' | '15_min' | '5_min' | '0_min';
+
+export interface AppNotification {
+  id: string;
+  consultationId: string;
+  customerName: string;
+  readingDateTime: string;
+  checkpoint: ReminderCheckpoint;
+  title: string;
+  message: string;
+  assignedUserId?: string;
+  assignedUserName?: string;
+  createdAt: string;
+  isRead: boolean;
+  phone?: string;
+  serviceCategory?: ServiceCategory;
 }
 
 export interface AmuletCatalogItem {

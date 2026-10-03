@@ -19,7 +19,8 @@ import {
   Wifi,
   WifiOff,
   Users,
-  Activity
+  Activity,
+  Bell
 } from 'lucide-react';
 import { ActiveTab } from './Navbar';
 import { UserAccount, getEffectivePermissions } from '../utils/auth';
@@ -36,6 +37,7 @@ interface SidebarProps {
   onOpenVersionModal: () => void;
   onOpenCloudSyncModal?: () => void;
   onOpenDatabaseQuotaModal?: () => void;
+  onOpenNotificationCenter?: () => void;
   onOpenNewConsultation: () => void;
   onLogout: () => void;
   onClearAllData: () => void;
@@ -55,6 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenVersionModal,
   onOpenCloudSyncModal,
   onOpenDatabaseQuotaModal,
+  onOpenNotificationCenter,
   onOpenNewConsultation,
   onLogout,
   onClearAllData,
@@ -198,19 +201,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          {/* New Consultation CTA Button */}
-          {perms.canAddConsultation && (
+          {/* Notification Center Button */}
+          {onOpenNotificationCenter && (
             <div className="px-3 mb-2">
               <button
                 type="button"
                 onClick={() => {
-                  onOpenNewConsultation();
+                  onOpenNotificationCenter();
                   onClose();
                 }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs shadow-md transition active:scale-95 cursor-pointer"
+                className="w-full flex items-center justify-between py-2.5 px-3.5 rounded-2xl bg-stone-850 hover:bg-stone-800 text-amber-300 border border-amber-500/30 font-bold text-xs shadow transition cursor-pointer active:scale-95"
               >
-                <PlusCircle className="w-4 h-4" />
-                <span>+ ဗေဒင်အသစ်သွင်းရန်</span>
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-amber-400" />
+                  <span>အသိပေးချက် စင်တာ (ယနေ့ ရက်ချိန်းများ)</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-stone-500" />
               </button>
             </div>
           )}

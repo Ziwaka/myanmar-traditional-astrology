@@ -15,28 +15,27 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.5.4';
+export const LOCAL_APP_VERSION = '1.6.1';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
   {
-    version: '1.5.4',
+    version: '1.6.1',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂',
-    title: 'Complete Historical Watat Exception Table (ceMmDateTime Algorithm)',
-    badge: 'Latest Release',
+    title: 'Mobile Safe Area Inset & Dynamic Island / Notch Display Fix',
+    badge: 'UI Optimization',
     changelog: [
-      'မြန်မာနိုင်ငံ သမိုင်းဝင်ပြက္ခဒိန် အကြွင်းဇယားနှင့် ဝါထပ်ကိန်းများ (၁၃၄၄၊ ၁၃၄၅ ဝါထပ်ကိန်းများ အပါအဝင်) အား အပြည့်အစုံ ထည့်သွင်းခြင်း။',
-      '၄-၁၀-၁၉၈၂ (4 October 1982) ရက်စွဲအတွက် "၁၃၄၄ ခု၊ တော်သလင်း လဆုတ် ၂ ရက် (၂ လာ)" နှင့် မဟာဘုတ် "ပုတိ" အဖြစ် မြန်မာပြက္ခဒိန် အစစ်အမှန်နှင့် ၁၀၀% တထပ်တည်း တိကျစွာ တွက်ထုတ်ပြသခြင်း။',
-      '၂၃-၃-၁၉၉၀ (23 March 1990) ရက်စွဲအတွက် "၁၃၅၁ ခု၊ တပေါင်း လဆုတ် ၁၃ ရက် (၆ ကြာ)" နှင့် မဟာဘုတ် "အထွန်း" အဖြစ် ၁၀၀% တထပ်တည်း တိကျစွာ တွက်ထုတ်ပြသခြင်း။'
+      'iPhone Dynamic Island / Notch / Android Status Bar အောက်သို့ Modal Popup များ မရောက်ရှိစေရန် Safe Area Padding (pt-safe) ဖြင့် ချိန်ညှိပြင်ဆင်ပေးခြင်း။',
+      'ဗေဒင်မေးသူ အချက်အလက် စာရင်းသွင်း/ပြင်ဆင်သည့် Form ၏ Header ခလုတ်များအား ဖုန်းမျက်နှာပြင်တွင် သပ်ရပ်စွာ မြင်သာအောင် ပြုပြင်ခြင်း။'
     ]
   },
   {
-    version: '1.5.3',
+    version: '1.6.0',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂',
-    title: 'Precise Waning Moon Formatting (လဆုတ် ၁၃ ရက်) & Editable Myanmar Birth Date Field',
+    title: 'Smart Notification Center & Timed Multi-Interval Appointment Reminders',
     changelog: [
-      'တွက်ချက်ရရှိသော မြန်မာ မွေးရက်စွဲ (myanmarBirthDate) အား လိုအပ်ပါက သုံးစွဲသူစိတ်ကြိုက် တိုက်ရိုက် ပြင်ဆင်ရိုက်ထည့်နိုင်သော Editable Input Field ပြုလုပ်ပေးခြင်း။'
+      'Notification Center ထည့်သွင်းခြင်းနှင့် နာရီဝက်၊ ၁၅ မိနစ်၊ ၅ မိနစ်၊ အချိန်တည့်တည့် သတိပေးချက်များ ထည့်သွင်းခြင်း။'
     ]
   }
 ];

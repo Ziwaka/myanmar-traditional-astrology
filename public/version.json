@@ -1,22 +1,20 @@
 {
-  "version": "1.5.4",
+  "version": "1.6.1",
   "releaseDate": "2026-10-02",
-  "title": "Complete Historical Watat Exception Table (ceMmDateTime Algorithm)",
+  "title": "Mobile Safe Area Inset & Dynamic Island / Notch Display Fix",
   "isCloudAuthoritative": true,
   "changelog": [
-    "မြန်မာနိုင်ငံ သမိုင်းဝင်ပြက္ခဒိန် အကြွင်းဇယားနှင့် ဝါထပ်ကိန်းများ (၁၃၄၄၊ ၁၃၄၅ ဝါထပ်ကိန်းများ အပါအဝင်) အား အပြည့်အစုံ ထည့်သွင်းခြင်း။",
-    "၄-၁၀-၁၉၈၂ (4 October 1982) ရက်စွဲအတွက် '၁၃၄၄ ခု၊ တော်သလင်း လဆုတ် ၂ ရက် (၂ လာ)' နှင့် မဟာဘုတ် 'ပုတိ' အဖြစ် မြန်မာပြက္ခဒိန် အစစ်အမှန်နှင့် ၁၀၀% တထပ်တည်း တိကျစွာ တွက်ထုတ်ပြသခြင်း။",
-    "၂၃-၃-၁၉၉၀ (23 March 1990) ရက်စွဲအတွက် '၁၃၅၁ ခု၊ တပေါင်း လဆုတ် ၁၃ ရက် (၆ ကြာ)' နှင့် မဟာဘုတ် 'အထွန်း' အဖြစ် ၁၀၀% တထပ်တည်း တိကျစွာ တွက်ထုတ်ပြသခြင်း။"
+    "iPhone Dynamic Island / Notch / Android Status Bar အောက်သို့ Modal Popup များ မရောက်ရှိစေရန် Safe Area Padding (pt-safe) ဖြင့် ချိန်ညှိပြင်ဆင်ပေးခြင်း။",
+    "ဗေဒင်မေးသူ အချက်အလက် စာရင်းသွင်း/ပြင်ဆင်သည့် Form ၏ Header ခလုတ်များအား ဖုန်းမျက်နှာပြင်တွင် သပ်ရပ်စွာ မြင်သာအောင် ပြုပြင်ခြင်း။"
   ],
   "history": [
     {
-      "version": "1.5.4",
+      "version": "1.6.1",
       "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၂",
-      "title": "Complete Historical Watat Exception Table (ceMmDateTime Algorithm)",
-      "badge": "Latest Release",
+      "title": "Mobile Safe Area Inset & Dynamic Island / Notch Display Fix",
+      "badge": "UI Optimization",
       "changelog": [
-        "၄-၁၀-၁၉၈၂ အတွက် ၁၃၄၄ ခု၊ တော်သလင်း လဆုတ် ၂ ရက် (၂ လာ) အတိအကျ ပြင်ဆင်ခြင်း",
-        "၂၃-၃-၁၉၉၀ အတွက် ၁၃၅၁ ခု၊ တပေါင်း လဆုတ် ၁၃ ရက် (၆ ကြာ) အတိအကျ ပြင်ဆင်ခြင်း"
+        "Mobile Safe Area Padding (iPhone Dynamic Island / Notch Fix)"
       ]
     }
   ]
