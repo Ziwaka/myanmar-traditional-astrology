@@ -15,11 +15,21 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.8.19';
+export const LOCAL_APP_VERSION = '1.8.20';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
+  {
+    version: '1.8.20',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',
+    title: 'Optimized Image Exports & Removed PDF',
+    badge: 'Exports Fix',
+    changelog: [
+      'ပြေစာကို PNG/JPEG ပုံရိပ်အဖြစ်သိမ်းဆည်းရာတွင် ဖုန်းအချို့၌ RAM Memory မလောက်၍ ဖြစ်ပေါ်တတ်သော Crash/Error ပြဿနာကို သက်သာစေရန် Resolution scale အား ၁.၅ သို့ စနစ်တကျ ချိန်ညှိပေးပြီး၊ ပျက်ကွက်ပါက Auto scale fallback စနစ်ဖြင့် အောင်မြင်အောင် ပြန်လည်ရေးဆွဲသိမ်းဆည်းပေးခြင်း။',
+      'အသုံးနည်းပြီး တက်လာတတ်သော PDF ထုတ်ယူခြင်း (Export PDF) လုပ်ဆောင်ချက်အား ညွှန်ကြားချက်အရ လုံးဝဖြုတ်ပယ်ပေးခြင်း။'
+    ]
+  },
   {
     version: '1.8.19',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
@@ -28,17 +38,6 @@ export const ALL_VERSION_HISTORY: VersionRelease[] = [
     changelog: [
       'ယတြာ ကတ်တလောက်နှင့် အဆောင် ကတ်တလောက်များတွင် သတ်မှတ်ထားသော ပစ္စည်းများအား ပြန်လည်ပြင်ဆင်နိုင်သည့် \'Edit (ပြင်ဆင်ရန်)\' စနစ် အပြည့်အဝ ထည့်သွင်းခြင်း။',
       'ကတ်တလောက်ကတ်ပြားများတွင် \'Edit Icon\' အသစ်ထည့်သွင်းပေးပြီး၊ ၎င်းအား နှိပ်ပါက ယခင်အချက်အလက်ဟောင်းများကို မူလအတိုင်း ဖြည့်သွင်းပေးထားပြီး ပြင်ဆင်ချက်များကို Cloud နှင့် Local Storage နှစ်ဖက်လုံးတွင် စနစ်တကျ Auto-Sync သိမ်းဆည်းပေးခြင်း။'
-    ]
-  },
-  {
-    version: '1.8.18',
-    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'Print Receipt & Customer Card UI Refinements',
-    badge: 'UI Refinements',
-    changelog: [
-      'ဘောက်ချာ (Print Receipt) ထိပ်ရှိ မလိုလားအပ်သော စာသားအပိုများအား ဖျက်ထုတ်ပေးခြင်း။',
-      'ဘောက်ချာရှိ မေးသူအချက်အလက် (Client Profile) များအား ဖုန်းမျက်နှာပြင်ငယ်များတွင် ဘေးဘက်သို့လိပ်မထွက်စေဘဲ ၁ ခုလျှင် ၁ ကြောင်းစီ သန့်ရှင်းသပ်ရပ်စွာ ပြသပေးခြင်း။',
-      'ပင်မစာရင်း ကတ်ပြားများတွင် ဖုန်းနံပါတ် မဖြည့်ထားပါက မလိုလားအပ်သော \'09- (မဖြည့်ရသေး)\' စာသားအား လုံးဝဖျက်သိမ်းကာ ဖုံးကွယ်ပေးခြင်း။'
     ]
   }
 ];

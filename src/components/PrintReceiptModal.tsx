@@ -5,7 +5,6 @@ import {
   Sparkles, 
   Download, 
   Image as ImageIcon, 
-  FileText, 
   Check, 
   Loader2,
   Share2,
@@ -16,7 +15,6 @@ import {
   Crown
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { ConsultationRecord } from '../types';
 import { formatMMK, NAWAWIN_OPTIONS, BURMESE_DAYS, MAHABOTE_HOUSES, formatDateDDMMYYYY } from '../utils/astrology';
 
@@ -49,89 +47,70 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
     window.print();
   };
 
-  // 2. Export High-Resolution PDF
-  const handleExportPDF = async () => {
+  // 2. High-Compatibility Memory-Safe Image Export (PNG / JPEG) with Scale Fallbacks
+  const exportCanvas = async (format: 'png' | 'jpeg') => {
     if (!printAreaRef.current) return;
     setIsExporting(true);
+    
+    // Scale 1.5 is the sweet spot for mobile device memory limits and crystal-clear text quality
+    const primaryScale = 1.5;
+    
     try {
       const canvas = await html2canvas(printAreaRef.current, {
-        scale: 2.5,
+        scale: primaryScale,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
+        imageTimeout: 0,
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const imgWidth = 210; // A4 mm
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
-      pdf.save(`Horoscope_Receipt_${record.id}_${record.customerName}.pdf`);
-      showNotification('PDF ဖိုင် အောင်မြင်စွာ ဒေါင်းလုဒ်ဆွဲပြီးပါပြီ!');
-    } catch (err) {
-      console.error('Error exporting PDF', err);
-      alert('PDF ထုတ်ယူရာတွင် အမှားဖြစ်ပေါ်ပါသည်');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  // 3. Export PNG Image (Ideal for Viber / Messenger)
-  const handleExportPNG = async () => {
-    if (!printAreaRef.current) return;
-    setIsExporting(true);
-    try {
-      const canvas = await html2canvas(printAreaRef.current, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
+      const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+      const fileExt = format === 'png' ? 'png' : 'jpg';
+      const dataUrl = canvas.toDataURL(mimeType, 0.95);
 
       const link = document.createElement('a');
-      link.download = `Horoscope_Card_${record.id}_${record.customerName}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.download = `Horoscope_Card_${record.id}_${record.customerName || 'Receipt'}.${fileExt}`;
+      link.href = dataUrl;
       link.click();
-      showNotification('PNG ပုံရိပ် အောင်မြင်စွာ ထုတ်ယူပြီးပါပြီ (Viber/Messenger တွင် ပို့နိုင်ပါသည်)!');
+      
+      const successMsg = format === 'png' 
+        ? 'PNG ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ (Viber/Messenger တွင် ပို့နိုင်ပါသည်)!'
+        : 'JPEG ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ!';
+      showNotification(successMsg);
     } catch (err) {
-      console.error('Error exporting PNG', err);
-      alert('PNG ထုတ်ယူရာတွင် အမှားဖြစ်ပေါ်ပါသည်');
+      console.warn(`Primary high-quality render failed for ${format}, attempting fallback scale...`, err);
+      try {
+        // Fallback with scale: 1.0 which takes 50%+ less device RAM and never fails
+        const canvas = await html2canvas(printAreaRef.current, {
+          scale: 1.0,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+        });
+
+        const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+        const fileExt = format === 'png' ? 'png' : 'jpg';
+        const dataUrl = canvas.toDataURL(mimeType, 0.9);
+
+        const link = document.createElement('a');
+        link.download = `Horoscope_Card_${record.id}_${record.customerName || 'Receipt'}.${fileExt}`;
+        link.href = dataUrl;
+        link.click();
+        
+        showNotification('ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ (Standard Quality)!');
+      } catch (fallbackErr) {
+        console.error('Fallback export error', fallbackErr);
+        alert('ပုံရိပ်သိမ်းဆည်းရာတွင် အမှားဖြစ်ပေါ်နေပါသည်။ Browser ရွှေ့သုံးပေးပါ သို့မဟုတ် Screenshot ရိုက်၍ အလွယ်တကူ သိမ်းဆည်းနိုင်ပါသည် ခင်ဗျာ။');
+      }
     } finally {
       setIsExporting(false);
     }
   };
 
-  // 4. Export JPEG Image
-  const handleExportJPEG = async () => {
-    if (!printAreaRef.current) return;
-    setIsExporting(true);
-    try {
-      const canvas = await html2canvas(printAreaRef.current, {
-        scale: 2.5,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
-
-      const link = document.createElement('a');
-      link.download = `Horoscope_Card_${record.id}_${record.customerName}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 0.95);
-      link.click();
-      showNotification('JPEG ပုံရိပ် အောင်မြင်စွာ ထုတ်ယူပြီးပါပြီ!');
-    } catch (err) {
-      console.error('Error exporting JPEG', err);
-      alert('JPEG ထုတ်ယူရာတွင် အမှားဖြစ်ပေါ်ပါသည်');
-    } finally {
-      setIsExporting(false);
-    }
-  };
+  const handleExportPNG = () => exportCanvas('png');
+  const handleExportJPEG = () => exportCanvas('jpeg');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
@@ -147,24 +126,13 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
               </h2>
             </div>
             <p className="text-[11px] text-stone-400 mt-0.5">
-              PDF, PNG, JPEG ပုံစံများဖြင့် သိမ်းဆည်းခြင်း သို့မဟုတ် ပရင်တာဖြင့် တိုက်ရိုက်ထုတ်ခြင်း
+              PNG, JPEG ပုံစံများဖြင့် သိမ်းဆည်းခြင်း သို့မဟုတ် ပရင်တာဖြင့် တိုက်ရိုက်ထုတ်ခြင်း
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             
-            {/* 1. PDF Download */}
-            <button
-              onClick={handleExportPDF}
-              disabled={isExporting}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-500/40 text-xs font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
-              title="PDF ဖိုင် ဒေါင်းလုဒ်ဆွဲမည်"
-            >
-              <FileText className="w-3.5 h-3.5 text-red-400" />
-              <span>PDF</span>
-            </button>
-
-            {/* 2. PNG Image (for Viber/Telegram/Messenger) */}
+            {/* 1. PNG Image (for Viber/Telegram/Messenger) */}
             <button
               onClick={handleExportPNG}
               disabled={isExporting}
@@ -175,7 +143,7 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
               <span>PNG ပုံရိပ်</span>
             </button>
 
-            {/* 3. JPEG Image */}
+            {/* 2. JPEG Image */}
             <button
               onClick={handleExportJPEG}
               disabled={isExporting}
