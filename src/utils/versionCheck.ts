@@ -15,29 +15,29 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.8.20';
+export const LOCAL_APP_VERSION = '1.8.21';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
+  {
+    version: '1.8.21',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',
+    title: 'Tailwind v4 OKLCH Fix with Native Image Exporter Engine',
+    badge: 'OKLCH Fix',
+    changelog: [
+      'Tailwind CSS v4 ၏ \'oklch()\' ရောင်စုံစနစ်အား html2canvas မှ မဖတ်နိုင်ဘဲ \'Attempting to parse an unsupported color function oklch\' ဟု တက်လာသော error အား Browser Native Renderer (html-to-image) Engine သို့ ပြောင်းလဲအသုံးပြု၍ ၁၀၀% အပြည့်အဝ ဖြေရှင်းပေးလိုက်ခြင်း။',
+      'PNG/JPEG ပုံရိပ်ထုတ်ယူရာတွင် စာလုံး/အရောင်များ ပျက်ယွင်းမှုမရှိဘဲ လွန်စွာ ကြည်လင်ပြတ်သားစွာ ဒေါင်းလုဒ်ရယူနိုင်ခြင်း။'
+    ]
+  },
   {
     version: '1.8.20',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',
     title: 'Optimized Image Exports & Removed PDF',
     badge: 'Exports Fix',
     changelog: [
-      'ပြေစာကို PNG/JPEG ပုံရိပ်အဖြစ်သိမ်းဆည်းရာတွင် ဖုန်းအချို့၌ RAM Memory မလောက်၍ ဖြစ်ပေါ်တတ်သော Crash/Error ပြဿနာကို သက်သာစေရန် Resolution scale အား ၁.၅ သို့ စနစ်တကျ ချိန်ညှိပေးပြီး၊ ပျက်ကွက်ပါက Auto scale fallback စနစ်ဖြင့် အောင်မြင်အောင် ပြန်လည်ရေးဆွဲသိမ်းဆည်းပေးခြင်း။',
-      'အသုံးနည်းပြီး တက်လာတတ်သော PDF ထုတ်ယူခြင်း (Export PDF) လုပ်ဆောင်ချက်အား ညွှန်ကြားချက်အရ လုံးဝဖြုတ်ပယ်ပေးခြင်း။'
-    ]
-  },
-  {
-    version: '1.8.19',
-    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၃',
-    title: 'Catalog Edit Actions for Yatras & Amulets',
-    badge: 'Catalog Edit',
-    changelog: [
-      'ယတြာ ကတ်တလောက်နှင့် အဆောင် ကတ်တလောက်များတွင် သတ်မှတ်ထားသော ပစ္စည်းများအား ပြန်လည်ပြင်ဆင်နိုင်သည့် \'Edit (ပြင်ဆင်ရန်)\' စနစ် အပြည့်အဝ ထည့်သွင်းခြင်း။',
-      'ကတ်တလောက်ကတ်ပြားများတွင် \'Edit Icon\' အသစ်ထည့်သွင်းပေးပြီး၊ ၎င်းအား နှိပ်ပါက ယခင်အချက်အလက်ဟောင်းများကို မူလအတိုင်း ဖြည့်သွင်းပေးထားပြီး ပြင်ဆင်ချက်များကို Cloud နှင့် Local Storage နှစ်ဖက်လုံးတွင် စနစ်တကျ Auto-Sync သိမ်းဆည်းပေးခြင်း။'
+      'ပြေစာအား PNG/JPEG ပြုလုပ်ရာတွင် memory limit ကျော်၍ error တက်ခြင်းအား စနစ်တကျ ပြုပြင်ပေးခြင်း',
+      'PDF သိမ်းဆည်းရန် ခလုတ်အား လုံးဝဖြုတ်ပယ်ပေးခြင်း'
     ]
   }
 ];

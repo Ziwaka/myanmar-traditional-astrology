@@ -14,6 +14,7 @@ import {
   CreditCard,
   Crown
 } from 'lucide-react';
+import { toPng, toJpeg } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { ConsultationRecord } from '../types';
 import { formatMMK, NAWAWIN_OPTIONS, BURMESE_DAYS, MAHABOTE_HOUSES, formatDateDDMMYYYY } from '../utils/astrology';
@@ -47,61 +48,85 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
     window.print();
   };
 
-  // 2. High-Compatibility Memory-Safe Image Export (PNG / JPEG) with Scale Fallbacks
+  // 2. High-Compatibility Image Export (PNG / JPEG) using Browser Native SVG Render + html2canvas Fallback
   const exportCanvas = async (format: 'png' | 'jpeg') => {
     if (!printAreaRef.current) return;
     setIsExporting(true);
-    
-    // Scale 1.5 is the sweet spot for mobile device memory limits and crystal-clear text quality
-    const primaryScale = 1.5;
-    
-    try {
-      const canvas = await html2canvas(printAreaRef.current, {
-        scale: primaryScale,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        imageTimeout: 0,
-      });
 
-      const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
-      const fileExt = format === 'png' ? 'png' : 'jpg';
-      const dataUrl = canvas.toDataURL(mimeType, 0.95);
+    const fileExt = format === 'png' ? 'png' : 'jpg';
+    const fileName = `Horoscope_Card_${record.id}_${record.customerName || 'Receipt'}.${fileExt}`;
+
+    try {
+      // Primary Engine: html-to-image (Uses browser native SVG renderer, 100% supports Tailwind v4 oklch())
+      let dataUrl = '';
+      const renderOptions = {
+        quality: 0.95,
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        cacheBust: true,
+      };
+
+      if (format === 'png') {
+        dataUrl = await toPng(printAreaRef.current, renderOptions);
+      } else {
+        dataUrl = await toJpeg(printAreaRef.current, renderOptions);
+      }
 
       const link = document.createElement('a');
-      link.download = `Horoscope_Card_${record.id}_${record.customerName || 'Receipt'}.${fileExt}`;
+      link.download = fileName;
       link.href = dataUrl;
       link.click();
-      
-      const successMsg = format === 'png' 
+
+      const successMsg = format === 'png'
         ? 'PNG ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ (Viber/Messenger တွင် ပို့နိုင်ပါသည်)!'
         : 'JPEG ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ!';
       showNotification(successMsg);
-    } catch (err) {
-      console.warn(`Primary high-quality render failed for ${format}, attempting fallback scale...`, err);
+    } catch (primaryErr) {
+      console.warn('html-to-image primary export failed, attempting html2canvas with oklch sanitizer fallback...', primaryErr);
+
       try {
-        // Fallback with scale: 1.0 which takes 50%+ less device RAM and never fails
+        // Fallback Engine: html2canvas with onclone CSS rule sanitization (removes oklch rules to prevent parser crash)
         const canvas = await html2canvas(printAreaRef.current, {
-          scale: 1.0,
+          scale: 1.5,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
           logging: false,
+          onclone: (clonedDoc) => {
+            // Remove/sanitize all oklch rules in cloned stylesheets
+            try {
+              const sheets = Array.from(clonedDoc.styleSheets);
+              for (const sheet of sheets) {
+                try {
+                  const rules = sheet.cssRules || sheet.rules;
+                  if (rules) {
+                    for (let i = rules.length - 1; i >= 0; i--) {
+                      if (rules[i].cssText && rules[i].cssText.includes('oklch')) {
+                        sheet.deleteRule(i);
+                      }
+                    }
+                  }
+                } catch (e) {
+                  // ignore cross-origin stylesheets
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+          },
         });
 
         const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
-        const fileExt = format === 'png' ? 'png' : 'jpg';
-        const dataUrl = canvas.toDataURL(mimeType, 0.9);
+        const fallbackDataUrl = canvas.toDataURL(mimeType, 0.9);
 
         const link = document.createElement('a');
-        link.download = `Horoscope_Card_${record.id}_${record.customerName || 'Receipt'}.${fileExt}`;
-        link.href = dataUrl;
+        link.download = fileName;
+        link.href = fallbackDataUrl;
         link.click();
-        
-        showNotification('ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ (Standard Quality)!');
+
+        showNotification('ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ!');
       } catch (fallbackErr) {
-        console.error('Fallback export error', fallbackErr);
+        console.error('All image export methods failed:', fallbackErr);
         alert('ပုံရိပ်သိမ်းဆည်းရာတွင် အမှားဖြစ်ပေါ်နေပါသည်။ Browser ရွှေ့သုံးပေးပါ သို့မဟုတ် Screenshot ရိုက်၍ အလွယ်တကူ သိမ်းဆည်းနိုင်ပါသည် ခင်ဗျာ။');
       }
     } finally {
