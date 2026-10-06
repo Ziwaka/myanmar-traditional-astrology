@@ -96,7 +96,7 @@ export function getTodayAppointments(records: ConsultationRecord[], user: UserAc
   const todayStr = new Date().toISOString().split('T')[0];
   
   return records.filter((r) => {
-    if (r.status === 'cancelled') return false;
+    if (r.status === 'cancelled' || r.status === 'completed' || r.taskDone) return false;
     
     // Check if readingDateTime is today
     const readingDateStr = r.readingDateTime ? r.readingDateTime.split('T')[0] : '';

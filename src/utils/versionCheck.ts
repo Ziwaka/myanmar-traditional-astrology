@@ -15,11 +15,42 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.8.22';
+export const LOCAL_APP_VERSION = '1.8.25';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
+  {
+    version: '1.8.25',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',
+    title: 'Complete Hide of Completed Appointments in Notification Center',
+    badge: 'Noti Fix v2',
+    changelog: [
+      'ယနေ့ရက်ချိန်းများစာရင်းမှ ဟောပြီးစီးသူများကို လုံးဝစစ်ထုတ်ဖယ်ရှားပေးခြင်း',
+      'ပြီးစီးသွားသောရက်ချိန်းများ အသိပေးချက်စင်တာမှ တိုက်ရိုက်ပျောက်ကွယ်သွားစေခြင်း'
+    ]
+  },
+  {
+    version: '1.8.24',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',
+    title: 'Auto-Clear Completed Task Notifications',
+    badge: 'Noti Fix',
+    changelog: [
+      'ဟောကြားပြီးစီးကြောင်း သတ်မှတ်လိုက်သည်နှင့် အဆိုပါမေးသူ၏ Notification များ အလိုအလျောက် ဖျက်သိမ်းခြင်း',
+      'Notification Badge အမှတ်အသားများ ချက်ချင်း ပျောက်ကွယ်သွားစေရန် ချက်ဆက်ခြင်း'
+    ]
+  },
+  {
+    version: '1.8.23',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',
+    title: 'Grouped & Collapsible Customer Lists (ဟောရန်ကျန် vs ဟောပြီး)',
+    badge: 'List UI',
+    changelog: [
+      'ဟောရန်ကျန် နှင့် ဟောပြီး ကို အုပ်စုခွဲခြားပြသခြင်း',
+      'ဟောရန်ကျန်အား ဦးစားပေးအဖြစ် အပေါ်ဆုံးတွင် ထားရှိခြင်း',
+      'ချုံ့/ချဲ့ (Collapse/Expand) ပြုလုပ်နိုင်သော Toggle ခလုတ် ထည့်သွင်းခြင်း'
+    ]
+  },
   {
     version: '1.8.22',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',

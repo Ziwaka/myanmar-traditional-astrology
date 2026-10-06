@@ -66,7 +66,8 @@ import {
   checkUpcomingAppointments, 
   UpcomingAppointmentAlert, 
   getTodayAppointments, 
-  loadStoredNotifications 
+  loadStoredNotifications,
+  saveStoredNotifications
 } from './utils/notifications';
 import { 
   shouldShowSyncReminderBanner, 
@@ -423,6 +424,14 @@ export default function App() {
     saveConsultations(updated);
     refreshDatabaseQuota();
 
+    // Clear notifications if marked completed
+    if (finalRecord.taskDone || finalRecord.status === 'completed') {
+      const allNotis = loadStoredNotifications();
+      const cleanedNotis = allNotis.filter(n => n.consultationId !== finalRecord.id);
+      saveStoredNotifications(cleanedNotis);
+      setNotificationRefreshTrigger(prev => prev + 1);
+    }
+
     // Push to Google Cloud Firestore (deep merge)
     saveConsultationToCloud(finalRecord).catch(e => console.warn('Cloud save error:', e));
 
@@ -466,7 +475,14 @@ export default function App() {
     refreshDatabaseQuota();
 
     if (updatedTarget) {
-      saveConsultationToCloud(updatedTarget).catch(e => console.warn('Cloud update error:', e));
+      const target = updatedTarget as ConsultationRecord;
+      if (target.taskDone || target.status === 'completed') {
+        const allNotis = loadStoredNotifications();
+        const cleanedNotis = allNotis.filter(n => n.consultationId !== id);
+        saveStoredNotifications(cleanedNotis);
+        setNotificationRefreshTrigger(prev => prev + 1);
+      }
+      saveConsultationToCloud(target).catch(e => console.warn('Cloud update error:', e));
     }
 
     if (selectedRecord && selectedRecord.id === id) {
