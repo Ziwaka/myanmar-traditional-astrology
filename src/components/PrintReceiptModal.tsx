@@ -4,17 +4,15 @@ import {
   Printer, 
   Sparkles, 
   Download, 
-  Image as ImageIcon, 
   Check, 
   Loader2,
-  Share2,
   Calendar,
   User,
   Flame,
   CreditCard,
   Crown
 } from 'lucide-react';
-import { toPng, toJpeg } from 'html-to-image';
+import { toJpeg } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { ConsultationRecord } from '../types';
 import { formatMMK, NAWAWIN_OPTIONS, BURMESE_DAYS, MAHABOTE_HOUSES, formatDateDDMMYYYY } from '../utils/astrology';
@@ -37,10 +35,17 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
   const serviceName = record.serviceCategory || 'ဗေဒင်ဟောကြားခြင်း';
   const dayInfo = BURMESE_DAYS.find(d => d.key === record.birthDayOfWeek);
   const mahaboteInfo = MAHABOTE_HOUSES.find(m => m.key === record.mahabote);
+  const hasYatra = Boolean((record.yatraFee && record.yatraFee > 0) || (record.navawinFee && record.navawinFee > 0));
 
   const showNotification = (msg: string) => {
     setExportSuccessMsg(msg);
     setTimeout(() => setExportSuccessMsg(''), 3000);
+  };
+
+  // Helper to format currency numbers without repeated 'ကျပ်'
+  const formatKyatsOnly = (amount: number | undefined | null): string => {
+    if (amount === undefined || amount === null) return '၀';
+    return new Intl.NumberFormat('my-MM').format(amount);
   };
 
   // 1. Direct Browser Print
@@ -48,41 +53,30 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
     window.print();
   };
 
-  // 2. High-Compatibility Image Export (PNG / JPEG) using Browser Native SVG Render + html2canvas Fallback
-  const exportCanvas = async (format: 'png' | 'jpeg') => {
+  // 2. High-Compatibility JPEG Image Export using Browser Native SVG Render + html2canvas Fallback
+  const handleExportJPEG = async () => {
     if (!printAreaRef.current) return;
     setIsExporting(true);
 
-    const fileExt = format === 'png' ? 'png' : 'jpg';
-    const fileName = `Horoscope_Card_${record.id}_${record.customerName || 'Receipt'}.${fileExt}`;
+    const fileName = `Horoscope_Receipt_${record.id}_${record.customerName || 'Receipt'}.jpg`;
 
     try {
       // Primary Engine: html-to-image (Uses browser native SVG renderer, 100% supports Tailwind v4 oklch())
-      let dataUrl = '';
-      const renderOptions = {
+      const dataUrl = await toJpeg(printAreaRef.current, {
         quality: 0.95,
         pixelRatio: 2,
         backgroundColor: '#ffffff',
         cacheBust: true,
-      };
-
-      if (format === 'png') {
-        dataUrl = await toPng(printAreaRef.current, renderOptions);
-      } else {
-        dataUrl = await toJpeg(printAreaRef.current, renderOptions);
-      }
+      });
 
       const link = document.createElement('a');
       link.download = fileName;
       link.href = dataUrl;
       link.click();
 
-      const successMsg = format === 'png'
-        ? 'PNG ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ (Viber/Messenger တွင် ပို့နိုင်ပါသည်)!'
-        : 'JPEG ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ!';
-      showNotification(successMsg);
+      showNotification('JPEG ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ!');
     } catch (primaryErr) {
-      console.warn('html-to-image primary export failed, attempting html2canvas with oklch sanitizer fallback...', primaryErr);
+      console.warn('html-to-image export failed, attempting html2canvas with oklch sanitizer fallback...', primaryErr);
 
       try {
         // Fallback Engine: html2canvas with onclone CSS rule sanitization (removes oklch rules to prevent parser crash)
@@ -93,7 +87,6 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
           backgroundColor: '#ffffff',
           logging: false,
           onclone: (clonedDoc) => {
-            // Remove/sanitize all oklch rules in cloned stylesheets
             try {
               const sheets = Array.from(clonedDoc.styleSheets);
               for (const sheet of sheets) {
@@ -116,15 +109,13 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
           },
         });
 
-        const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
-        const fallbackDataUrl = canvas.toDataURL(mimeType, 0.9);
-
+        const fallbackDataUrl = canvas.toDataURL('image/jpeg', 0.9);
         const link = document.createElement('a');
         link.download = fileName;
         link.href = fallbackDataUrl;
         link.click();
 
-        showNotification('ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ!');
+        showNotification('JPEG ပုံရိပ် အောင်မြင်စွာ ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ!');
       } catch (fallbackErr) {
         console.error('All image export methods failed:', fallbackErr);
         alert('ပုံရိပ်သိမ်းဆည်းရာတွင် အမှားဖြစ်ပေါ်နေပါသည်။ Browser ရွှေ့သုံးပေးပါ သို့မဟုတ် Screenshot ရိုက်၍ အလွယ်တကူ သိမ်းဆည်းနိုင်ပါသည် ခင်ဗျာ။');
@@ -133,9 +124,6 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
       setIsExporting(false);
     }
   };
-
-  const handleExportPNG = () => exportCanvas('png');
-  const handleExportJPEG = () => exportCanvas('jpeg');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
@@ -151,35 +139,24 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
               </h2>
             </div>
             <p className="text-[11px] text-stone-400 mt-0.5">
-              PNG, JPEG ပုံစံများဖြင့် သိမ်းဆည်းခြင်း သို့မဟုတ် ပရင်တာဖြင့် တိုက်ရိုက်ထုတ်ခြင်း
+              JPEG ပုံစံဖြင့် သိမ်းဆည်းခြင်း သို့မဟုတ် ပရင်တာဖြင့် တိုက်ရိုက်ထုတ်ခြင်း
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             
-            {/* 1. PNG Image (for Viber/Telegram/Messenger) */}
-            <button
-              onClick={handleExportPNG}
-              disabled={isExporting}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-500/40 text-xs font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
-              title="PNG ပုံရိပ်အဖြစ် ထုတ်ယူမည် (Viber တွင် ပို့ရန် အထူးသင့်လျော်ပါသည်)"
-            >
-              <ImageIcon className="w-3.5 h-3.5 text-purple-400" />
-              <span>PNG ပုံရိပ်</span>
-            </button>
-
-            {/* 2. JPEG Image */}
+            {/* 1. JPEG Image */}
             <button
               onClick={handleExportJPEG}
               disabled={isExporting}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-950/80 hover:bg-blue-900 text-blue-200 border border-blue-500/40 text-xs font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-950/80 hover:bg-blue-900 text-blue-200 border border-blue-500/40 text-xs font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
               title="JPEG ပုံရိပ်အဖြစ် ထုတ်ယူမည်"
             >
               <Download className="w-3.5 h-3.5 text-blue-400" />
-              <span>JPEG</span>
+              <span>JPEG သိမ်းဆည်းရန်</span>
             </button>
 
-            {/* 4. Browser Direct Print */}
+            {/* 2. Browser Direct Print */}
             <button
               onClick={handlePrint}
               disabled={isExporting}
@@ -237,22 +214,26 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
               </div>
             </div>
 
-            {/* Section 1: မေးသူ အချက်အလက်များ (Client Profile) */}
+            {/* Section 1: မေးသူ အချက်အလက်များ */}
             <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-300/80 space-y-2.5">
               <div className="flex items-center justify-between border-b border-amber-200/80 pb-1.5">
                 <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-amber-700" />
-                  <span>၁။ မေးသူနှင့် ရက်ချိန်း အချက်အလက် (Client Profile)</span>
-                </span>
-                <span className="text-xs font-mono font-bold text-amber-900 bg-amber-200/60 px-2 py-0.5 rounded border border-amber-300">
-                  ID: {record.id}
+                  <span>၁။ မေးသူနှင့် ရက်ချိန်း အချက်အလက်</span>
                 </span>
               </div>
 
-              <div className="flex flex-col gap-y-2.5 text-xs text-stone-800">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-amber-200/40 pb-1.5">
-                  <span className="text-stone-500 text-[11px] font-medium">ဗေဒင်မေးသူ အမည်:</span>
-                  <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex flex-col gap-y-2 text-xs text-stone-800">
+                <div className="flex items-center justify-between gap-2 border-b border-amber-200/40 pb-1.5">
+                  <span className="text-stone-500 text-[11px] font-medium whitespace-nowrap">ဗေဒင်မေးသူ ID:</span>
+                  <strong className="font-mono text-amber-950 font-bold bg-amber-200/60 px-2 py-0.5 rounded border border-amber-300 inline-block text-xs">
+                    {record.id}
+                  </strong>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 border-b border-amber-200/40 pb-1.5">
+                  <span className="text-stone-500 text-[11px] font-medium whitespace-nowrap">ဗေဒင်မေးသူ အမည်:</span>
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
                     <strong className="text-stone-950 text-sm">{record.customerName || 'မမေးသူ'}</strong>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-900">
                       {record.consultationMode === 'remote' ? '🌐 Remote (အွန်လိုင်း)' : '🏢 In Person (လူကိုယ်တိုင်)'}
@@ -260,33 +241,33 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                   </div>
                 </div>
 
-                {record.phone && record.phone !== '-' && record.phone !== '09-' && (
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-amber-200/40 pb-1.5">
-                    <span className="text-stone-500 text-[11px] font-medium">ဖုန်းနံပါတ် / Social:</span>
+                {record.phone && record.phone.trim() !== '' && record.phone.trim() !== '-' && record.phone.trim() !== '0' && record.phone.trim() !== '09-' ? (
+                  <div className="flex items-center justify-between gap-2 border-b border-amber-200/40 pb-1.5">
+                    <span className="text-stone-500 text-[11px] font-medium whitespace-nowrap">ဖုန်းနံပါတ် / Social:</span>
                     <strong className="font-mono text-stone-900">
                       {record.phone}
-                      {record.socialAccountName ? ` (${record.socialPlatform || 'Social'}: {record.socialAccountName})` : ''}
+                      {record.socialAccountName ? ` (${record.socialPlatform || 'Social'}: ${record.socialAccountName})` : ''}
                     </strong>
                   </div>
-                )}
+                ) : null}
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-amber-200/40 pb-1.5">
-                  <span className="text-stone-500 text-[11px] font-medium">ဘိုကင်ရက်စွဲ:</span>
+                <div className="flex items-center justify-between gap-2 border-b border-amber-200/40 pb-1.5">
+                  <span className="text-stone-500 text-[11px] font-medium whitespace-nowrap">ဘိုကင်ရက်စွဲ:</span>
                   <span className="font-mono text-stone-900">{formatDateDDMMYYYY(record.bookingDate)}</span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-0.5">
-                  <span className="text-stone-500 text-[11px] font-medium">ဟောကြားသည့် ရက်စွဲနှင့် အချိန်:</span>
+                <div className="flex items-center justify-between gap-2 pb-0.5">
+                  <span className="text-stone-500 text-[11px] font-medium whitespace-nowrap">ဟောကြားသည့် ရက်စွဲနှင့် အချိန်:</span>
                   <strong className="font-mono text-amber-950">{formatDateDDMMYYYY(record.readingDateTime)}</strong>
                 </div>
               </div>
             </div>
 
-            {/* Section 2: ကျသင့်ငွေစာရင်း (Itemized Financial Statement) */}
+            {/* Section 2: ကျသင့်ငွေစာရင်း */}
             <div className="space-y-2">
               <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
                 <CreditCard className="w-3.5 h-3.5 text-stone-600" />
-                <span>၂။ ဝန်ဆောင်ခနှင့် အဆောင်ပစ္စည်း ကျသင့်ငွေများ (Financial Breakdown)</span>
+                <span>၂။ ဝန်ဆောင်ခနှင့် အဆောင်ပစ္စည်း ကျသင့်ငွေများ</span>
               </span>
 
               <table className="w-full text-xs border-collapse border border-stone-200 rounded-lg overflow-hidden">
@@ -295,7 +276,7 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                     <th className="py-2 px-3 text-left font-bold w-10">စဉ်</th>
                     <th className="py-2 px-3 text-left font-bold">အမျိုးအမည် / ဝန်ဆောင်မှု</th>
                     <th className="py-2 px-3 text-center font-bold w-20">အရေအတွက်</th>
-                    <th className="py-2 px-3 text-right font-bold w-28">ကျသင့်ငွေ</th>
+                    <th className="py-2 px-3 text-right font-bold w-28">ကျသင့်ငွေ (ကျပ်)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-200">
@@ -304,11 +285,11 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                     <td className="py-2 px-3 text-stone-500">၁</td>
                     <td className="py-2 px-3 font-semibold text-stone-900">{serviceName}</td>
                     <td className="py-2 px-3 text-center">၁ ကြိမ်</td>
-                    <td className="py-2 px-3 text-right font-mono font-bold">{formatMMK(record.serviceFee)}</td>
+                    <td className="py-2 px-3 text-right font-mono font-bold">{formatKyatsOnly(record.serviceFee)}</td>
                   </tr>
 
                   {/* Yatra Fee */}
-                  {((record.yatraFee && record.yatraFee > 0) || (record.navawinFee && record.navawinFee > 0)) && (
+                  {hasYatra ? (
                     <tr className="bg-amber-50/40">
                       <td className="py-2 px-3 text-stone-500">၂</td>
                       <td className="py-2 px-3 font-semibold text-amber-950">
@@ -316,57 +297,63 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                       </td>
                       <td className="py-2 px-3 text-center">၁ မှု</td>
                       <td className="py-2 px-3 text-right font-mono font-bold text-amber-900">
-                        {formatMMK(record.yatraFee || record.navawinFee)}
+                        {formatKyatsOnly(record.yatraFee || record.navawinFee)}
                       </td>
                     </tr>
-                  )}
+                  ) : null}
 
                   {/* Purchased Amulets */}
-                  {record.amulets && record.amulets.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="py-2 px-3 text-stone-500">{3 + idx}</td>
-                      <td className="py-2 px-3 text-stone-900">
-                        <span className="font-semibold">{item.name}</span>
-                        <span className="text-[10px] text-stone-500 ml-1.5">({item.category})</span>
-                      </td>
-                      <td className="py-2 px-3 text-center font-mono">{item.quantity} ခု</td>
-                      <td className="py-2 px-3 text-right font-mono font-bold">{formatMMK(item.price * item.quantity)}</td>
-                    </tr>
-                  ))}
+                  {record.amulets && record.amulets.length > 0 ? record.amulets.map((item, idx) => {
+                    const rowNumber = (hasYatra ? 2 : 1) + idx + 1;
+                    const rowNumberMy = new Intl.NumberFormat('my-MM').format(rowNumber);
+                    return (
+                      <tr key={idx}>
+                        <td className="py-2 px-3 text-stone-500">{rowNumberMy}</td>
+                        <td className="py-2 px-3 text-stone-900">
+                          <span className="font-semibold">{item.name}</span>
+                          <span className="text-[10px] text-stone-500 ml-1.5">({item.category})</span>
+                        </td>
+                        <td className="py-2 px-3 text-center font-mono">{item.quantity} ခု</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold">{formatKyatsOnly(item.price * item.quantity)}</td>
+                      </tr>
+                    );
+                  }) : null}
                 </tbody>
                 <tfoot>
                   <tr className="bg-stone-100 font-bold border-t-2 border-stone-300">
-                    <td colSpan={3} className="py-2 px-3 text-right text-stone-900">စုစုပေါင်း ကျသင့်ငွေ (Total):</td>
-                    <td className="py-2 px-3 text-right font-mono text-amber-900 text-sm">{formatMMK(record.totalAmount)}</td>
+                    <td colSpan={3} className="py-2 px-3 text-right text-stone-900">စုစုပေါင်း ကျသင့်ငွေ:</td>
+                    <td className="py-2 px-3 text-right font-mono text-amber-900 text-sm">{formatKyatsOnly(record.totalAmount)}</td>
                   </tr>
-                  <tr className="text-xs font-semibold text-emerald-800 bg-emerald-50/40">
-                    <td colSpan={3} className="py-1.5 px-3 text-right">
-                      ပေးချေပြီးငွေ ({record.paymentMethod.toUpperCase()}):
-                    </td>
-                    <td className="py-1.5 px-3 text-right font-mono">{formatMMK(record.paidAmount)}</td>
-                  </tr>
-                  {record.totalAmount > record.paidAmount && (
-                    <tr className="text-xs font-semibold text-rose-800 bg-rose-50/40">
-                      <td colSpan={3} className="py-1.5 px-3 text-right">ကျန်ငွေ (Remaining):</td>
-                      <td className="py-1.5 px-3 text-right font-mono">{formatMMK(record.totalAmount - record.paidAmount)}</td>
+                  {record.paidAmount && record.paidAmount > 0 ? (
+                    <tr className="text-xs font-semibold text-emerald-800 bg-emerald-50/40">
+                      <td colSpan={3} className="py-1.5 px-3 text-right">
+                        ပေးချေပြီးငွေ ({record.paymentMethod ? record.paymentMethod.toUpperCase() : 'CASH'}):
+                      </td>
+                      <td className="py-1.5 px-3 text-right font-mono">{formatKyatsOnly(record.paidAmount)}</td>
                     </tr>
-                  )}
+                  ) : null}
+                  {record.totalAmount > (record.paidAmount || 0) && (record.paidAmount || 0) > 0 ? (
+                    <tr className="text-xs font-semibold text-rose-800 bg-rose-50/40">
+                      <td colSpan={3} className="py-1.5 px-3 text-right">ကျန်ငွေ:</td>
+                      <td className="py-1.5 px-3 text-right font-mono">{formatKyatsOnly(record.totalAmount - (record.paidAmount || 0))}</td>
+                    </tr>
+                  ) : null}
                 </tfoot>
               </table>
             </div>
 
-            {/* Section 3: ယတြာနှင့် အစီအရင် ညွှန်ကြားချက်များ (Yatra Ritual Instructions) */}
-            {(record.yatraInstructions || record.yatraName) && (
+            {/* Section 3: ယတြာနှင့် အစီအရင် ညွှန်ကြားချက်များ */}
+            {(record.yatraInstructions || record.yatraName) ? (
               <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-300/80 space-y-1.5">
                 <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
                   <Flame className="w-3.5 h-3.5 text-amber-600" />
-                  <span>၃။ ဆောင်ရွက်ရမည့် ယတြာနှင့် အစီအရင် ညွှန်ကြားချက်များ (Yatra Instructions)</span>
+                  <span>၃။ ဆောင်ရွက်ရမည့် ယတြာနှင့် အစီအရင် ညွှန်ကြားချက်များ</span>
                 </span>
-                {record.yatraName && (
+                {record.yatraName ? (
                   <p className="text-xs font-bold text-amber-900">
                     ယတြာအမည်: {record.yatraName}
                   </p>
-                )}
+                ) : null}
                 {record.yatraInstructions ? (
                   <p className="text-xs text-stone-800 whitespace-pre-wrap leading-relaxed">
                     {record.yatraInstructions}
@@ -377,36 +364,29 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                   </p>
                 )}
               </div>
-            )}
+            ) : null}
 
-            {/* Section 4: ဆရာ့ဟောကိန်း အပြည့်အစုံ (Astrological Predictions) */}
-            {record.predictions && (
+            {/* Section 4: ဆရာ့ဟောကိန်း အပြည့်အစုံ */}
+            {record.predictions ? (
               <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-1.5">
                 <span className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                  <span>၄။ ဆရာ့ဟောကိန်းနှင့် အကြံပြုချက်များ (Astrological Predictions)</span>
+                  <span>၄။ ဆရာ့ဟောကိန်းနှင့် အကြံပြုချက်များ</span>
                 </span>
                 <p className="text-xs text-stone-800 whitespace-pre-wrap leading-relaxed">
                   {record.predictions}
                 </p>
               </div>
-            )}
+            ) : null}
 
-            {/* Section 5: Traditional Blessing & Signature Footer */}
-            <div className="pt-4 border-t-2 border-stone-200 flex items-end justify-between text-xs text-stone-600">
-              <div className="space-y-1">
-                <p className="font-bold text-amber-900 text-xs">
-                  “ကံပွင့် လာဘ်ရွှင် စီးပွားတိုးတက် ဘေးရန်ကင်းရှင်းပြီး လိုရာဆန္ဒ ပြည့်ဝပါစေ”
-                </p>
-                <p className="text-[10px] text-stone-500">
-                  မှတ်ချက်: ယတြာပြုလုပ်ရာတွင် အချိန်အခါနှင့် စိတ်သဒ္ဓါ အဓိကဖြစ်ပါသည်။
-                </p>
-              </div>
-
-              <div className="text-center shrink-0">
-                <div className="h-10 border-b border-stone-400 w-36 mx-auto mb-1"></div>
-                <p className="font-semibold text-stone-800 text-xs">ဗေဒင်ပညာရှင် လက်မှတ်</p>
-              </div>
+            {/* Section 5: Traditional Blessing Footer */}
+            <div className="pt-4 border-t-2 border-stone-200 text-xs text-stone-600 space-y-1">
+              <p className="font-bold text-amber-900 text-xs">
+                “ကံပွင့် လာဘ်ရွှင် စီးပွားတိုးတက် ဘေးရန်ကင်းရှင်းပြီး လိုရာဆန္ဒ ပြည့်ဝပါစေ”
+              </p>
+              <p className="text-[10px] text-stone-500">
+                မှတ်ချက်: ယတြာပြုလုပ်ရာတွင် အချိန်အခါနှင့် စိတ်သဒ္ဓါ အဓိကဖြစ်ပါသည်။
+              </p>
             </div>
 
           </div>

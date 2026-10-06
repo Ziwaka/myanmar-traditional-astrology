@@ -15,11 +15,23 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.8.21';
+export const LOCAL_APP_VERSION = '1.8.22';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
+  {
+    version: '1.8.22',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',
+    title: 'Receipt Layout Refinements & Clean Single-Line Format',
+    badge: 'Receipt UI',
+    changelog: [
+      'ပြေစာတွင် PNG အား ဖြုတ်ပြီး JPEG သာ သုံးရန် ထားရှိခြင်း',
+      'Client Profile နှင့် Financial Breakdown အင်္ဂလိပ်စာသားများ ဖြုတ်ပယ်ခြင်း',
+      'ID အား ၁ ကြောင်း သီးသန့်ထားပြီး ကျသင့်ငွေ (ကျပ်) ခေါင်းစဉ်သို့ ပြောင်းလဲခြင်း',
+      'မလိုအပ်သော 0 ပိုနေခြင်းများနှင့် ပညာရှင်လက်မှတ်နေရာ ဖြုတ်ပယ်ခြင်း'
+    ]
+  },
   {
     version: '1.8.21',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',

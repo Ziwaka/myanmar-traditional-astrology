@@ -1,13 +1,30 @@
 {
-  "version": "1.8.21",
+  "version": "1.8.22",
   "releaseDate": "2026-10-06",
-  "title": "Tailwind v4 OKLCH Fix with Native Image Exporter Engine",
+  "title": "Receipt Layout Refinements & Clean Single-Line Format",
   "isCloudAuthoritative": true,
   "changelog": [
-    "Tailwind CSS v4 ၏ 'oklch()' ရောင်စုံစနစ်အား html2canvas မှ မဖတ်နိုင်ဘဲ 'Attempting to parse an unsupported color function oklch' ဟု တက်လာသော error အား Browser Native Renderer (html-to-image) Engine သို့ ပြောင်းလဲအသုံးပြု၍ ၁၀၀% အပြည့်အဝ ဖြေရှင်းပေးလိုက်ခြင်း။",
-    "PNG/JPEG ပုံရိပ်ထုတ်ယူရာတွင် စာလုံး/အရောင်များ ပျက်ယွင်းမှုမရှိဘဲ လွန်စွာ ကြည်လင်ပြတ်သားစွာ ဒေါင်းလုဒ်ရယူနိုင်ခြင်း။"
+    "ပြေစာ (Print Receipt) တွင် PNG Format အား လုံးဝဖြုတ်ပယ်၍ JPEG နှင့် Print သာ ထားရှိပေးခြင်း။",
+    "မေးသူနှင့် ရက်ချိန်းအချက်အလက် (Client Profile) မှ အင်္ဂလိပ်စာသား ဖြုတ်ပယ်ပေးခြင်း။",
+    "ဗေဒင်မေးသူ ID အား ၁ ကြောင်း သပ်သပ် သီးသန့် အပေါ်ဆုံးတွင် ထားရှိပေးခြင်း။",
+    "(Financial Breakdown) အင်္ဂလိပ်စာသား ဖြုတ်ပယ်ပေးခြင်း။",
+    "ဇယားခေါင်းစဉ်တွင် 'ကျသင့်ငွေ (ကျပ်)' ဟု ပြောင်းလဲပြီး အောက်ရှိ ငွေပမာဏများတွင် ထပ်ခါတလဲလဲ မဖြစ်စေရန် 'ကျပ်' စာသားများ ဖြုတ်ပယ်ပေးခြင်း။",
+    "ပြေစာဇယားအတွင်း မလိုလားအပ်သော 0 ပိုနေခြင်းများ (ယတြာမပါချိန် သို့မဟုတ် ငွေအပြည့်ရှင်းပြီးချိန် ကျန်ငွေ ၀ ပြခြင်း) အား ရှင်းလင်းပေးခြင်း။",
+    "ဗေဒင်ပညာရှင်လက်မှတ် အပိုင်းအား လုံးဝဖြုတ်ပယ်ပေးခြင်း။"
   ],
   "history": [
+    {
+      "version": "1.8.22",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
+      "title": "Receipt Layout Refinements & Clean Single-Line Format",
+      "badge": "Receipt UI",
+      "changelog": [
+        "ပြေစာတွင် PNG အား ဖြုတ်ပြီး JPEG သာ သုံးရန် ထားရှိခြင်း",
+        "Client Profile နှင့် Financial Breakdown အင်္ဂလိပ်စာသားများ ဖြုတ်ပယ်ခြင်း",
+        "ID အား ၁ ကြောင်း သီးသန့်ထားပြီး ကျသင့်ငွေ (ကျပ်) ခေါင်းစဉ်သို့ ပြောင်းလဲခြင်း",
+        "မလိုအပ်သော 0 ပိုနေခြင်းများနှင့် ပညာရှင်လက်မှတ်နေရာ ဖြုတ်ပယ်ခြင်း"
+      ]
+    },
     {
       "version": "1.8.21",
       "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
@@ -16,16 +33,6 @@
       "changelog": [
         "Tailwind v4 oklch() color parsing error အား Native Engine ဖြင့် ၁၀၀% ပြုပြင်ပေးခြင်း",
         "PNG/JPEG ဘောက်ချာပုံရိပ်များအား ပိုမို ကြည်လင်ပြတ်သားစွာ ဒေါင်းလုဒ်ဆွဲနိုင်ခြင်း"
-      ]
-    },
-    {
-      "version": "1.8.20",
-      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
-      "title": "Optimized Image Exports & Removed PDF",
-      "badge": "Exports Fix",
-      "changelog": [
-        "ပြေစာအား PNG/JPEG ပြုလုပ်ရာတွင် memory limit ကျော်၍ error တက်ခြင်းအား စနစ်တကျ ပြုပြင်ပေးခြင်း",
-        "PDF သိမ်းဆည်းရန် ခလုတ်အား လုံးဝဖြုတ်ပယ်ပေးခြင်း"
       ]
     }
   ]
