@@ -16,7 +16,11 @@ import {
   ChevronRight,
   PieChart,
   LineChart as LineChartIcon,
-  BarChart3
+  BarChart3,
+  Percent,
+  Layers,
+  Activity,
+  ArrowRightLeft
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -24,11 +28,16 @@ import {
   Area,
   LineChart,
   Line,
+  BarChart,
+  Bar,
+  ComposedChart,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend
+  Legend,
+  Cell,
+  ReferenceLine
 } from 'recharts';
 import { ConsultationRecord, ExpenseRecord } from '../types';
 import { formatMMK } from '../utils/astrology';
@@ -42,7 +51,8 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
   consultations,
   expenses,
 }) => {
-  const [trendMetricView, setTrendMetricView] = useState<'all' | 'income' | 'profit' | 'expense'>('all');
+  const [trendMetricView, setTrendMetricView] = useState<'all' | 'income_growth' | 'income' | 'profit' | 'expense' | 'growth'>('all');
+  const [earningsChartMode, setEarningsChartMode] = useState<'category' | 'comparison'>('category');
 
   // Extract all distinct year-months from both datasets
   const availableMonths = useMemo(() => {
@@ -67,12 +77,12 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
   // Filter records for selected month (or all)
   const currentMonthConsultations = useMemo(() => {
     if (selectedMonth === 'all') return consultations;
-    return consultations.filter(c => (c.readingDateTime || c.bookingDate).startsWith(selectedMonth));
+    return consultations.filter(c => (c.readingDateTime || c.bookingDate || '').startsWith(selectedMonth));
   }, [consultations, selectedMonth]);
 
   const currentMonthExpenses = useMemo(() => {
     if (selectedMonth === 'all') return expenses;
-    return expenses.filter(e => e.date.startsWith(selectedMonth));
+    return expenses.filter(e => (e.date || '').startsWith(selectedMonth));
   }, [expenses, selectedMonth]);
 
   // Aggregate Calculations
@@ -121,7 +131,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
     };
   }, [currentMonthConsultations, currentMonthExpenses]);
 
-  // Generate 12-Month Financial Trend Data Series for Recharts
+  // Generate 12-Month Financial Trend Data Series with MoM Growth Rate for Recharts Dual-Axis
   const last12MonthsTrend = useMemo(() => {
     const data: {
       key: string;
@@ -132,6 +142,8 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
       netProfit: number;
       readingsCount: number;
       yatraCount: number;
+      growthRate: number;
+      prevIncome: number;
     }[] = [];
 
     const now = new Date();
@@ -156,6 +168,16 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
       const readingsCount = monthConsultations.length;
       const yatraCount = monthConsultations.filter(c => c.yatraEnabled || c.yatraName || (c.yatraFee && c.yatraFee > 0) || (c.navawinType && c.navawinType !== 'none')).length;
 
+      // Month-over-Month (MoM) Growth calculation
+      const prevD = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+      const prevKey = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}`;
+      const prevConsultations = consultations.filter(c => (c.readingDateTime || c.bookingDate || '').startsWith(prevKey));
+      const prevIncome = prevConsultations.reduce((sum, c) => sum + (c.totalAmount || 0), 0);
+
+      const growthRate = prevIncome > 0
+        ? Number((((income - prevIncome) / prevIncome) * 100).toFixed(1))
+        : (income > 0 ? 100 : 0);
+
       data.push({
         key,
         monthLabel,
@@ -165,19 +187,24 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
         netProfit,
         readingsCount,
         yatraCount,
+        growthRate,
+        prevIncome,
       });
     }
 
     return data;
   }, [consultations, expenses, selectedMonth]);
 
-  // 12-Month Summary Stats
+  // 12-Month Summary Stats & MoM Highlights
   const trendStats = useMemo(() => {
     const total12Income = last12MonthsTrend.reduce((sum, m) => sum + m.income, 0);
     const total12Expense = last12MonthsTrend.reduce((sum, m) => sum + m.expense, 0);
     const total12Profit = total12Income - total12Expense;
     const avgMonthlyIncome = Math.round(total12Income / 12);
     const peakMonth = [...last12MonthsTrend].sort((a, b) => b.income - a.income)[0];
+    const latestMonthTrend = last12MonthsTrend[last12MonthsTrend.length - 1];
+    const latestGrowthRate = latestMonthTrend ? latestMonthTrend.growthRate : 0;
+    const highestGrowthMonth = [...last12MonthsTrend].sort((a, b) => b.growthRate - a.growthRate)[0];
 
     return {
       total12Income,
@@ -185,8 +212,104 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
       total12Profit,
       avgMonthlyIncome,
       peakMonth,
+      latestGrowthRate,
+      highestGrowthMonth,
     };
   }, [last12MonthsTrend]);
+
+  // Category Breakdown for 'Monthly Earnings Overview' (Total Income vs Total Expenses by Category)
+  const monthlyEarningsCategoryData = useMemo(() => {
+    const list: {
+      category: string;
+      displayName: string;
+      shortName: string;
+      type: 'income' | 'expense';
+      incomeAmount: number;
+      expenseAmount: number;
+      amount: number;
+      fill: string;
+      percentage: number;
+    }[] = [];
+
+    // 1. Income Categories
+    if (metrics.serviceRevenue > 0) {
+      list.push({
+        category: 'income_astrology',
+        displayName: 'ဗေဒင်ဟောခ (Readings)',
+        shortName: 'ဗေဒင်ဟောခ',
+        type: 'income',
+        incomeAmount: metrics.serviceRevenue,
+        expenseAmount: 0,
+        amount: metrics.serviceRevenue,
+        fill: '#10b981', // emerald-500
+        percentage: metrics.totalIncome > 0 ? Math.round((metrics.serviceRevenue / metrics.totalIncome) * 100) : 0,
+      });
+    }
+    if (metrics.yatraRevenue > 0) {
+      list.push({
+        category: 'income_yatra',
+        displayName: 'ယတြာအစီအရင် (Yatra)',
+        shortName: 'ယတြာခ',
+        type: 'income',
+        incomeAmount: metrics.yatraRevenue,
+        expenseAmount: 0,
+        amount: metrics.yatraRevenue,
+        fill: '#f59e0b', // amber-500
+        percentage: metrics.totalIncome > 0 ? Math.round((metrics.yatraRevenue / metrics.totalIncome) * 100) : 0,
+      });
+    }
+    if (metrics.amuletsRevenue > 0) {
+      list.push({
+        category: 'income_amulets',
+        displayName: 'အဆောင်ပစ္စည်း POS (Amulets)',
+        shortName: 'အဆောင်ရောင်းရငွေ',
+        type: 'income',
+        incomeAmount: metrics.amuletsRevenue,
+        expenseAmount: 0,
+        amount: metrics.amuletsRevenue,
+        fill: '#a855f7', // purple-500
+        percentage: metrics.totalIncome > 0 ? Math.round((metrics.amuletsRevenue / metrics.totalIncome) * 100) : 0,
+      });
+    }
+
+    // 2. Expense Categories
+    const expCatMap = new Map<string, number>();
+    currentMonthExpenses.forEach((e) => {
+      const cat = e.category || 'အထွေထွေစရိတ်';
+      expCatMap.set(cat, (expCatMap.get(cat) || 0) + (e.amount || 0));
+    });
+
+    const expenseColors = ['#f43f5e', '#fb7185', '#e11d48', '#f87171', '#fda4af', '#be123c', '#e11d48'];
+    let cIdx = 0;
+    expCatMap.forEach((amt, catName) => {
+      list.push({
+        category: `exp_${catName}`,
+        displayName: `${catName} (အသုံးစရိတ်)`,
+        shortName: catName,
+        type: 'expense',
+        incomeAmount: 0,
+        expenseAmount: amt,
+        amount: amt,
+        fill: expenseColors[cIdx % expenseColors.length],
+        percentage: metrics.totalExpense > 0 ? Math.round((amt / metrics.totalExpense) * 100) : 0,
+      });
+      cIdx++;
+    });
+
+    return list;
+  }, [metrics, currentMonthExpenses]);
+
+  // Side-by-Side Overall Comparison Chart Data
+  const monthlyTotalComparisonData = useMemo(() => {
+    return [
+      {
+        name: 'လစဉ် စုစုပေါင်း',
+        income: metrics.totalIncome,
+        expense: metrics.totalExpense,
+        netProfit: metrics.netProfit,
+      }
+    ];
+  }, [metrics]);
 
   // Format month name for display
   const formatMonthLabel = (m: string) => {
@@ -446,19 +569,269 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
         </div>
       </div>
 
-      {/* 12-Month Financial Progress & Income Trend Line Chart (Recharts) */}
+      {/* FEATURE 1: Monthly Earnings Overview Chart (Total Income vs Total Expenses by Category for Current Month) */}
       <div className="bg-stone-850 p-6 rounded-2xl border border-stone-800 shadow-xl space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-emerald-500/20 text-amber-300 border border-amber-500/30">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-amber-500/20 text-emerald-300 border border-emerald-500/30">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-stone-100 flex items-center gap-2">
+                <span>လစဉ် ဝင်ငွေနှင့် အသုံးစရိတ် ကဏ္ဍအလိုက် သုံးသပ်ချက် ဇယား (Monthly Earnings Overview)</span>
+              </h3>
+              <p className="text-xs text-stone-400 mt-0.5">
+                {formatMonthLabel(selectedMonth)} အတွက် ဝင်ငွေအမျိုးအစားများနှင့် အသုံးစရိတ်ကဏ္ဍများ အသေးစိတ် နှိုင်းယှဉ်ချက်
+              </p>
+            </div>
+          </div>
+
+          {/* View Toggle Mode */}
+          <div className="flex items-center gap-1.5 bg-stone-900 p-1 rounded-xl border border-stone-800 self-start sm:self-auto text-xs">
+            <button
+              type="button"
+              onClick={() => setEarningsChartMode('category')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+                earningsChartMode === 'category'
+                  ? 'bg-amber-500 text-stone-950 font-bold shadow'
+                  : 'text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>ကဏ္ဍအလိုက် (By Category)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setEarningsChartMode('comparison')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+                earningsChartMode === 'comparison'
+                  ? 'bg-amber-500 text-stone-950 font-bold shadow'
+                  : 'text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              <span>ဝင်ငွေ vs ထွက်ငွေ နှိုင်းယှဉ်</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Category Badges Summary */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-stone-900/60 p-3 rounded-xl border border-emerald-900/30">
+            <span className="text-[11px] text-stone-400 block">စုစုပေါင်း ဝင်ငွေ</span>
+            <span className="text-base font-bold font-mono text-emerald-400">
+              {formatMMK(metrics.totalIncome)}
+            </span>
+          </div>
+          <div className="bg-stone-900/60 p-3 rounded-xl border border-rose-900/30">
+            <span className="text-[11px] text-stone-400 block">စုစုပေါင်း အသုံးစရိတ်</span>
+            <span className="text-base font-bold font-mono text-rose-400">
+              {formatMMK(metrics.totalExpense)}
+            </span>
+          </div>
+          <div className="bg-stone-900/60 p-3 rounded-xl border border-amber-900/30">
+            <span className="text-[11px] text-stone-400 block">အသားတင် ကျန်ငွေ</span>
+            <span className={`text-base font-bold font-mono ${metrics.netProfit >= 0 ? 'text-amber-300' : 'text-rose-400'}`}>
+              {formatMMK(metrics.netProfit)}
+            </span>
+          </div>
+          <div className="bg-stone-900/60 p-3 rounded-xl border border-stone-800">
+            <span className="text-[11px] text-stone-400 block">အဓိက ဝင်ငွေရလမ်း</span>
+            <span className="text-xs sm:text-sm font-bold text-stone-200 block truncate">
+              {metrics.serviceRevenue >= metrics.yatraRevenue && metrics.serviceRevenue >= metrics.amuletsRevenue
+                ? `ဗေဒင်ဟောခ (${metrics.totalIncome > 0 ? Math.round((metrics.serviceRevenue / metrics.totalIncome) * 100) : 0}%)`
+                : metrics.yatraRevenue >= metrics.amuletsRevenue
+                ? `ယတြာအစီအရင် (${metrics.totalIncome > 0 ? Math.round((metrics.yatraRevenue / metrics.totalIncome) * 100) : 0}%)`
+                : `အဆောင် POS (${metrics.totalIncome > 0 ? Math.round((metrics.amuletsRevenue / metrics.totalIncome) * 100) : 0}%)`
+              }
+            </span>
+          </div>
+        </div>
+
+        {/* Recharts Monthly Earnings Overview BarChart */}
+        <div className="w-full h-80 pt-2">
+          {monthlyEarningsCategoryData.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-stone-500 text-xs space-y-2">
+              <BarChart3 className="w-8 h-8 opacity-40" />
+              <span>ယခုလအတွက် ဝင်ငွေနှင့် အသုံးစရိတ် မှတ်တမ်း မရှိသေးပါ။</span>
+            </div>
+          ) : earningsChartMode === 'category' ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={monthlyEarningsCategoryData}
+                margin={{ top: 15, right: 15, left: -5, bottom: 25 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#292524" vertical={false} />
+                <XAxis
+                  dataKey="shortName"
+                  stroke="#a8a29e"
+                  fontSize={11}
+                  tickLine={false}
+                  interval={0}
+                  angle={-15}
+                  textAnchor="end"
+                  height={45}
+                  axisLine={{ stroke: '#44403c' }}
+                />
+                <YAxis
+                  stroke="#78716c"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={{ stroke: '#44403c' }}
+                  tickFormatter={(val) => {
+                    if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+                    if (val >= 100000) return `${(val / 100000).toFixed(0)}L`;
+                    if (val >= 1000) return `${(val / 1000).toFixed(0)}K`;
+                    return `${val}`;
+                  }}
+                />
+                <Tooltip
+                  content={({ active, payload }: any) => {
+                    if (active && payload && payload.length) {
+                      const item = payload[0].payload;
+                      const isIncome = item.type === 'income';
+                      return (
+                        <div className="bg-stone-900/95 border border-stone-700 p-3 rounded-xl shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[210px]">
+                          <div className="font-bold text-stone-200 border-b border-stone-800 pb-1 flex items-center justify-between">
+                            <span>{item.displayName}</span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              isIncome ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                            }`}>
+                              {isIncome ? 'ဝင်ငွေ (Income)' : 'အသုံးစရိတ် (Expense)'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center pt-0.5">
+                            <span className="text-stone-400">ပမာဏ:</span>
+                            <span className={`font-mono font-bold ${isIncome ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {formatMMK(item.amount)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-[11px] text-stone-400">
+                            <span>{isIncome ? 'စုစုပေါင်း ဝင်ငွေ၏:' : 'စုစုပေါင်း စရိတ်၏:'}</span>
+                            <span className="font-bold text-amber-300">{item.percentage}%</span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar
+                  dataKey="amount"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={55}
+                >
+                  {monthlyEarningsCategoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={monthlyTotalComparisonData}
+                margin={{ top: 15, right: 20, left: 0, bottom: 10 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#292524" vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  stroke="#a8a29e"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={{ stroke: '#44403c' }}
+                />
+                <YAxis
+                  stroke="#78716c"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={{ stroke: '#44403c' }}
+                  tickFormatter={(val) => {
+                    if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+                    if (val >= 100000) return `${(val / 100000).toFixed(0)}L`;
+                    if (val >= 1000) return `${(val / 1000).toFixed(0)}K`;
+                    return `${val}`;
+                  }}
+                />
+                <Tooltip
+                  content={({ active, payload }: any) => {
+                    if (active && payload && payload.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-stone-900/95 border border-amber-500/40 p-3 rounded-xl shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[220px]">
+                          <div className="font-bold text-amber-200 border-b border-stone-800 pb-1">
+                            {formatMonthLabel(selectedMonth)} နှိုင်းယှဉ်ချက်
+                          </div>
+                          <div className="flex justify-between items-center text-emerald-400">
+                            <span>ဝင်ငွေ (Total Income):</span>
+                            <span className="font-mono font-bold">{formatMMK(d.income)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-rose-400">
+                            <span>ထွက်ငွေ (Total Expenses):</span>
+                            <span className="font-mono font-bold">{formatMMK(d.expense)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-amber-300 font-bold pt-1 border-t border-stone-800">
+                            <span>အသားတင် အမြတ်:</span>
+                            <span className="font-mono">{formatMMK(d.netProfit)}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  wrapperStyle={{ paddingBottom: '10px', fontSize: '11px' }}
+                  formatter={(value) => {
+                    if (value === 'income') return <span className="text-emerald-400">စုစုပေါင်း ဝင်ငွေ</span>;
+                    if (value === 'expense') return <span className="text-rose-400">စုစုပေါင်း အသုံးစရိတ်</span>;
+                    if (value === 'netProfit') return <span className="text-amber-400">အသားတင် အမြတ်</span>;
+                    return value;
+                  }}
+                />
+                <Bar dataKey="income" name="income" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={60} />
+                <Bar dataKey="expense" name="expense" fill="#f43f5e" radius={[6, 6, 0, 0]} maxBarSize={60} />
+                <Bar dataKey="netProfit" name="netProfit" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={60} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Category Color Legend Strip */}
+        <div className="flex flex-wrap items-center gap-3 pt-2 text-xs border-t border-stone-800">
+          <span className="text-stone-400 font-medium">ဝင်ငွေကဏ္ဍများ:</span>
+          <span className="flex items-center gap-1.5 text-stone-300">
+            <span className="w-3 h-3 rounded bg-emerald-500 inline-block" /> ဗေဒင်ဟောခ
+          </span>
+          <span className="flex items-center gap-1.5 text-stone-300">
+            <span className="w-3 h-3 rounded bg-amber-500 inline-block" /> ယတြာအစီအရင်
+          </span>
+          <span className="flex items-center gap-1.5 text-stone-300">
+            <span className="w-3 h-3 rounded bg-purple-500 inline-block" /> အဆောင်ပစ္စည်း POS
+          </span>
+          <span className="text-stone-500">|</span>
+          <span className="text-stone-400 font-medium">အသုံးစရိတ်ကဏ္ဍများ:</span>
+          <span className="flex items-center gap-1.5 text-stone-300">
+            <span className="w-3 h-3 rounded bg-rose-500 inline-block" /> အထွေထွေ/ဝယ်ယူ/လစာ စရိတ်များ
+          </span>
+        </div>
+      </div>
+
+      {/* FEATURE 2: 12-Month Financial Progress & Dual-Axis MoM Income Growth Trend Chart (Recharts) */}
+      <div className="bg-stone-850 p-6 rounded-2xl border border-stone-800 shadow-xl space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-sky-500/20 text-sky-300 border border-sky-500/30">
               <LineChartIcon className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-base font-bold text-stone-100 flex items-center gap-2">
-                <span>လွန်ခဲ့သော ၁၂ လ ဘဏ္ဍာရေးနှင့် ဝင်ငွေ တိုးတက်မှု လမ်းကြောင်း (12-Month Financial Trend)</span>
+                <span>လွန်ခဲ့သော ၁၂ လ ဘဏ္ဍာရေးနှင့် ဝင်ငွေ တိုးတက်မှု လမ်းကြောင်း (Dual-Axis MoM Growth Trend)</span>
               </h3>
               <p className="text-xs text-stone-400 mt-0.5">
-                လစဉ် ဝင်ငွေ၊ အသုံးစရိတ် နှင့် အသားတင်အမြတ်ငွေ စီးဆင်းမှု မျဉ်းကွေးဇယား (Monthly Income & Financial Trend Chart)
+                လစဉ် ဝင်ငွေ (MMK) နှင့် လအလိုက် ဝင်ငွေ တိုးတက်မှုနှုန်း Month-over-Month (MoM %) ပူးတွဲဖော်ပြသော မျဉ်းကွေးဇယား
               </p>
             </div>
           </div>
@@ -478,6 +851,17 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => setTrendMetricView('income_growth')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                trendMetricView === 'income_growth'
+                  ? 'bg-sky-500 text-stone-950 font-bold shadow'
+                  : 'text-stone-400 hover:text-sky-300'
+              }`}
+            >
+              ဝင်ငွေ & MoM Growth
+            </button>
+            <button
+              type="button"
               onClick={() => setTrendMetricView('income')}
               className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
                 trendMetricView === 'income'
@@ -485,7 +869,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                   : 'text-stone-400 hover:text-emerald-300'
               }`}
             >
-              ဝင်ငွေ
+              ဝင်ငွေသီးသန့်
             </button>
             <button
               type="button"
@@ -527,9 +911,12 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
             </span>
           </div>
           <div className="bg-stone-900/60 p-3 rounded-xl border border-stone-800">
-            <span className="text-[11px] text-stone-400 block">၁၂ လ ပျမ်းမျှ လစဉ်ဝင်ငွေ</span>
-            <span className="text-base sm:text-lg font-bold font-mono text-amber-300">
-              {formatMMK(trendStats.avgMonthlyIncome)}
+            <span className="text-[11px] text-stone-400 block">လတ်တလော MoM Growth</span>
+            <span className={`text-base sm:text-lg font-bold font-mono flex items-center gap-1 ${
+              trendStats.latestGrowthRate >= 0 ? 'text-sky-400' : 'text-rose-400'
+            }`}>
+              {trendStats.latestGrowthRate >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+              {trendStats.latestGrowthRate > 0 ? `+${trendStats.latestGrowthRate}%` : `${trendStats.latestGrowthRate}%`}
             </span>
           </div>
           <div className="bg-stone-900/60 p-3 rounded-xl border border-stone-800">
@@ -542,25 +929,27 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
           </div>
         </div>
 
-        {/* Recharts Line / Area Chart Container */}
-        <div className="w-full h-72 sm:h-80 pt-2">
+        {/* Recharts Dual-Axis ComposedChart Container */}
+        <div className="w-full h-80 sm:h-96 pt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={last12MonthsTrend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <ComposedChart data={last12MonthsTrend} margin={{ top: 15, right: 20, left: -10, bottom: 0 }}>
               <defs>
-                <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="incomeAreaGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
                   <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
                 </linearGradient>
-                <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="profitAreaGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.35} />
                   <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
                 </linearGradient>
-                <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="expenseAreaGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.25} />
                   <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#292524" vertical={false} />
+              
+              {/* X-Axis */}
               <XAxis
                 dataKey="monthLabel"
                 stroke="#78716c"
@@ -568,7 +957,10 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                 tickLine={false}
                 axisLine={{ stroke: '#44403c' }}
               />
+
+              {/* Primary Y-Axis (Left) - Currency MMK */}
               <YAxis
+                yAxisId="left"
                 stroke="#78716c"
                 fontSize={11}
                 tickLine={false}
@@ -580,12 +972,28 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                   return `${val}`;
                 }}
               />
+
+              {/* Secondary Y-Axis (Right) - Growth Rate % */}
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                stroke="#38bdf8"
+                fontSize={11}
+                tickLine={false}
+                axisLine={{ stroke: '#0284c7' }}
+                tickFormatter={(val) => `${val > 0 ? `+${val}` : val}%`}
+              />
+
+              {/* Zero Reference Line for MoM Growth Rate */}
+              <ReferenceLine yAxisId="right" y={0} stroke="#44403c" strokeDasharray="3 3" />
+
               <Tooltip
                 content={({ active, payload }: any) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
+                    const isPositive = data.growthRate >= 0;
                     return (
-                      <div className="bg-stone-900/95 border border-amber-500/50 p-3 rounded-xl shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[200px]">
+                      <div className="bg-stone-900/95 border border-sky-500/40 p-3.5 rounded-xl shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[220px]">
                         <div className="font-bold text-amber-200 border-b border-stone-800 pb-1 flex items-center justify-between">
                           <span>{data.fullLabel}</span>
                           <span className="text-[10px] text-stone-400 font-mono">({data.key})</span>
@@ -608,7 +1016,16 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                           </span>
                           <span className="font-mono font-bold">{formatMMK(data.netProfit)}</span>
                         </div>
-                        <div className="flex justify-between items-center text-stone-400 text-[11px] pt-1">
+                        
+                        {/* Dual-Axis MoM Highlight in Tooltip */}
+                        <div className={`flex justify-between items-center pt-1 border-t border-stone-800 font-bold ${isPositive ? 'text-sky-400' : 'text-rose-400'}`}>
+                          <span className="flex items-center gap-1">
+                            <Activity className="w-3.5 h-3.5" /> MoM တိုးတက်မှုနှုန်း:
+                          </span>
+                          <span className="font-mono">{isPositive ? `+${data.growthRate}%` : `${data.growthRate}%`}</span>
+                        </div>
+
+                        <div className="flex justify-between items-center text-stone-400 text-[11px] pt-0.5">
                           <span>ဧည့်သည်/ယတြာ:</span>
                           <span className="font-medium text-stone-300">{data.readingsCount} ဦး / {data.yatraCount} မှု</span>
                         </div>
@@ -618,44 +1035,55 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                   return null;
                 }}
               />
+
               <Legend
                 verticalAlign="top"
                 align="right"
                 iconType="circle"
                 wrapperStyle={{ paddingBottom: '12px', fontSize: '11px' }}
                 formatter={(value) => {
-                  if (value === 'income') return <span className="text-emerald-400">ဝင်ငွေ (Income)</span>;
+                  if (value === 'income') return <span className="text-emerald-400">ဝင်ငွေ (Income - MMK)</span>;
                   if (value === 'netProfit') return <span className="text-amber-400">အသားတင်အမြတ် (Net Profit)</span>;
                   if (value === 'expense') return <span className="text-rose-400">အသုံးစရိတ် (Expense)</span>;
+                  if (value === 'growthRate') return <span className="text-sky-400 font-semibold">လစဉ် တိုးတက်မှု (MoM Growth %)</span>;
                   return value;
                 }}
               />
-              {(trendMetricView === 'all' || trendMetricView === 'income') && (
+
+              {/* Left Axis: Income Area */}
+              {(trendMetricView === 'all' || trendMetricView === 'income' || trendMetricView === 'income_growth') && (
                 <Area
+                  yAxisId="left"
                   type="monotone"
                   dataKey="income"
                   name="income"
                   stroke="#10b981"
                   strokeWidth={2.5}
                   fillOpacity={1}
-                  fill="url(#incomeGradient)"
+                  fill="url(#incomeAreaGradient)"
                   activeDot={{ r: 6, fill: '#10b981', stroke: '#064e3b', strokeWidth: 2 }}
                 />
               )}
+
+              {/* Left Axis: Net Profit Area */}
               {(trendMetricView === 'all' || trendMetricView === 'profit') && (
                 <Area
+                  yAxisId="left"
                   type="monotone"
                   dataKey="netProfit"
                   name="netProfit"
                   stroke="#f59e0b"
                   strokeWidth={2}
                   fillOpacity={1}
-                  fill="url(#profitGradient)"
+                  fill="url(#profitAreaGradient)"
                   activeDot={{ r: 5, fill: '#f59e0b', stroke: '#78350f', strokeWidth: 2 }}
                 />
               )}
+
+              {/* Left Axis: Expense Area */}
               {(trendMetricView === 'all' || trendMetricView === 'expense') && (
                 <Area
+                  yAxisId="left"
                   type="monotone"
                   dataKey="expense"
                   name="expense"
@@ -663,11 +1091,25 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                   strokeWidth={2}
                   strokeDasharray="4 4"
                   fillOpacity={1}
-                  fill="url(#expenseGradient)"
+                  fill="url(#expenseAreaGradient)"
                   activeDot={{ r: 5, fill: '#f43f5e', stroke: '#881337', strokeWidth: 2 }}
                 />
               )}
-            </AreaChart>
+
+              {/* Right Axis: MoM Income Growth Rate Line Overlay */}
+              {(trendMetricView === 'all' || trendMetricView === 'income_growth' || trendMetricView === 'growth') && (
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="growthRate"
+                  name="growthRate"
+                  stroke="#38bdf8"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: '#0284c7', stroke: '#e0f2fe', strokeWidth: 1.5 }}
+                  activeDot={{ r: 7, fill: '#38bdf8', stroke: '#0369a1', strokeWidth: 2 }}
+                />
+              )}
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>

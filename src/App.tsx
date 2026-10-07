@@ -96,6 +96,8 @@ import {
 import { loadExpenseCategories, saveExpenseCategories } from './utils/storage';
 import { loadUserAccounts, saveUserAccounts } from './utils/auth';
 import { getDeviceId, getDeviceName } from './utils/deviceProfile';
+import { getRecordPaymentDate } from './utils/astrology';
+import { getRecordPaidAmount } from './components/ConsultationList';
 
 export default function App() {
   // Authentication State
@@ -120,7 +122,7 @@ export default function App() {
   const [isCheckingCloud, setIsCheckingCloud] = useState<boolean>(false);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState<boolean>(false);
   const [isReleaseChangelogModalOpen, setIsReleaseChangelogModalOpen] = useState<boolean>(
-    typeof window !== 'undefined' ? localStorage.getItem('myanmar_astrology_seen_changelog_138') !== 'true' : true
+    typeof window !== 'undefined' ? localStorage.getItem('myanmar_astrology_seen_changelog_139') !== 'true' : true
   );
   const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState<boolean>(false);
   const [isDatabaseQuotaModalOpen, setIsDatabaseQuotaModalOpen] = useState<boolean>(false);
@@ -671,8 +673,14 @@ export default function App() {
   }, [consultations, todayStr]);
 
   const totalIncomeToday = useMemo(() => {
-    return todayConsultations.reduce((sum, c) => sum + (c.paidAmount || c.totalAmount || 0), 0);
-  }, [todayConsultations]);
+    return consultations.reduce((sum, c) => {
+      const payDate = getRecordPaymentDate(c);
+      if (payDate === todayStr) {
+        return sum + getRecordPaidAmount(c);
+      }
+      return sum;
+    }, 0);
+  }, [consultations, todayStr]);
 
   // If not logged in, render Login Screen
   if (!isAuthenticated) {
@@ -935,7 +943,7 @@ export default function App() {
         onClose={() => {
           setIsReleaseChangelogModalOpen(false);
           try {
-            localStorage.setItem('myanmar_astrology_seen_changelog_138', 'true');
+            localStorage.setItem('myanmar_astrology_seen_changelog_139', 'true');
             setLastSeenChangelogVersion(LOCAL_APP_VERSION);
           } catch (e) {
             console.error(e);

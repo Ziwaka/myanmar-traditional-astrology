@@ -15,11 +15,21 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.8';
+export const LOCAL_APP_VERSION = '1.9';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
+  {
+    version: '1.9',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',
+    title: 'Exact Cash Flow Real-Time Accounting Engine',
+    badge: 'Financial Fix',
+    changelog: [
+      'ယနေ့ဝင်ငွေအား ဟောမည့်ရက်စွဲအစား အမှန်တကယ် ငွေပေးချေမှုပြီးမြောက်သည့်နေ့ (Payment Date) ဖြင့် စနစ်တကျ တွက်ချက်ခြင်း',
+      'နေ့စဉ်ဝင်ငွေအချက်အလက်များကို အခြေပြမြေပြင် တကယ့်ငွေရှင်း Cash Flow စာရင်းအတိုင်း တိုက်ရိုက်ချိတ်ဆက်ခြင်း'
+    ]
+  },
   {
     version: '1.8',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',
