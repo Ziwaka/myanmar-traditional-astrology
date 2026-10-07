@@ -109,7 +109,17 @@ export interface ConsultationRecord {
   updatedAt: string;
 }
 
-export type ReminderCheckpoint = '30_min' | '15_min' | '5_min' | '0_min';
+export type ReminderCheckpoint = '30_min' | '15_min' | '5_min' | '0_min' | 'duplicate_alert';
+
+export interface DuplicateConflict {
+  id: string;
+  type: 'time_slot_clash' | 'duplicate_phone_same_day' | 'duplicate_id' | 'duplicate_customer';
+  title: string;
+  description: string;
+  primaryRecord: ConsultationRecord;
+  conflictingRecords: ConsultationRecord[];
+  severity: 'high' | 'medium';
+}
 
 export interface AppNotification {
   id: string;

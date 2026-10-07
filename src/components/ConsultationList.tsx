@@ -17,10 +17,12 @@ import {
   Globe,
   CreditCard,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  AlertTriangle
 } from 'lucide-react';
 import { ConsultationRecord, ConsultationStatus } from '../types';
 import { formatMMK, formatDateDDMMYYYY, getRecordPaymentDate } from '../utils/astrology';
+import { detectDuplicateConflicts } from '../utils/notifications';
 
 interface ConsultationListProps {
   records: ConsultationRecord[];
@@ -69,7 +71,7 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
   onOpenNewConsultation,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | ConsultationStatus | 'today'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | ConsultationStatus | 'today' | 'duplicate'>('all');
   const [yatraFilter, setYatraFilter] = useState<'all' | 'with_yatra' | 'no_yatra'>('all');
   const [modeFilter, setModeFilter] = useState<'all' | 'in_person' | 'remote'>('all');
   const [isPendingExpanded, setIsPendingExpanded] = useState(false);
@@ -87,6 +89,20 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
+  // Duplicate Conflicts Detection
+  const duplicateConflicts = useMemo(() => {
+    return detectDuplicateConflicts(records);
+  }, [records]);
+
+  const duplicateRecordIds = useMemo(() => {
+    const idSet = new Set<string>();
+    duplicateConflicts.forEach(c => {
+      idSet.add(c.primaryRecord.id);
+      c.conflictingRecords.forEach(cr => idSet.add(cr.id));
+    });
+    return idSet;
+  }, [duplicateConflicts]);
+
   // Filtered records
   const filteredRecords = useMemo(() => {
     return records.filter((rec) => {
@@ -103,7 +119,9 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
       if (!matchesSearch) return false;
 
       // Status filter
-      if (statusFilter === 'today') {
+      if (statusFilter === 'duplicate') {
+        if (!duplicateRecordIds.has(rec.id)) return false;
+      } else if (statusFilter === 'today') {
         const recDate = rec.readingDateTime.slice(0, 10);
         if (recDate !== todayStr) return false;
       } else if (statusFilter !== 'all') {
@@ -123,7 +141,7 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
 
       return true;
     });
-  }, [records, searchTerm, statusFilter, yatraFilter, modeFilter, todayStr]);
+  }, [records, searchTerm, statusFilter, yatraFilter, modeFilter, todayStr, duplicateRecordIds]);
 
   // Quick metrics
   const stats = useMemo(() => {
@@ -317,6 +335,9 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
             <option value="scheduled">ရက်ချိန်းစောင့်</option>
             <option value="yatra_ongoing">ယတြာလုပ်ဆဲ</option>
             <option value="completed">ပြီးစီး</option>
+            {duplicateConflicts.length > 0 && (
+              <option value="duplicate">⚠️ ထပ်နေမှုများ ({duplicateConflicts.length})</option>
+            )}
           </select>
 
           <select
@@ -433,6 +454,14 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                       <span>{visitCount} ကြိမ်မေး</span>
                     </span>
                   ) : null}
+
+                  {/* Duplicate Conflict Badge */}
+                  {duplicateRecordIds.has(rec.id) && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/50 text-[11px] font-extrabold animate-pulse">
+                      <AlertTriangle className="w-3 h-3 text-rose-400" />
+                      <span>ထပ်နေသည် (Duplicate)</span>
+                    </span>
+                  )}
 
                   {isToday && (
                     <span className="px-1.5 py-0.5 rounded-md bg-amber-500 text-stone-950 font-bold text-[10px]">

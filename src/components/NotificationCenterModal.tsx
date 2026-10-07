@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Bell, 
   X, 
@@ -14,16 +14,20 @@ import {
   Trash2, 
   CheckCheck,
   Filter,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle,
+  Copy,
+  Layers
 } from 'lucide-react';
-import { ConsultationRecord, AppNotification } from '../types';
+import { ConsultationRecord, AppNotification, DuplicateConflict } from '../types';
 import { UserAccount, loadUserAccounts } from '../utils/auth';
 import { 
   getTodayAppointments, 
   loadStoredNotifications, 
   saveStoredNotifications, 
   requestBrowserNotificationPermission,
-  getMinutesDifference
+  getMinutesDifference,
+  detectDuplicateConflicts
 } from '../utils/notifications';
 import { soundService } from '../utils/notificationSound';
 import { SERVICE_CATEGORIES, formatDateDDMMYYYY } from '../utils/astrology';
@@ -45,7 +49,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
   onOpenConsultation,
   onNotificationsUpdated,
 }) => {
-  const [activeTab, setActiveTab] = useState<'today_schedule' | 'alerts_history'>('today_schedule');
+  const [activeTab, setActiveTab] = useState<'today_schedule' | 'duplicate_alerts' | 'alerts_history'>('today_schedule');
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(soundService.getSoundEnabled());
   const [selectedUserFilter, setSelectedUserFilter] = useState<string>(
@@ -64,6 +68,15 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
       }
     }
   }, [isOpen]);
+
+  // Detect duplicate conflicts
+  const duplicateConflicts = useMemo(() => {
+    return detectDuplicateConflicts(records, {
+      ...currentUser,
+      id: selectedUserFilter === 'all' ? currentUser.id : selectedUserFilter,
+      role: selectedUserFilter === 'all' ? 'super_admin' : 'staff',
+    });
+  }, [records, currentUser, selectedUserFilter]);
 
   if (!isOpen) return null;
 
@@ -157,9 +170,14 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                     {unreadCount}
                   </span>
                 )}
+                {duplicateConflicts.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-stone-950 flex items-center gap-1 animate-pulse">
+                    <AlertTriangle className="w-3 h-3" /> ထပ်နေမှု {duplicateConflicts.length} ခု
+                  </span>
+                )}
               </h2>
               <p className="text-xs text-stone-400 mt-0.5">
-                ယနေ့ ရက်ချိန်းများနှင့် အချိန်မီ သတိပေးချက်များ
+                ယနေ့ ရက်ချိန်းများ၊ ထပ်နေမှု သတိပေးချက်များနှင့် အသိပေးချက် မှတ်တမ်း
               </p>
             </div>
           </div>
@@ -233,26 +251,41 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
         <div className="flex border-b border-stone-800 bg-stone-950/40 shrink-0">
           <button
             onClick={() => setActiveTab('today_schedule')}
-            className={`flex-1 py-3 px-4 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition cursor-pointer ${
+            className={`flex-1 py-3 px-2 sm:px-4 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border-b-2 transition cursor-pointer ${
               activeTab === 'today_schedule'
                 ? 'border-amber-400 text-amber-300 bg-amber-500/10'
                 : 'border-transparent text-stone-400 hover:text-stone-200'
             }`}
           >
             <Calendar className="w-4 h-4" />
-            <span>ယနေ့ ရက်ချိန်းများ ({todayAppointments.length})</span>
+            <span>ယနေ့ ရက်ချိန်း ({todayAppointments.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('duplicate_alerts')}
+            className={`flex-1 py-3 px-2 sm:px-4 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border-b-2 transition cursor-pointer ${
+              activeTab === 'duplicate_alerts'
+                ? 'border-rose-400 text-rose-300 bg-rose-500/10'
+                : 'border-transparent text-stone-400 hover:text-stone-200'
+            }`}
+          >
+            <AlertTriangle className={`w-4 h-4 ${duplicateConflicts.length > 0 ? 'text-amber-400' : ''}`} />
+            <span>ထပ်နေမှု ({duplicateConflicts.length})</span>
+            {duplicateConflicts.length > 0 && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+            )}
           </button>
 
           <button
             onClick={() => setActiveTab('alerts_history')}
-            className={`flex-1 py-3 px-4 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition cursor-pointer ${
+            className={`flex-1 py-3 px-2 sm:px-4 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border-b-2 transition cursor-pointer ${
               activeTab === 'alerts_history'
                 ? 'border-amber-400 text-amber-300 bg-amber-500/10'
                 : 'border-transparent text-stone-400 hover:text-stone-200'
             }`}
           >
             <Clock className="w-4 h-4" />
-            <span>အသိပေးချက် သမိုင်း ({filteredNotifications.length})</span>
+            <span>အသိပေးချက် ({filteredNotifications.length})</span>
           </button>
         </div>
 
@@ -370,7 +403,105 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
             </div>
           )}
 
-          {/* TAB 2: ALERTS HISTORY */}
+          {/* TAB 2: DUPLICATE & CLASH ALERTS */}
+          {activeTab === 'duplicate_alerts' && (
+            <div className="space-y-3">
+              {duplicateConflicts.length === 0 ? (
+                <div className="py-12 text-center text-stone-400 bg-stone-950/40 rounded-2xl border border-stone-800">
+                  <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-400 mb-2" />
+                  <p className="font-bold text-sm text-emerald-300">ရက်ချိန်း ထပ်နေမှုများ မရှိပါ</p>
+                  <p className="text-xs text-stone-400 mt-1">အချိန်ထပ်နေခြင်း (Double Booking) နှင့် ဖုန်းနံပါတ်တူ ထပ်နေမှုများ မရှိဘဲ ပုံမှန်အတိုင်း သပ်ရပ်နေပါသည်</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs text-amber-200 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <span>
+                      အောက်ဖော်ပြပါ ရက်ချိန်းများသည် အချိန်ထပ်နေခြင်း (သို့) ဖုန်းနံပါတ်တူ တစ်ရက်တည်း ၂ ကြိမ် ဘိုကင်တင်ထားခြင်း ဖြစ်ပါသည်။ ဖွင့်၍ စစ်ဆေးပြင်ဆင်နိုင်ပါသည်။
+                    </span>
+                  </div>
+
+                  {duplicateConflicts.map((conflict) => (
+                    <div
+                      key={conflict.id}
+                      className="p-4 rounded-2xl bg-stone-950 border border-rose-500/40 hover:border-rose-500/70 transition-all shadow-lg space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                            <AlertTriangle className="w-4 h-4" />
+                          </span>
+                          <div>
+                            <h4 className="text-sm font-bold text-rose-300">
+                              {conflict.title}
+                            </h4>
+                            <span className="text-[11px] text-stone-400 font-mono">
+                              {conflict.type === 'time_slot_clash' ? '⏱️ အချိန်တိုက်ဆိုင်မှု (Double Booking)' : '📱 ဖုန်းနံပါတ်တူ ထပ်နေမှု'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-stone-200 leading-relaxed bg-stone-900/80 p-2.5 rounded-xl border border-stone-800/80">
+                        {conflict.description}
+                      </p>
+
+                      {/* Conflicting Appointments Actions */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {/* Primary Record Button */}
+                        <div className="p-2.5 bg-stone-900 rounded-xl border border-stone-800 flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <span className="text-[10px] text-amber-400 font-bold block">ရက်ချိန်း (၁):</span>
+                            <span className="text-xs font-bold text-stone-200 truncate block">
+                              {conflict.primaryRecord.customerName} ({conflict.primaryRecord.id})
+                            </span>
+                            <span className="text-[11px] text-stone-400 font-mono">
+                              {conflict.primaryRecord.readingDateTime?.slice(11, 16) || conflict.primaryRecord.bookingDate}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              onClose();
+                              onOpenConsultation(conflict.primaryRecord.id);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold shrink-0 transition"
+                          >
+                            ဖွင့်ရန်
+                          </button>
+                        </div>
+
+                        {/* Conflicting Records Buttons */}
+                        {conflict.conflictingRecords.map((cr) => (
+                          <div key={cr.id} className="p-2.5 bg-stone-900 rounded-xl border border-stone-800 flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <span className="text-[10px] text-rose-400 font-bold block">ရက်ချိန်း (၂):</span>
+                              <span className="text-xs font-bold text-stone-200 truncate block">
+                                {cr.customerName} ({cr.id})
+                              </span>
+                              <span className="text-[11px] text-stone-400 font-mono">
+                                {cr.readingDateTime?.slice(11, 16) || cr.bookingDate}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                onClose();
+                                onOpenConsultation(cr.id);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold shrink-0 transition"
+                            >
+                              ဖွင့်ရန်
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: ALERTS HISTORY */}
           {activeTab === 'alerts_history' && (
             <div className="space-y-3">
               
@@ -405,50 +536,58 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                 <div className="py-12 text-center text-stone-400">
                   <Bell className="w-12 h-12 mx-auto text-stone-600 mb-2" />
                   <p className="font-semibold text-sm">အသိပေးချက် သမိုင်း မရှိသေးပါ</p>
-                  <p className="text-xs text-stone-500 mt-1">ရက်ချိန်းနီးကပ်လာသည့်အခါ ဤနေရာတွင် အလိုအလျောက် ပေါ်လာပါမည်</p>
+                  <p className="text-xs text-stone-500 mt-1">ရက်ချိန်းနီးကပ်လာသည့်အခါ သို့မဟုတ် ထပ်နေမှုများရှိပါက ဤနေရာတွင် အလိုအလျောက် ပေါ်လာပါမည်</p>
                 </div>
               ) : (
-                filteredNotifications.map((noti) => (
-                  <div
-                    key={noti.id}
-                    onClick={() => {
-                      onClose();
-                      onOpenConsultation(noti.consultationId);
-                    }}
-                    className={`p-3.5 rounded-2xl border transition cursor-pointer flex items-start justify-between gap-3 ${
-                      noti.isRead
-                        ? 'bg-stone-950/40 border-stone-800/80 hover:bg-stone-850'
-                        : 'bg-amber-500/10 border-amber-500/40 hover:bg-amber-500/20'
-                    }`}
-                  >
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-amber-300">
-                          {noti.title}
-                        </span>
-                        {!noti.isRead && (
-                          <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                        )}
-                      </div>
-
-                      <p className="text-xs text-stone-200 font-semibold truncate">
-                        {noti.message}
-                      </p>
-
-                      <div className="flex items-center gap-3 text-[11px] text-stone-400">
-                        <span>{new Date(noti.createdAt).toLocaleTimeString('my-MM', { hour: '2-digit', minute: '2-digit' })}</span>
-                        {noti.assignedUserName && <span>• တာဝန်ခံ: {noti.assignedUserName}</span>}
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 shrink-0 text-xs"
+                filteredNotifications.map((noti) => {
+                  const isDup = noti.checkpoint === 'duplicate_alert';
+                  return (
+                    <div
+                      key={noti.id}
+                      onClick={() => {
+                        onClose();
+                        onOpenConsultation(noti.consultationId);
+                      }}
+                      className={`p-3.5 rounded-2xl border transition cursor-pointer flex items-start justify-between gap-3 ${
+                        isDup
+                          ? 'bg-rose-950/30 border-rose-500/40 hover:bg-rose-900/40'
+                          : noti.isRead
+                          ? 'bg-stone-950/40 border-stone-800/80 hover:bg-stone-850'
+                          : 'bg-amber-500/10 border-amber-500/40 hover:bg-amber-500/20'
+                      }`}
                     >
-                      <ExternalLink className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          {isDup && (
+                            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                          )}
+                          <span className={`text-xs font-bold ${isDup ? 'text-rose-300' : 'text-amber-300'}`}>
+                            {noti.title}
+                          </span>
+                          {!noti.isRead && (
+                            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                          )}
+                        </div>
+
+                        <p className="text-xs text-stone-200 font-semibold truncate">
+                          {noti.message}
+                        </p>
+
+                        <div className="flex items-center gap-3 text-[11px] text-stone-400">
+                          <span>{new Date(noti.createdAt).toLocaleTimeString('my-MM', { hour: '2-digit', minute: '2-digit' })}</span>
+                          {noti.assignedUserName && <span>• တာဝန်ခံ: {noti.assignedUserName}</span>}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 shrink-0 text-xs"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })
               )}
             </div>
           )}
@@ -457,7 +596,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 
         {/* Footer */}
         <div className="p-3 bg-stone-950 border-t border-stone-800 text-center text-xs text-stone-500">
-          ✨ ရက်ချိန်းမတိုင်မီ နာရီဝက်၊ ၁၅ မိနစ်၊ ၅ မိနစ်နှင့် အချိန်တည့်တည့်တို့တွင် အသိပေးချက် အလိုအလျောက် တက်ပေးပါသည်
+          ✨ ရက်ချိန်းအချိန် သတိပေးချက်များနှင့် Duplicate ထပ်နေမှုများအား စနစ်မှ အလိုအလျောက် သတိပေးပေးပါသည်
         </div>
 
       </div>

@@ -23,7 +23,14 @@ import {
   UserCheck,
   Printer,
   Globe,
-  Layers
+  Layers,
+  AlertTriangle,
+  Phone,
+  Copy,
+  ShieldAlert,
+  RotateCcw,
+  CheckCircle2,
+  Info
 } from 'lucide-react';
 import { DatePickerInput } from './DatePickerInput';
 import { TimePickerInput } from './TimePickerInput';
@@ -44,7 +51,8 @@ import {
   loadSavedCustomYatras, 
   rememberCustomYatra,
   searchCustomerHistoryProfiles,
-  CustomerHistoryProfile
+  CustomerHistoryProfile,
+  generateNextConsultationId
 } from '../utils/storage';
 import { loadUserAccounts, getCurrentUser, UserAccount } from '../utils/auth';
 import { subscribeToUsers } from '../utils/firebase';
@@ -203,6 +211,72 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
       setPaidAmount(totalAmount);
     }
   }, [totalAmount, paymentStatus, initialData]);
+
+  // Duplicate ID Detection
+  const duplicateIdConflict = useMemo(() => {
+    if (!id || !id.trim()) return false;
+    return allRecords.some(r => r.id.toLowerCase() === id.trim().toLowerCase() && (!initialData || r.id !== initialData.id));
+  }, [id, allRecords, initialData]);
+
+  // Duplicate Phone or Customer Name Detection
+  const duplicateCustomerMatches = useMemo(() => {
+    const cleanPh = phone ? phone.replace(/[^0-9]/g, '') : '';
+    const cleanNm = customerName ? customerName.trim().toLowerCase() : '';
+    if (!cleanPh && (!cleanNm || cleanNm === 'မမေးသူ (အမည်မသိ)' || cleanNm === 'မမေသူ (သို့) မထည့်ပါ')) {
+      return [];
+    }
+
+    return allRecords.filter(r => {
+      if (initialData && r.id === initialData.id) return false;
+      const rPh = r.phone ? r.phone.replace(/[^0-9]/g, '') : '';
+      const rNm = r.customerName ? r.customerName.trim().toLowerCase() : '';
+      
+      const phoneMatch = cleanPh.length >= 6 && rPh === cleanPh;
+      const nameMatch = cleanNm.length >= 3 && rNm === cleanNm && rNm !== 'မမေးသူ (အမည်မသိ)';
+      return phoneMatch || nameMatch;
+    });
+  }, [phone, customerName, allRecords, initialData]);
+
+  // Duplicate / Overlapping Time Slot Conflict (Double Booking Detection)
+  const timeSlotConflict = useMemo(() => {
+    if (!readingDateTime) return null;
+    const targetTime = new Date(readingDateTime).getTime();
+    if (isNaN(targetTime)) return null;
+
+    const targetDateStr = readingDateTime.slice(0, 10);
+
+    for (const r of allRecords) {
+      if (initialData && r.id === initialData.id) continue;
+      if (r.status === 'cancelled') continue;
+      if (!r.readingDateTime) continue;
+
+      const rDateStr = r.readingDateTime.slice(0, 10);
+      if (rDateStr !== targetDateStr) continue;
+
+      const rTime = new Date(r.readingDateTime).getTime();
+      if (isNaN(rTime)) continue;
+
+      const diffMin = Math.abs(targetTime - rTime) / 60000;
+      if (diffMin <= 25) {
+        const sameReader = 
+          !assignedUserId || 
+          !r.assignedUserId || 
+          assignedUserId === 'all' || 
+          r.assignedUserId === 'all' || 
+          assignedUserId === r.assignedUserId;
+
+        if (sameReader) {
+          return {
+            record: r,
+            diffMinutes: Math.round(diffMin),
+            readerName: r.assignedUserName || 'ဗေဒင်ဆရာ/တာဝန်ခံ',
+            timeText: r.readingDateTime.slice(11, 16) || r.readingDateTime,
+          };
+        }
+      }
+    }
+    return null;
+  }, [readingDateTime, assignedUserId, allRecords, initialData]);
 
   const handleSelectExistingCustomer = (profile: CustomerHistoryProfile) => {
     setCustomerName(profile.customerName || '');
@@ -535,7 +609,9 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                       value={id}
                       onChange={(e) => setId(e.target.value)}
                       placeholder="ID ပြင်ရန်..."
-                      className="px-2 py-0.5 bg-stone-950 border border-amber-500/50 rounded-lg text-amber-300 font-mono text-xs focus:outline-none"
+                      className={`px-2 py-0.5 bg-stone-950 border rounded-lg text-amber-300 font-mono text-xs focus:outline-none ${
+                        duplicateIdConflict ? 'border-rose-500 ring-1 ring-rose-500' : 'border-amber-500/50'
+                      }`}
                     />
                     <button
                       type="button"
@@ -558,7 +634,15 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               </div>
             </div>
 
-            {/* 1. Name */}
+            {/* Duplicate ID Warning Banner */}
+            {duplicateIdConflict && (
+              <div className="p-2.5 bg-rose-950/80 border border-rose-500/60 rounded-xl text-xs text-rose-200 flex items-center gap-2 animate-pulse">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>🚨 ဤ ID နံပါတ် ({id}) သည် အခြားမှတ်တမ်းတွင် ရှိပြီးသားဖြစ်ပါသည် (Duplicate ID)</span>
+              </div>
+            )}
+
+            {/* 1. Name & Phone */}
             <div className="space-y-3">
               <div className="space-y-1">
                 <label className="block text-sm font-semibold text-stone-200">
@@ -573,6 +657,54 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                   className="w-full px-3.5 py-3 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500 shadow-inner"
                 />
               </div>
+
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-stone-200">
+                  ဖုန်းနံပါတ် (Phone)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="09..."
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    style={{ fontSize: '16px' }}
+                    className="w-full px-3.5 py-3 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500 shadow-inner font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Live Duplicate Customer / Phone Warning */}
+              {duplicateCustomerMatches.length > 0 && !isEditing && (
+                <div className="p-3 bg-amber-950/40 border border-amber-500/50 rounded-2xl space-y-2 text-xs">
+                  <div className="flex items-center gap-2 text-amber-300 font-bold">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>⚠️ ဤဖုန်း/အမည်ဖြင့် ယခင်မှတ်တမ်း ({duplicateCustomerMatches.length}) ခု ရှိနှင့်ပြီးဖြစ်ပါသည် (Duplicate Match)</span>
+                  </div>
+                  <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
+                    {duplicateCustomerMatches.slice(0, 3).map((dm) => (
+                      <div key={dm.id} className="p-2 rounded-xl bg-stone-900/90 border border-stone-800 flex items-center justify-between text-[11px]">
+                        <div>
+                          <span className="font-mono text-amber-400 font-bold">{dm.id}</span>
+                          <span className="text-stone-300 ml-2 font-semibold">{dm.customerName}</span>
+                          <span className="text-stone-400 ml-2 font-mono">({formatDateDDMMYYYY(dm.readingDateTime || dm.bookingDate)})</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomerName(dm.customerName || '');
+                            setPhone(dm.phone || '');
+                            if (dm.gender) setGender(dm.gender);
+                          }}
+                          className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold"
+                        >
+                          အချက်အလက်ယူ
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="block text-sm font-semibold text-stone-200">ကျား/မ</label>
@@ -722,6 +854,19 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                   ))}
                 </select>
               </div>
+
+              {/* Time Slot Conflict Warning Banner */}
+              {timeSlotConflict && (
+                <div className="p-3 bg-rose-950/80 border border-rose-500/80 rounded-2xl text-xs text-rose-200 space-y-1 animate-pulse shadow-lg">
+                  <div className="flex items-center gap-2 font-bold text-rose-300">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span>🚨 ရက်ချိန်းအချိန် ထပ်နေပါသည် (Time Slot Conflict / Double Booking)!</span>
+                  </div>
+                  <p className="text-[11px] text-rose-200 pl-6">
+                    ရွေးချယ်ထားသော အချိန် ({timeSlotConflict.timeText}) တွင် [<strong>{timeSlotConflict.readerName}</strong>] နှင့် [<strong>{timeSlotConflict.record.customerName}</strong> ({timeSlotConflict.record.id})] ၏ ရက်ချိန်း ရှိနေပါသည် ({timeSlotConflict.diffMinutes === 0 ? 'တစ်ပြိုင်နက်တည်း' : `${timeSlotConflict.diffMinutes} မိနစ်သာ ကွာသည်`})။
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="block text-sm font-semibold text-stone-300">လုပ်ငန်းစဉ် အခြေအနေ (Status)</label>

@@ -63,6 +63,7 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { getDatabaseQuotaReport } from './utils/databaseQuota';
 import { 
   checkUpcomingAppointments, 
+  checkDuplicateAppointments,
   UpcomingAppointmentAlert, 
   getTodayAppointments, 
   loadStoredNotifications,
@@ -183,14 +184,22 @@ export default function App() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Run check immediately
+    // Run checks immediately
     checkUpcomingAppointments(consultations, currentUser, (alert) => {
+      setActiveAlertPopup(alert);
+      setNotificationRefreshTrigger((prev) => prev + 1);
+    });
+    checkDuplicateAppointments(consultations, currentUser, (alert) => {
       setActiveAlertPopup(alert);
       setNotificationRefreshTrigger((prev) => prev + 1);
     });
 
     const intervalId = setInterval(() => {
       checkUpcomingAppointments(consultations, currentUser, (alert) => {
+        setActiveAlertPopup(alert);
+        setNotificationRefreshTrigger((prev) => prev + 1);
+      });
+      checkDuplicateAppointments(consultations, currentUser, (alert) => {
         setActiveAlertPopup(alert);
         setNotificationRefreshTrigger((prev) => prev + 1);
       });

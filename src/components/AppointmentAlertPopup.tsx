@@ -9,7 +9,8 @@ import {
   ExternalLink, 
   X,
   Volume2,
-  VolumeX
+  VolumeX,
+  AlertTriangle
 } from 'lucide-react';
 import { UpcomingAppointmentAlert } from '../utils/notifications';
 import { soundService } from '../utils/notificationSound';
@@ -29,7 +30,8 @@ export const AppointmentAlertPopup: React.FC<AppointmentAlertPopupProps> = ({
   if (!alert) return null;
 
   const { record, checkpoint, checkpointLabel, formattedTimeText } = alert;
-  const isUrgent = checkpoint === '0_min';
+  const isDuplicate = checkpoint === 'duplicate_alert';
+  const isUrgent = checkpoint === '0_min' || isDuplicate;
   const serviceInfo = SERVICE_CATEGORIES.find((s) => s.key === record.serviceCategory);
 
   return (
@@ -51,11 +53,15 @@ export const AppointmentAlertPopup: React.FC<AppointmentAlertPopupProps> = ({
         <div className="flex items-center justify-between pb-3 border-b border-stone-700/60">
           <div className="flex items-center gap-2">
             <div className={`p-2 rounded-2xl ${isUrgent ? 'bg-rose-500/30 text-rose-300' : 'bg-amber-500/30 text-amber-300'}`}>
-              <Bell className="w-5 h-5 animate-bounce" />
+              {isDuplicate ? (
+                <AlertTriangle className="w-5 h-5 text-rose-300 animate-bounce" />
+              ) : (
+                <Bell className="w-5 h-5 animate-bounce" />
+              )}
             </div>
             <div>
               <span className={`text-xs font-bold uppercase tracking-wider block ${isUrgent ? 'text-rose-400' : 'text-amber-400'}`}>
-                📅 ရက်ချိန်း သတိပေးချက်
+                {isDuplicate ? '⚠️ Duplicate သတိပေးချက်' : '📅 ရက်ချိန်း သတိပေးချက်'}
               </span>
               <span className="text-sm font-extrabold text-stone-100">
                 {checkpointLabel}

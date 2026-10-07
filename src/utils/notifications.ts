@@ -1,4 +1,4 @@
-import { ConsultationRecord, AppNotification, ReminderCheckpoint } from '../types';
+import { ConsultationRecord, AppNotification, ReminderCheckpoint, DuplicateConflict } from '../types';
 import { UserAccount } from './auth';
 import { soundService } from './notificationSound';
 
@@ -69,6 +69,8 @@ export function getCheckpointLabel(checkpoint: ReminderCheckpoint): string {
       return '၅ မိနစ် အလို';
     case '0_min':
       return 'ဟောမည့်အချိန် ရောက်ရှိပါပြီ!';
+    case 'duplicate_alert':
+      return '⚠️ ရက်ချိန်း ထပ်နေမှု သတိပေးချက် (Duplicate Alert)';
     default:
       return 'ရက်ချိန်း သတိပေးချက်';
   }
@@ -241,4 +243,217 @@ export async function requestBrowserNotificationPermission(): Promise<boolean> {
     console.error('Error requesting notification permission', e);
     return false;
   }
+}
+
+// Format date-time for user-friendly display
+function formatReadableTime(dtStr?: string): string {
+  if (!dtStr) return '-';
+  try {
+    const d = new Date(dtStr);
+    const datePart = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const timePart = d.toLocaleTimeString('my-MM', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return `${datePart} ${timePart}`;
+  } catch {
+    return dtStr;
+  }
+}
+
+// Clean phone digits for matching
+function normalizePhone(ph?: string): string {
+  if (!ph) return '';
+  return ph.replace(/[^0-9]/g, '');
+}
+
+// Detect all duplicate conflicts across records
+export function detectDuplicateConflicts(
+  records: ConsultationRecord[],
+  currentUser?: UserAccount
+): DuplicateConflict[] {
+  const conflicts: DuplicateConflict[] = [];
+  const activeRecords = records.filter(r => r.status !== 'cancelled');
+
+  const processedClashPairs = new Set<string>();
+
+  // 1. Time Slot Clash Detection (Double Booking for same astrologer / reader)
+  for (let i = 0; i < activeRecords.length; i++) {
+    const r1 = activeRecords[i];
+    if (!r1.readingDateTime) continue;
+
+    const t1 = new Date(r1.readingDateTime).getTime();
+    if (isNaN(t1)) continue;
+
+    const d1Str = r1.readingDateTime.slice(0, 10);
+
+    for (let j = i + 1; j < activeRecords.length; j++) {
+      const r2 = activeRecords[j];
+      if (!r2.readingDateTime) continue;
+
+      const t2 = new Date(r2.readingDateTime).getTime();
+      if (isNaN(t2)) continue;
+
+      const d2Str = r2.readingDateTime.slice(0, 10);
+      if (d1Str !== d2Str) continue;
+
+      // Check if within 25 minutes of each other
+      const diffMinutes = Math.abs(t1 - t2) / 60000;
+      if (diffMinutes <= 25) {
+        // Check if assigned to the same reader or either is unassigned / all
+        const sameReader = 
+          !r1.assignedUserId || 
+          !r2.assignedUserId || 
+          r1.assignedUserId === 'all' || 
+          r2.assignedUserId === 'all' || 
+          r1.assignedUserId === r2.assignedUserId;
+
+        if (sameReader) {
+          const pairKey = [r1.id, r2.id].sort().join('_time_');
+          if (!processedClashPairs.has(pairKey)) {
+            processedClashPairs.add(pairKey);
+
+            const readerName = r1.assignedUserName || r2.assignedUserName || 'ဗေဒင်ဆရာ/တာဝန်ခံ';
+            const time1Formatted = formatReadableTime(r1.readingDateTime);
+            const time2Formatted = formatReadableTime(r2.readingDateTime);
+
+            conflicts.push({
+              id: `conflict-time-${pairKey}`,
+              type: 'time_slot_clash',
+              title: `🚨 ရက်ချိန်း အချိန်ထပ်နေသည် (Time Slot Conflict)`,
+              description: `[${readerName}] အတွက် [${r1.customerName || 'ဧည့်သည်'} (${r1.id})] နှင့် [${r2.customerName || 'ဧည့်သည်'} (${r2.id})] တို့၏ ရက်ချိန်းအချိန် (${diffMinutes === 0 ? 'တစ်ပြိုင်နက်တည်း' : `${Math.round(diffMinutes)} မိနစ်ခြား`}) ထပ်နေပါသည် (${time1Formatted} / ${time2Formatted})။`,
+              primaryRecord: r1,
+              conflictingRecords: [r2],
+              severity: 'high',
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Duplicate Phone / Customer Booking on Same Day Detection
+  const processedPhonePairs = new Set<string>();
+  for (let i = 0; i < activeRecords.length; i++) {
+    const r1 = activeRecords[i];
+    const ph1 = normalizePhone(r1.phone);
+    if (!ph1 || ph1.length < 6) continue;
+
+    const day1 = (r1.readingDateTime ? r1.readingDateTime.slice(0, 10) : r1.bookingDate) || '';
+
+    for (let j = i + 1; j < activeRecords.length; j++) {
+      const r2 = activeRecords[j];
+      const ph2 = normalizePhone(r2.phone);
+      if (ph1 !== ph2) continue;
+
+      const day2 = (r2.readingDateTime ? r2.readingDateTime.slice(0, 10) : r2.bookingDate) || '';
+      if (day1 && day2 && day1 === day2) {
+        const pairKey = [r1.id, r2.id].sort().join('_phone_');
+        if (!processedPhonePairs.has(pairKey)) {
+          processedPhonePairs.add(pairKey);
+
+          conflicts.push({
+            id: `conflict-phone-${pairKey}`,
+            type: 'duplicate_phone_same_day',
+            title: `⚠️ ဖုန်းနံပါတ်တူ ရက်ချိန်း ၂ ခု ရှိနေသည် (Duplicate Phone Booking)`,
+            description: `ဖုန်းနံပါတ် (${r1.phone}) ဖြင့် ${day1} နေ့တွင် [${r1.customerName} (${r1.id})] နှင့် [${r2.customerName} (${r2.id})] ရက်ချိန်း ၂ ကြိမ် တင်ထားသည်ကို တွေ့ရှိရပါသည်။`,
+            primaryRecord: r1,
+            conflictingRecords: [r2],
+            severity: 'medium',
+          });
+        }
+      }
+    }
+  }
+
+  // If user filter is passed, filter conflicts
+  if (currentUser && currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
+    return conflicts.filter(c => 
+      isConsultationForUser(c.primaryRecord, currentUser) ||
+      c.conflictingRecords.some(r => isConsultationForUser(r, currentUser))
+    );
+  }
+
+  return conflicts;
+}
+
+// Get specific conflict for a single consultation record
+export function getDuplicateConflictForRecord(
+  record: ConsultationRecord,
+  allRecords: ConsultationRecord[]
+): DuplicateConflict | null {
+  const allConflicts = detectDuplicateConflicts(allRecords);
+  const found = allConflicts.find(c => 
+    c.primaryRecord.id === record.id || 
+    c.conflictingRecords.some(cr => cr.id === record.id)
+  );
+  return found || null;
+}
+
+// Check and trigger Duplicate Appointment Notifications
+export function checkDuplicateAppointments(
+  records: ConsultationRecord[],
+  currentUser: UserAccount,
+  onTriggerAlertPopup?: (alert: UpcomingAppointmentAlert) => void
+): DuplicateConflict[] {
+  const conflicts = detectDuplicateConflicts(records, currentUser);
+  const sentMap = loadSentCheckpoints();
+
+  conflicts.forEach((conflict) => {
+    const sentKey = `duplicate_${conflict.id}_${currentUser.id}`;
+
+    if (!sentMap[sentKey]) {
+      saveSentCheckpoint(sentKey);
+
+      // Play audio chime
+      if (conflict.severity === 'high') {
+        soundService.playUrgentAlert();
+      } else {
+        soundService.playChime();
+      }
+
+      // Trigger Web Notification API if permitted
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification(`${conflict.title}`, {
+            body: `${conflict.description}\nကျေးဇူးပြု၍ ရက်ချိန်းအား စစ်ဆေးပြင်ဆင်ပေးပါ။`,
+            icon: '/icons/icon-192.png',
+            tag: sentKey,
+          });
+        } catch (e) {
+          console.warn('Browser notification error for duplicate', e);
+        }
+      }
+
+      // Create notification in storage
+      const newNoti: AppNotification = {
+        id: `noti-dup-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        consultationId: conflict.primaryRecord.id,
+        customerName: conflict.primaryRecord.customerName || 'အမည်မသိသူ',
+        readingDateTime: conflict.primaryRecord.readingDateTime || new Date().toISOString(),
+        checkpoint: 'duplicate_alert',
+        title: conflict.title,
+        message: conflict.description,
+        assignedUserId: conflict.primaryRecord.assignedUserId || currentUser.id,
+        assignedUserName: conflict.primaryRecord.assignedUserName || currentUser.name,
+        createdAt: new Date().toISOString(),
+        isRead: false,
+        phone: conflict.primaryRecord.phone,
+        serviceCategory: conflict.primaryRecord.serviceCategory,
+      };
+
+      const currentList = loadStoredNotifications();
+      saveStoredNotifications([newNoti, ...currentList]);
+
+      // Trigger popup if urgent
+      if (onTriggerAlertPopup && conflict.severity === 'high') {
+        onTriggerAlertPopup({
+          record: conflict.primaryRecord,
+          checkpoint: 'duplicate_alert',
+          minutesRemaining: 0,
+          formattedTimeText: formatReadableTime(conflict.primaryRecord.readingDateTime),
+          checkpointLabel: conflict.title,
+        });
+      }
+    }
+  });
+
+  return conflicts;
 }
