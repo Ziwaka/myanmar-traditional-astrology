@@ -99,7 +99,7 @@ export function getTodayAppointments(records: ConsultationRecord[], user: UserAc
     if (r.status === 'cancelled' || r.status === 'completed' || r.taskDone) return false;
     
     // Check if readingDateTime is today
-    const readingDateStr = r.readingDateTime ? r.readingDateTime.split('T')[0] : '';
+    const readingDateStr = r.readingDateTime ? r.readingDateTime.slice(0, 10) : '';
     const bookingDateStr = r.bookingDate || '';
     const isToday = readingDateStr === todayStr || (!readingDateStr && bookingDateStr === todayStr);
 

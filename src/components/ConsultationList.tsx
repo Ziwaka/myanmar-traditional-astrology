@@ -72,8 +72,18 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | ConsultationStatus | 'today'>('all');
   const [yatraFilter, setYatraFilter] = useState<'all' | 'with_yatra' | 'no_yatra'>('all');
   const [modeFilter, setModeFilter] = useState<'all' | 'in_person' | 'remote'>('all');
-  const [isPendingExpanded, setIsPendingExpanded] = useState(true);
-  const [isCompletedExpanded, setIsCompletedExpanded] = useState(true);
+  const [isPendingExpanded, setIsPendingExpanded] = useState(false);
+  const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
+  const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
+  const [expandedTimes, setExpandedTimes] = useState<Record<string, boolean>>({});
+
+  const toggleDate = (dateKey: string) => {
+    setExpandedDates(prev => ({ ...prev, [dateKey]: !prev[dateKey] }));
+  };
+
+  const toggleTime = (timeCompKey: string) => {
+    setExpandedTimes(prev => ({ ...prev, [timeCompKey]: prev[timeCompKey] === false }));
+  };
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -575,6 +585,98 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
           );
         };
 
+        const groupSortAndSubgroupRecords = (recordsToGroup: ConsultationRecord[], isCompleted: boolean) => {
+          const dateGroupsMap: Record<string, Record<string, ConsultationRecord[]>> = {};
+
+          recordsToGroup.forEach(rec => {
+            let dateStr = 'no-date';
+            let timeStr = 'no-time';
+
+            if (rec.readingDateTime) {
+              const clean = rec.readingDateTime.trim();
+              const parts = clean.split(/T|\s+/);
+              if (parts[0]) {
+                dateStr = parts[0];
+              }
+              if (parts[1]) {
+                timeStr = parts[1].slice(0, 5); // "HH:MM"
+                if (parts[2]) {
+                  timeStr += ' ' + parts[2]; // e.g. "AM" or "PM"
+                }
+              }
+            } else if (rec.bookingDate) {
+              const clean = rec.bookingDate.trim();
+              const parts = clean.split(/T|\s+/);
+              if (parts[0]) {
+                dateStr = parts[0];
+              }
+            }
+
+            if (!dateGroupsMap[dateStr]) {
+              dateGroupsMap[dateStr] = {};
+            }
+            if (!dateGroupsMap[dateStr][timeStr]) {
+              dateGroupsMap[dateStr][timeStr] = [];
+            }
+            dateGroupsMap[dateStr][timeStr].push(rec);
+          });
+
+          // Sort Date Keys
+          const sortedDateKeys = Object.keys(dateGroupsMap).sort((a, b) => {
+            if (a === 'no-date') return 1;
+            if (b === 'no-date') return -1;
+            if (isCompleted) {
+              return b.localeCompare(a); // latest date first
+            } else {
+              return a.localeCompare(b); // earliest date first
+            }
+          });
+
+          return sortedDateKeys.map(dateKey => {
+            const timeMap = dateGroupsMap[dateKey];
+            
+            // Sort Time Keys
+            const sortedTimeKeys = Object.keys(timeMap).sort((a, b) => {
+              if (a === 'no-time') return 1;
+              if (b === 'no-time') return -1;
+              return a.localeCompare(b); // earliest time first
+            });
+
+            let totalDateRecordsCount = 0;
+            const timeGroups = sortedTimeKeys.map(timeKey => {
+              const timeRecords = timeMap[timeKey];
+              totalDateRecordsCount += timeRecords.length;
+
+              // Sort records inside the time slot by ID
+              timeRecords.sort((a, b) => a.id.localeCompare(b.id));
+
+              let displayTime = 'အချိန် မသတ်မှတ်ရသေး';
+              if (timeKey !== 'no-time') {
+                displayTime = `${timeKey} နာရီ`;
+              }
+
+              return {
+                timeKey,
+                displayTime,
+                records: timeRecords
+              };
+            });
+
+            let displayDate = 'ရက်စွဲ မသတ်မှတ်ရသေး';
+            if (dateKey !== 'no-date') {
+              const [y, m, d] = dateKey.split('-');
+              displayDate = `${d} / ${m} / ${y}`;
+            }
+
+            return {
+              dateKey,
+              displayDate,
+              recordsCount: totalDateRecordsCount,
+              timeGroups
+            };
+          });
+        };
+
         if (filteredRecords.length === 0) {
           return (
             <div className="bg-stone-850 rounded-2xl border border-stone-800 p-8 sm:p-12 text-center text-stone-500 space-y-3">
@@ -616,8 +718,67 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                 pendingRecords.length === 0 ? (
                   <p className="text-xs text-stone-500 italic pl-3.5">ဟောရန်ကျန်ရှိသူ မရှိပါ။</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 w-full min-w-0">
-                    {pendingRecords.map(renderRecordCard)}
+                  <div className="space-y-4">
+                    {groupSortAndSubgroupRecords(pendingRecords, false).map(group => {
+                      const isDateExpanded = expandedDates[group.dateKey] ?? false;
+                      return (
+                        <div key={group.dateKey} className="space-y-3 bg-stone-900/30 p-3 sm:p-4 rounded-2xl border border-stone-800/60">
+                          {/* Date Sub-header Button */}
+                          <button
+                            type="button"
+                            onClick={() => toggleDate(group.dateKey)}
+                            className="flex items-center justify-between w-full px-3 py-2.5 bg-stone-900 hover:bg-stone-850 border border-stone-800/80 rounded-xl cursor-pointer transition select-none text-left"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                              <span className="text-xs font-bold text-amber-200/90">{group.displayDate}</span>
+                              <span className="px-1.5 py-0.2 rounded bg-stone-950 text-[10px] text-stone-400 font-bold font-mono">
+                                {group.recordsCount} ဦး
+                              </span>
+                            </div>
+                            <div className="text-stone-500">
+                              {isDateExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </div>
+                          </button>
+                          
+                          {isDateExpanded && (
+                            <div className="space-y-4 pl-3 border-l border-amber-500/10 ml-2">
+                              {group.timeGroups.map(timeGroup => {
+                                const timeCompKey = `${group.dateKey}_${timeGroup.timeKey}`;
+                                const isTimeExpanded = expandedTimes[timeCompKey] !== false;
+                                return (
+                                  <div key={timeGroup.timeKey} className="space-y-2.5">
+                                    {/* Time Slot Collapsible Header */}
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleTime(timeCompKey)}
+                                      className="flex items-center justify-between w-full sm:w-auto gap-2 px-2.5 py-1.5 bg-stone-900/60 hover:bg-stone-900 border border-stone-800/80 rounded-lg text-left cursor-pointer transition select-none"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                        <span className="text-xs font-bold text-stone-300">{timeGroup.displayTime}</span>
+                                        <span className="px-1.5 py-0.2 rounded bg-stone-950 text-[10px] text-amber-400 font-bold font-mono">
+                                          {timeGroup.records.length} ဦး
+                                        </span>
+                                      </div>
+                                      <div className="text-stone-500 ml-1">
+                                        {isTimeExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                      </div>
+                                    </button>
+
+                                    {isTimeExpanded && (
+                                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 w-full min-w-0 pt-1">
+                                        {timeGroup.records.map(renderRecordCard)}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )
               )}
@@ -648,8 +809,67 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                 completedRecords.length === 0 ? (
                   <p className="text-xs text-stone-500 italic pl-3.5">ဟောပြီးစီးသူ မရှိပါ။</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 w-full min-w-0">
-                    {completedRecords.map(renderRecordCard)}
+                  <div className="space-y-4">
+                    {groupSortAndSubgroupRecords(completedRecords, true).map(group => {
+                      const isDateExpanded = expandedDates[group.dateKey] ?? false;
+                      return (
+                        <div key={group.dateKey} className="space-y-3 bg-stone-900/30 p-3 sm:p-4 rounded-2xl border border-stone-800/60">
+                          {/* Date Sub-header Button */}
+                          <button
+                            type="button"
+                            onClick={() => toggleDate(group.dateKey)}
+                            className="flex items-center justify-between w-full px-3 py-2.5 bg-stone-900 hover:bg-stone-850 border border-stone-800/80 rounded-xl cursor-pointer transition select-none text-left"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                              <span className="text-xs font-bold text-emerald-200/90">{group.displayDate}</span>
+                              <span className="px-1.5 py-0.2 rounded bg-stone-950 text-[10px] text-stone-400 font-bold font-mono">
+                                {group.recordsCount} ဦး
+                              </span>
+                            </div>
+                            <div className="text-stone-500">
+                              {isDateExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </div>
+                          </button>
+                          
+                          {isDateExpanded && (
+                            <div className="space-y-4 pl-3 border-l border-emerald-500/10 ml-2">
+                              {group.timeGroups.map(timeGroup => {
+                                const timeCompKey = `${group.dateKey}_${timeGroup.timeKey}`;
+                                const isTimeExpanded = expandedTimes[timeCompKey] !== false;
+                                return (
+                                  <div key={timeGroup.timeKey} className="space-y-2.5">
+                                    {/* Time Slot Collapsible Header */}
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleTime(timeCompKey)}
+                                      className="flex items-center justify-between w-full sm:w-auto gap-2 px-2.5 py-1.5 bg-stone-900/60 hover:bg-stone-900 border border-stone-800/80 rounded-lg text-left cursor-pointer transition select-none"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                                        <span className="text-xs font-bold text-stone-300">{timeGroup.displayTime}</span>
+                                        <span className="px-1.5 py-0.2 rounded bg-stone-950 text-[10px] text-emerald-400 font-bold font-mono">
+                                          {timeGroup.records.length} ဦး
+                                        </span>
+                                      </div>
+                                      <div className="text-stone-500 ml-1">
+                                        {isTimeExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                      </div>
+                                    </button>
+
+                                    {isTimeExpanded && (
+                                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 w-full min-w-0 pt-1">
+                                        {timeGroup.records.map(renderRecordCard)}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )
               )}

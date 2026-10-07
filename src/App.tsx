@@ -120,7 +120,7 @@ export default function App() {
   const [isCheckingCloud, setIsCheckingCloud] = useState<boolean>(false);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState<boolean>(false);
   const [isReleaseChangelogModalOpen, setIsReleaseChangelogModalOpen] = useState<boolean>(
-    typeof window !== 'undefined' ? localStorage.getItem('myanmar_astrology_seen_changelog_136') !== 'true' : true
+    typeof window !== 'undefined' ? localStorage.getItem('myanmar_astrology_seen_changelog_138') !== 'true' : true
   );
   const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState<boolean>(false);
   const [isDatabaseQuotaModalOpen, setIsDatabaseQuotaModalOpen] = useState<boolean>(false);
@@ -430,6 +430,11 @@ export default function App() {
       const cleanedNotis = allNotis.filter(n => n.consultationId !== finalRecord.id);
       saveStoredNotifications(cleanedNotis);
       setNotificationRefreshTrigger(prev => prev + 1);
+      
+      // Auto-dismiss active alert popup if it belongs to this completed consultation
+      if (activeAlertPopup && activeAlertPopup.record.id === finalRecord.id) {
+        setActiveAlertPopup(null);
+      }
     }
 
     // Push to Google Cloud Firestore (deep merge)
@@ -446,6 +451,11 @@ export default function App() {
     setConsultations(updated);
     saveConsultations(updated);
     refreshDatabaseQuota();
+
+    // Auto-dismiss active alert popup if it belongs to this deleted consultation
+    if (activeAlertPopup && activeAlertPopup.record.id === id) {
+      setActiveAlertPopup(null);
+    }
 
     // Push deletion to Cloud Firestore
     deleteConsultationFromCloud(id).catch(e => console.warn('Cloud delete error:', e));
@@ -481,6 +491,11 @@ export default function App() {
         const cleanedNotis = allNotis.filter(n => n.consultationId !== id);
         saveStoredNotifications(cleanedNotis);
         setNotificationRefreshTrigger(prev => prev + 1);
+        
+        // Auto-dismiss active alert popup if it belongs to this completed consultation
+        if (activeAlertPopup && activeAlertPopup.record.id === id) {
+          setActiveAlertPopup(null);
+        }
       }
       saveConsultationToCloud(target).catch(e => console.warn('Cloud update error:', e));
     }
@@ -920,7 +935,7 @@ export default function App() {
         onClose={() => {
           setIsReleaseChangelogModalOpen(false);
           try {
-            localStorage.setItem('myanmar_astrology_seen_changelog_136', 'true');
+            localStorage.setItem('myanmar_astrology_seen_changelog_138', 'true');
             setLastSeenChangelogVersion(LOCAL_APP_VERSION);
           } catch (e) {
             console.error(e);
