@@ -1,0 +1,97 @@
+{
+  "version": "2.0",
+  "releaseDate": "2026-10-06",
+  "title": "Seamless Silent Auto-Sync & Permanent Banner Removal",
+  "isCloudAuthoritative": true,
+  "changelog": [
+    "မျက်စိနောက်စေသော Sync သတိပေးချက် Banner ကြီးအား လုံးဝဖယ်ရှားပေးခြင်း။",
+    "နောက်ကွယ်မှ အလိုအလျောက် (Background) စက္ကန့်မလပ် အပြန်အလှန် ချိတ်ဆက်ပေးသော Silent Auto-Sync Engine စနစ် အပြည့်အဝ ထည့်သွင်းပေးခြင်း။",
+    "စက်ပစ္စည်းအားလုံး ဒေတာမပျောက်ပျက်ဘဲ အချိန်နှင့်တစ်ပြေးညီ Real-time Auto-Sync ဖြစ်စေခြင်း။"
+  ],
+  "history": [
+    {
+      "version": "2.0",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
+      "title": "Seamless Silent Auto-Sync & Permanent Banner Removal",
+      "badge": "Auto Sync",
+      "changelog": [
+        "မျက်စိနောက်စေသော Sync သတိပေးချက် Banner ကြီးအား လုံးဝဖယ်ရှားပေးခြင်း",
+        "နောက်ကွယ်မှ အလိုအလျောက် (Background) စက္ကန့်မလပ် အပြန်အလှန် ချိတ်ဆက်ပေးသော Silent Auto-Sync Engine စနစ် အပြည့်အဝ ထည့်သွင်းပေးခြင်း",
+        "စက်ပစ္စည်းအားလုံး ဒေတာမပျောက်ပျက်ဘဲ အချိန်နှင့်တစ်ပြေးညီ Real-time Auto-Sync ဖြစ်စေခြင်း"
+      ]
+    },
+    {
+      "version": "1.9",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
+      "title": "Exact Cash Flow Real-Time Accounting Engine",
+      "badge": "Financial Fix",
+      "changelog": [
+        "ယနေ့ဝင်ငွေအား ဟောမည့်ရက်စွဲအစား အမှန်တကယ် ငွေပေးချေမှုပြီးမြောက်သည့်နေ့ (Payment Date) ဖြင့် စနစ်တကျ တွက်ချက်ခြင်း",
+        "နေ့စဉ်ဝင်ငွေအချက်အလက်များကို အခြေပြမြေပြင် တကယ့်ငွေရှင်း Cash Flow စာရင်းအတိုင်း တိုက်ရိုက်ချိတ်ဆက်ခြင်း"
+      ]
+    },
+    {
+      "version": "1.8",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
+      "title": "Date Parsing Engine Fix & Collapsible Grouping",
+      "badge": "Parsing & Grouping",
+      "changelog": [
+        "ရက်စွဲအုပ်စုခွဲရာတွင် အချိန်အပိုင်းအခြားများ ရောထွေးပါဝင်နေမှုအား regex (space & T split) စနစ်ဖြင့် အပြည့်အဝခွဲခြားခြင်း",
+        "ရက်စွဲခေါင်းစဉ်များ၌ ရက်စွဲသက်သက်သာ ပေါ်လာစေပြီး ရက်နှင့်အချိန်များ ရောထွေးနေခြင်းကို ဖြေရှင်းခြင်း",
+        "ဟောရန်ကျန်/ဟောပြီးအုပ်စုများအောက်တွင် ရက်စွဲအလိုက်၊ ရက်စွဲတစ်ခုစီအောက်တွင် အချိန်အလိုက် ၃ ဆင့် အုပ်စုခွဲခြားပြသခြင်း"
+      ]
+    },
+    {
+      "version": "1.7",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
+      "title": "Auto-Clear Completed Task Notifications & Today Scope",
+      "badge": "Notifications",
+      "changelog": [
+        "ယနေ့ရက်ချိန်းများစာရင်းမှ ဟောပြီးစီးသူများကို လုံးဝစစ်ထုတ်ဖယ်ရှားပြီး Notification စင်တာမှ ပျောက်သွားစေခြင်း",
+        "ဟောကြားပြီးစီးကြောင်း သတ်မှတ်လိုက်သည်နှင့် အဆိုပါမေးသူ၏ Notification များ အလိုအလျောက် ဖျက်သိမ်းခြင်း"
+      ]
+    },
+    {
+      "version": "1.6",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
+      "title": "Grouped & Collapsible Customer Lists (ဟောရန်ကျန် vs ဟောပြီး)",
+      "badge": "List UI",
+      "changelog": [
+        "ဟောရန်ကျန် နှင့် ဟောပြီး ကို အုပ်စုခွဲခြားပြသပြီး ချုံ့/ချဲ့ (Collapse/Expand) တိုဂယ်ခလုတ် ထည့်သွင်းခြင်း",
+        "ဟောရန်ကျန်အား ဦးစားပေးအဖြစ် အပေါ်ဆုံးတွင် ထားရှိခြင်း"
+      ]
+    },
+    {
+      "version": "1.5",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
+      "title": "Receipt Layout Refinements & Clean Single-Line Format",
+      "badge": "Receipt UI",
+      "changelog": [
+        "ပြေစာတွင် PNG အား ဖြုတ်ပြီး JPEG သာ သုံးရန် ထားရှိခြင်း",
+        "Client Profile နှင့် Financial Breakdown အင်္ဂလိပ်စာသားများ၊ ပညာရှင်လက်မှတ်နေရာ ဖြုတ်ပယ်ခြင်း",
+        "ID အား ၁ ကြောင်း သီးသန့်ထားပြီး ကျသင့်ငွေ (ကျပ်) ခေါင်းစဉ်သို့ ပြောင်းလဲခြင်း"
+      ]
+    },
+    {
+      "version": "1.4",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
+      "title": "Cloud Real-Time Multi-Device Sync Engine",
+      "badge": "Multi-Device",
+      "changelog": [
+        "လူ ၂ ယောက်မက စက်များစွာ ပြိုင်တူ စာရင်းသွင်းနိုင်သော Google Cloud Firestore စနစ် ချိတ်ဆက်ခြင်း",
+        "Data Overwrite နှင့် Duplicate မဖြစ်စေရန် Auto-ID bumping နှင့် Smart Field Merging ထည့်သွင်းခြင်း",
+        "စက်အလိုက် တာဝန်ခံ အမည် သတ်မှတ်၍ Audit Trail မှတ်တမ်းတင်ခြင်း"
+      ]
+    },
+    {
+      "version": "1.3",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
+      "title": "Myanmar Calendar & PWA Mobile App Support",
+      "badge": "Core App",
+      "changelog": [
+        "မြန်မာ့ရက်စွဲ ပြက္ခဒိန် အပြည့်အစုံ တွက်ချက်ထည့်သွင်းခြင်း",
+        "ဖုန်းနှင့် ကွန်ပျူတာများတွင် App အဖြစ် အင်စတောလုပ်နိုင်သော PWA ထည့်သွင်းခြင်း"
+      ]
+    }
+  ]
+}

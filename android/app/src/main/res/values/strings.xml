@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">မြန်မာ့ရိုးရာဗေဒင်ပညာ မှတ်တမ်း</string>
+    <string name="title_activity_main">မြန်မာ့ရိုးရာဗေဒင်ပညာ မှတ်တမ်း</string>
+    <string name="package_name">com.myanmar.astrology.records</string>
+    <string name="custom_url_scheme">com.myanmar.astrology.records</string>
+</resources>
