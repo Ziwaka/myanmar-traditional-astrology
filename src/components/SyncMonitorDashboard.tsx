@@ -25,7 +25,8 @@ import {
   checkFirestoreLatencyMs, 
   fetchCloudDocumentCounts, 
   uploadAllLocalToCloud, 
-  pullAllCloudToLocal 
+  pullAllCloudToLocal,
+  performBackgroundAutoSync
 } from '../utils/firebase';
 import { 
   getLastCloudSyncTime, 
@@ -103,6 +104,26 @@ export const SyncMonitorDashboard: React.FC<SyncMonitorDashboardProps> = ({
   useEffect(() => {
     runHealthAudit();
   }, []);
+
+  const handleRunAutoSync = async () => {
+    setIsSyncing(true);
+    setActionMessage(null);
+    try {
+      const res = await performBackgroundAutoSync();
+      if (res.synced) {
+        setActionMessage(`Auto-Sync အောင်မြင်ပါသည်! Cloud မှ အချက်အလက် (${res.pulledCount}) ခု စစ်ဆေးပြီး အသစ်ပြင်ဆင်ချက် (${res.pushedCount}) ခုကို ချိတ်ဆက်ပြီးပါပြီ။`);
+        runHealthAudit();
+        onRefreshLocalData();
+      } else {
+        setActionMessage(`Auto-Sync ချိတ်ဆက်ရာတွင် အင်တာနက် လိုအပ်ပါသည် (${res.error || 'Offline'})`);
+      }
+    } catch (e) {
+      setActionMessage(`Auto-Sync ပြုလုပ်ရာတွင် ချို့ယွင်းချက်: ${String(e)}`);
+    } finally {
+      setIsSyncing(false);
+      setLogs(getSyncLogs());
+    }
+  };
 
   const handleForcePush = async () => {
     setIsSyncing(true);
@@ -361,15 +382,25 @@ export const SyncMonitorDashboard: React.FC<SyncMonitorDashboardProps> = ({
         </div>
 
         {/* Sync Controls Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-stone-800">
+        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-stone-800 flex-wrap">
+          <button
+            type="button"
+            onClick={handleRunAutoSync}
+            disabled={isSyncing || !isOnline}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg transition active:scale-95 disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>⚡ Auto-Sync စမ်းသပ်လုပ်ဆောင်မည်</span>
+          </button>
+
           <button
             type="button"
             onClick={handleForcePush}
             disabled={isSyncing || !isOnline}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-400 hover:to-emerald-500 text-stone-950 font-bold text-xs shadow-lg transition active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs shadow-lg transition active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             <UploadCloud className={`w-4 h-4 ${isSyncing ? 'animate-bounce' : ''}`} />
-            <span>🚀 စက်တွင်း ဒေတာများ Cloud သို့ Force-Push လုပ်မည်</span>
+            <span>🚀 စက်တွင်း ဒေတာများ Force-Push လုပ်မည်</span>
           </button>
 
           <button
@@ -379,7 +410,7 @@ export const SyncMonitorDashboard: React.FC<SyncMonitorDashboardProps> = ({
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-750 text-blue-300 border border-blue-500/40 font-bold text-xs shadow transition active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             <DownloadCloud className={`w-4 h-4 ${isSyncing ? 'animate-bounce' : ''}`} />
-            <span>📥 Cloud မှ ဒေတာများ စက်ထဲသို့ Force-Pull ယူမည်</span>
+            <span>📥 Cloud မှ ဒေတာများ Force-Pull ယူမည်</span>
           </button>
         </div>
       </div>

@@ -3,7 +3,7 @@
 export interface SyncLogEntry {
   id: string;
   timestamp: string;
-  action: 'auto_listener_sync' | 'manual_push' | 'manual_pull' | 'single_doc_write' | 'single_doc_delete' | 'connection_check';
+  action: 'auto_sync' | 'auto_listener_sync' | 'manual_push' | 'manual_pull' | 'single_doc_write' | 'single_doc_delete' | 'connection_check';
   collection: 'consultations' | 'expenses' | 'amulets' | 'all' | 'system';
   itemCount: number;
   status: 'success' | 'warning' | 'error';

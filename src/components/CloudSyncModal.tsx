@@ -18,7 +18,7 @@ import {
   Clock,
   AlertTriangle
 } from 'lucide-react';
-import { uploadAllLocalToCloud } from '../utils/firebase';
+import { uploadAllLocalToCloud, performBackgroundAutoSync } from '../utils/firebase';
 import { getDeviceId, getDeviceName, saveDeviceName } from '../utils/deviceProfile';
 import { 
   getLastCloudSyncTime, 
@@ -77,6 +77,25 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
       if (onSyncComplete) onSyncComplete();
     } catch (e) {
       setSyncResult(`Cloud သို့ တင်ပို့ရာတွင် ချို့ယွင်းချက် ဖြစ်ပေါ်ပါသည်: ${String(e)}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleRunAutoSync = async () => {
+    setIsSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await performBackgroundAutoSync();
+      if (res.synced) {
+        setLastSyncTime(Date.now());
+        setSyncResult(`Auto-Sync အောင်မြင်ပါသည်! Cloud မှ အချက်အလက် (${res.pulledCount}) ခု စစ်ဆေးပြီး အသစ်ပြင်ဆင်ချက် (${res.pushedCount}) ခုကို အလိုအလျောက် ချိတ်ဆက်ပြီးပါပြီ။`);
+        if (onSyncComplete) onSyncComplete();
+      } else {
+        setSyncResult(`Auto-Sync ချိတ်ဆက်ရာတွင် အင်တာနက် လိုအပ်ပါသည် (${res.error || 'Offline'})`);
+      }
+    } catch (e) {
+      setSyncResult(`Auto-Sync ပြုလုပ်ရာတွင် ချို့ယွင်းချက်: ${String(e)}`);
     } finally {
       setIsSyncing(false);
     }
@@ -266,14 +285,25 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
               )}
             </div>
 
-            <button
-              onClick={handlePushAll}
-              disabled={isSyncing || !isOnline}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-stone-800 text-white font-bold text-xs transition cursor-pointer shadow-lg active:scale-98"
-            >
-              <UploadCloud className={`w-4 h-4 ${isSyncing ? 'animate-bounce' : ''}`} />
-              <span>{isSyncing ? 'Cloud သို့ ပို့တင်နေပါသည်...' : 'လက်ရှိစာရင်း အားလုံး Cloud သို့ Sync လုပ်မည်'}</span>
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                onClick={handleRunAutoSync}
+                disabled={isSyncing || !isOnline}
+                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:bg-stone-800 text-white font-bold text-xs transition cursor-pointer shadow-lg active:scale-98"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>Auto-Sync စမ်းသပ်လုပ်ဆောင်မည်</span>
+              </button>
+
+              <button
+                onClick={handlePushAll}
+                disabled={isSyncing || !isOnline}
+                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-stone-800 hover:bg-stone-750 disabled:bg-stone-800 text-stone-200 font-bold text-xs transition cursor-pointer border border-stone-700 active:scale-98"
+              >
+                <UploadCloud className={`w-4 h-4 ${isSyncing ? 'animate-bounce' : ''}`} />
+                <span>Manual Push အားလုံး ပို့တင်မည်</span>
+              </button>
+            </div>
           </div>
 
         </div>

@@ -56,7 +56,6 @@ import { ReleaseChangelogPopUpModal } from './components/ReleaseChangelogPopUpMo
 import { ForcedPWAInstallBanner } from './components/ForcedPWAInstallBanner';
 import { DatabaseQuotaModal } from './components/DatabaseQuotaModal';
 import { CloudSyncModal } from './components/CloudSyncModal';
-import { CloudSyncReminderBanner } from './components/CloudSyncReminderBanner';
 import { NotificationCenterModal } from './components/NotificationCenterModal';
 import { AppointmentAlertPopup } from './components/AppointmentAlertPopup';
 import { LoginScreen } from './components/LoginScreen';
@@ -70,7 +69,6 @@ import {
   saveStoredNotifications
 } from './utils/notifications';
 import { 
-  shouldShowSyncReminderBanner, 
   isCloudSyncOverdue, 
   recordCloudSyncTime 
 } from './utils/cloudSyncReminder';
@@ -91,7 +89,8 @@ import {
   saveYatraToCloud,
   deleteYatraFromCloud,
   cleanupAndMigrateYatrasFromAmulets,
-  seedOrMigrateLocalToCloud
+  seedOrMigrateLocalToCloud,
+  performBackgroundAutoSync
 } from './utils/firebase';
 import { loadExpenseCategories, saveExpenseCategories } from './utils/storage';
 import { loadUserAccounts, saveUserAccounts } from './utils/auth';
@@ -122,21 +121,32 @@ export default function App() {
   const [isCheckingCloud, setIsCheckingCloud] = useState<boolean>(false);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState<boolean>(false);
   const [isReleaseChangelogModalOpen, setIsReleaseChangelogModalOpen] = useState<boolean>(
-    typeof window !== 'undefined' ? localStorage.getItem('myanmar_astrology_seen_changelog_139') !== 'true' : true
+    typeof window !== 'undefined' ? localStorage.getItem('myanmar_astrology_seen_changelog_200') !== 'true' : true
   );
   const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState<boolean>(false);
   const [isDatabaseQuotaModalOpen, setIsDatabaseQuotaModalOpen] = useState<boolean>(false);
   const [storageQuotaPercentage, setStorageQuotaPercentage] = useState<number>(0);
   const [storageQuotaUsedFormatted, setStorageQuotaUsedFormatted] = useState<string>('0 B');
-  const [showSyncReminderBanner, setShowSyncReminderBanner] = useState<boolean>(false);
+  const [isAutoSyncing, setIsAutoSyncing] = useState<boolean>(false);
 
-  // Refresh Database Quota metrics & Cloud Sync reminder state
+  // Background Auto-Sync Trigger
+  const triggerAutoSync = useCallback(async () => {
+    setIsAutoSyncing(true);
+    try {
+      await performBackgroundAutoSync();
+    } catch (err) {
+      console.warn('Silent auto sync error:', err);
+    } finally {
+      setIsAutoSyncing(false);
+    }
+  }, []);
+
+  // Refresh Database Quota metrics
   const refreshDatabaseQuota = useCallback(async () => {
     try {
       const q = await getDatabaseQuotaReport();
       setStorageQuotaPercentage(q.usedPercentage);
       setStorageQuotaUsedFormatted(q.formattedUsed);
-      setShowSyncReminderBanner(shouldShowSyncReminderBanner(loadConsultations().length > 0 || loadExpenses().length > 0));
     } catch (e) {
       console.warn('Could not load quota report', e);
     }
@@ -237,10 +247,11 @@ export default function App() {
     checkCloudVersion(true);
     refreshDatabaseQuota();
 
-    // Test Firestore connection & seed if cloud is empty
+    // Test Firestore connection, seed if cloud is empty & run silent Auto-Sync
     testFirestoreConnection().then(() => {
       seedOrMigrateLocalToCloud(localC, localE, localA, loadUserAccounts(), localY);
       cleanupAndMigrateYatrasFromAmulets().catch(err => console.warn('Amulets to Yatras migration check:', err));
+      triggerAutoSync();
     }).catch(err => {
       console.warn('Initial cloud sync check:', err);
     });
@@ -323,19 +334,27 @@ export default function App() {
       checkCloudVersion(true);
     }, 30000);
 
-    // Whenever browser tab gains focus or visibility, re-check Cloud version
+    // Continuous Silent Background Auto-Sync every 45 seconds
+    const autoSyncInterval = setInterval(() => {
+      triggerAutoSync();
+    }, 45000);
+
+    // Whenever browser tab gains focus or visibility, re-check Cloud version & run Auto-Sync
     const handleFocus = () => {
       checkCloudVersion(true);
       refreshDatabaseQuota();
+      triggerAutoSync();
     };
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         checkCloudVersion(true);
+        triggerAutoSync();
       }
     };
     const handleOnline = () => {
       checkCloudVersion(true);
       refreshDatabaseQuota();
+      triggerAutoSync();
     };
 
     window.addEventListener('online', handleOnline);
@@ -344,6 +363,7 @@ export default function App() {
 
     return () => {
       clearInterval(versionInterval);
+      clearInterval(autoSyncInterval);
       unsubConsultations();
       unsubExpenses();
       unsubUsers();
@@ -354,7 +374,7 @@ export default function App() {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [checkCloudVersion, refreshDatabaseQuota]);
+  }, [checkCloudVersion, refreshDatabaseQuota, triggerAutoSync]);
 
   // Apply Cloud Authoritative Version Update (reloads app with fresh assets & service worker update)
   const handleApplyCloudUpdate = () => {
@@ -761,16 +781,8 @@ export default function App() {
           isNewVersionAvailable={isNewVersionAvailable}
           storageQuotaPercentage={storageQuotaPercentage}
           isCloudSyncOverdue={isCloudSyncOverdue()}
+          isAutoSyncing={isAutoSyncing}
         />
-
-        {/* 48-Hour Overdue Cloud Sync Reminder Banner */}
-        {showSyncReminderBanner && (
-          <CloudSyncReminderBanner
-            onOpenSyncModal={() => setIsCloudSyncModalOpen(true)}
-            onDismiss={() => setShowSyncReminderBanner(false)}
-            totalLocalRecords={consultations.length + expenses.length}
-          />
-        )}
 
         {/* Main Tab Views */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-2.5 sm:px-6 lg:px-8 py-4 sm:py-6">
@@ -943,7 +955,7 @@ export default function App() {
         onClose={() => {
           setIsReleaseChangelogModalOpen(false);
           try {
-            localStorage.setItem('myanmar_astrology_seen_changelog_139', 'true');
+            localStorage.setItem('myanmar_astrology_seen_changelog_200', 'true');
             setLastSeenChangelogVersion(LOCAL_APP_VERSION);
           } catch (e) {
             console.error(e);

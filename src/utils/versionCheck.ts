@@ -15,11 +15,22 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '1.9';
+export const LOCAL_APP_VERSION = '2.0';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
+  {
+    version: '2.0',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',
+    title: 'Seamless Silent Auto-Sync & Permanent Banner Removal',
+    badge: 'Auto Sync',
+    changelog: [
+      'မျက်စိနောက်စေသော Sync သတိပေးချက် Banner ကြီးအား လုံးဝဖယ်ရှားပေးခြင်း',
+      'နောက်ကွယ်မှ အလိုအလျောက် (Background) စက္ကန့်မလပ် အပြန်အလှန် ချိတ်ဆက်ပေးသော Silent Auto-Sync Engine စနစ် အပြည့်အဝ ထည့်သွင်းပေးခြင်း',
+      'စက်ပစ္စည်းအားလုံး ဒေတာမပျောက်ပျက်ဘဲ အချိန်နှင့်တစ်ပြေးညီ Real-time Auto-Sync ဖြစ်စေခြင်း'
+    ]
+  },
   {
     version: '1.9',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',

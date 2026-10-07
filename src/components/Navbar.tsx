@@ -13,7 +13,8 @@ import {
   WifiOff,
   ShieldCheck,
   UserCheck,
-  Bell
+  Bell,
+  RefreshCw
 } from 'lucide-react';
 import { UserAccount, UserRole } from '../utils/auth';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -51,6 +52,7 @@ interface NavbarProps {
   isNewVersionAvailable?: boolean;
   storageQuotaPercentage?: number;
   isCloudSyncOverdue?: boolean;
+  isAutoSyncing?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -72,6 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   isNewVersionAvailable = false,
   storageQuotaPercentage,
   isCloudSyncOverdue = false,
+  isAutoSyncing = false,
 }) => {
   const isOnline = useOnlineStatus();
 
@@ -159,16 +162,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               {onOpenCloudSyncModal && (
                 <button
                   onClick={onOpenCloudSyncModal}
-                  title={isCloudSyncOverdue ? "Cloud Sync မလုပ်ရသေးသည်မှာ ၄၈ နာရီကျော်လွန်နေပါပြီ (နှိပ်ပါ)" : "Cloud Sync Status (နှိပ်ပါ)"}
+                  title={isAutoSyncing ? "Cloud သို့ အလိုအလျောက် Sync လုပ်ဆောင်နေပါသည်..." : `Auto Sync စနစ် အလုပ်လုပ်နေသည် (v${cloudVersion}) - အသေးစိတ်ကြည့်ရန် နှိပ်ပါ`}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs transition cursor-pointer ${
-                    isCloudSyncOverdue
-                      ? 'bg-rose-950/80 border border-rose-500/60 text-rose-300 animate-pulse hover:bg-rose-900'
-                      : 'bg-stone-850 border border-stone-700 text-emerald-300 hover:bg-stone-800'
+                    isAutoSyncing
+                      ? 'bg-amber-950/80 border border-amber-500/60 text-amber-300 shadow-sm'
+                      : 'bg-stone-850 border border-emerald-500/30 text-emerald-300 hover:bg-stone-800'
                   }`}
                 >
-                  <Cloud className={`w-3.5 h-3.5 shrink-0 ${isCloudSyncOverdue ? 'text-rose-400' : 'text-emerald-400'}`} />
+                  {isAutoSyncing ? (
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin shrink-0" />
+                  ) : (
+                    <Cloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  )}
                   <span className="font-mono text-[11px] font-semibold">
-                    {isCloudSyncOverdue ? 'Sync လိုအပ်' : `v${cloudVersion}`}
+                    {isAutoSyncing ? 'Syncing...' : `Auto Sync: Live`}
                   </span>
                 </button>
               )}

@@ -58,8 +58,8 @@ export function isCloudSyncReminderDismissed(): boolean {
 }
 
 export function shouldShowSyncReminderBanner(hasRecords: boolean): boolean {
-  if (!hasRecords) return false;
-  return isCloudSyncOverdue() && !isCloudSyncReminderDismissed();
+  // Permanently disabled in favor of silent automated background sync
+  return false;
 }
 
 export function formatLastSyncRelative(timestamp: number | null): string {

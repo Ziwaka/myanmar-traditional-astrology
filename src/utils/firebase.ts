@@ -612,3 +612,127 @@ export async function pullAllCloudToLocal(): Promise<{
     throw err;
   }
 }
+
+/**
+ * Automated Silent Background Auto-Sync Engine
+ * Runs quietly in the background without UI interruption.
+ * - Pushes any unsynced or newly updated local records to Cloud Firestore.
+ * - Merges latest Cloud records into localStorage seamlessly.
+ * - Automatically keeps recordCloudSyncTime up to date.
+ */
+export async function performBackgroundAutoSync(): Promise<{
+  synced: boolean;
+  pushedCount: number;
+  pulledCount: number;
+  error?: string;
+}> {
+  try {
+    const isConnected = await testFirestoreConnection();
+    if (!isConnected) return { synced: false, pushedCount: 0, pulledCount: 0, error: 'Offline' };
+
+    let pushedCount = 0;
+    let pulledCount = 0;
+
+    // 1. Consultations bi-directional sync
+    const localConsultations = loadConsultations();
+    const cloudConsultationsSnap = await getDocs(collection(db, 'consultations'));
+    const cloudConsultationsMap = new Map<string, ConsultationRecord>();
+    cloudConsultationsSnap.forEach(snap => {
+      const data = snap.data() as ConsultationRecord;
+      cloudConsultationsMap.set(data.id, data);
+    });
+
+    // Push local records that are not in cloud or newer than cloud
+    for (const localRec of localConsultations) {
+      const cloudRec = cloudConsultationsMap.get(localRec.id);
+      const localTime = new Date(localRec.updatedAt || localRec.createdAt || '').getTime();
+      const cloudTime = cloudRec ? new Date(cloudRec.updatedAt || cloudRec.createdAt || '').getTime() : 0;
+      if (!cloudRec || localTime > cloudTime) {
+        await saveConsultationToCloud(localRec);
+        pushedCount++;
+      }
+    }
+
+    // Merge cloud records into local
+    const mergedConsultationsMap = new Map<string, ConsultationRecord>();
+    cloudConsultationsMap.forEach((c, id) => mergedConsultationsMap.set(id, c));
+    localConsultations.forEach(l => {
+      const cloud = mergedConsultationsMap.get(l.id);
+      const localTime = new Date(l.updatedAt || l.createdAt || '').getTime();
+      const cloudTime = cloud ? new Date(cloud.updatedAt || cloud.createdAt || '').getTime() : 0;
+      if (!cloud || localTime >= cloudTime) {
+        mergedConsultationsMap.set(l.id, l);
+      }
+    });
+    const finalConsultations = Array.from(mergedConsultationsMap.values());
+    finalConsultations.sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime());
+    saveConsultations(finalConsultations);
+    pulledCount += cloudConsultationsSnap.size;
+
+    // 2. Expenses bi-directional sync
+    const localExpenses = loadExpenses();
+    const cloudExpensesSnap = await getDocs(collection(db, 'expenses'));
+    const cloudExpensesMap = new Map<string, ExpenseRecord>();
+    cloudExpensesSnap.forEach(snap => {
+      const data = snap.data() as ExpenseRecord;
+      cloudExpensesMap.set(data.id, data);
+    });
+
+    for (const localExp of localExpenses) {
+      if (!cloudExpensesMap.has(localExp.id)) {
+        await saveExpenseToCloud(localExp);
+        pushedCount++;
+      }
+    }
+    const mergedExpensesMap = new Map<string, ExpenseRecord>();
+    cloudExpensesMap.forEach((e, id) => mergedExpensesMap.set(id, e));
+    localExpenses.forEach(l => mergedExpensesMap.set(l.id, l));
+    const finalExpenses = Array.from(mergedExpensesMap.values());
+    finalExpenses.sort((a, b) => new Date(b.createdAt || b.date || '').getTime() - new Date(a.createdAt || a.date || '').getTime());
+    saveExpenses(finalExpenses);
+
+    // 3. Amulets & Yatras sync
+    const localAmulets = loadAmuletsCatalog();
+    const cloudAmuletsSnap = await getDocs(collection(db, 'amulets'));
+    if (cloudAmuletsSnap.empty && localAmulets.length > 0) {
+      for (const a of localAmulets) {
+        await saveAmuletToCloud(a);
+        pushedCount++;
+      }
+    } else if (!cloudAmuletsSnap.empty) {
+      const fetchedAmulets: AmuletCatalogItem[] = [];
+      cloudAmuletsSnap.forEach(docSnap => fetchedAmulets.push(docSnap.data() as AmuletCatalogItem));
+      saveAmuletsCatalog(fetchedAmulets);
+    }
+
+    const localYatras = loadYatraCatalog();
+    const cloudYatrasSnap = await getDocs(collection(db, 'yatras'));
+    if (cloudYatrasSnap.empty && localYatras.length > 0) {
+      for (const y of localYatras) {
+        await saveYatraToCloud(y);
+        pushedCount++;
+      }
+    } else if (!cloudYatrasSnap.empty) {
+      const fetchedYatras: YatraCatalogItem[] = [];
+      cloudYatrasSnap.forEach(docSnap => fetchedYatras.push(docSnap.data() as YatraCatalogItem));
+      saveYatraCatalog(fetchedYatras);
+    }
+
+    // 4. Update sync timestamp and log
+    recordCloudSyncTime();
+    if (pushedCount > 0) {
+      addSyncLog({
+        action: 'auto_sync',
+        collection: 'all',
+        itemCount: pushedCount + pulledCount,
+        status: 'success',
+        details: `Auto Background Sync: pushed ${pushedCount} changes, verified ${pulledCount} cloud items`,
+      });
+    }
+
+    return { synced: true, pushedCount, pulledCount };
+  } catch (err: any) {
+    console.warn('Auto Background Sync notice:', err);
+    return { synced: false, pushedCount: 0, pulledCount: 0, error: err?.message };
+  }
+}

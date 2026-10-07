@@ -1,13 +1,25 @@
 {
-  "version": "1.9",
+  "version": "2.0",
   "releaseDate": "2026-10-06",
-  "title": "Exact Cash Flow Real-Time Accounting Engine",
+  "title": "Seamless Silent Auto-Sync & Permanent Banner Removal",
   "isCloudAuthoritative": true,
   "changelog": [
-    "ယနေ့ဝင်ငွေ (Today's Income) တွက်ချက်မှုကို ရက်ချိန်းယူသည့်ရက်စွဲအစား အမှန်တကယ် 'ငွေရှင်းသည့်ရက်စွဲ' (Payment Date) ပေါ်တွင် အခြေခံ၍ ပြောင်းလဲတွက်ချက်ပေးခြင်း။",
-    "တကယ့်ငွေဝင်သည့်နေ့ရက် Cash Flow အတိုင်း ဘဏ္ဍာရေးစာရင်းဇယား တိကျမှန်ကန်မှုရှိစေရန် ဆောင်ရွက်ပေးခြင်း။"
+    "မျက်စိနောက်စေသော Sync သတိပေးချက် Banner ကြီးအား လုံးဝဖယ်ရှားပေးခြင်း။",
+    "နောက်ကွယ်မှ အလိုအလျောက် (Background) စက္ကန့်မလပ် အပြန်အလှန် ချိတ်ဆက်ပေးသော Silent Auto-Sync Engine စနစ် အပြည့်အဝ ထည့်သွင်းပေးခြင်း။",
+    "စက်ပစ္စည်းအားလုံး ဒေတာမပျောက်ပျက်ဘဲ အချိန်နှင့်တစ်ပြေးညီ Real-time Auto-Sync ဖြစ်စေခြင်း။"
   ],
   "history": [
+    {
+      "version": "2.0",
+      "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
+      "title": "Seamless Silent Auto-Sync & Permanent Banner Removal",
+      "badge": "Auto Sync",
+      "changelog": [
+        "မျက်စိနောက်စေသော Sync သတိပေးချက် Banner ကြီးအား လုံးဝဖယ်ရှားပေးခြင်း",
+        "နောက်ကွယ်မှ အလိုအလျောက် (Background) စက္ကန့်မလပ် အပြန်အလှန် ချိတ်ဆက်ပေးသော Silent Auto-Sync Engine စနစ် အပြည့်အဝ ထည့်သွင်းပေးခြင်း",
+        "စက်ပစ္စည်းအားလုံး ဒေတာမပျောက်ပျက်ဘဲ အချိန်နှင့်တစ်ပြေးညီ Real-time Auto-Sync ဖြစ်စေခြင်း"
+      ]
+    },
     {
       "version": "1.9",
       "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
@@ -63,21 +75,22 @@
     {
       "version": "1.4",
       "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
-      "title": "Tailwind v4 OKLCH Fix with Native Image Exporter Engine",
-      "badge": "OKLCH Fix",
+      "title": "Cloud Real-Time Multi-Device Sync Engine",
+      "badge": "Multi-Device",
       "changelog": [
-        "Tailwind CSS v4 ၏ oklch() အား Native Renderer (html-to-image) Engine သို့ ပြောင်းလဲအသုံးပြု၍ ဖြေရှင်းခြင်း",
-        "PNG/JPEG ပုံရိပ်ထုတ်ယူရာတွင် စာလုံး/အရောင်များ ပျက်ယွင်းမှုမရှိဘဲ လွန်စွာ ကြည်လင်ပြတ်သားစွာ ဒေါင်းလုဒ်ရယူနိုင်ခြင်း"
+        "လူ ၂ ယောက်မက စက်များစွာ ပြိုင်တူ စာရင်းသွင်းနိုင်သော Google Cloud Firestore စနစ် ချိတ်ဆက်ခြင်း",
+        "Data Overwrite နှင့် Duplicate မဖြစ်စေရန် Auto-ID bumping နှင့် Smart Field Merging ထည့်သွင်းခြင်း",
+        "စက်အလိုက် တာဝန်ခံ အမည် သတ်မှတ်၍ Audit Trail မှတ်တမ်းတင်ခြင်း"
       ]
     },
     {
       "version": "1.3",
       "releaseDate": "၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆",
-      "title": "Optimized Image Exports & Removed PDF",
-      "badge": "Exports Fix",
+      "title": "Myanmar Calendar & PWA Mobile App Support",
+      "badge": "Core App",
       "changelog": [
-        "ပြေစာအား PNG/JPEG ပြုလုပ်ရာတွင် memory limit ကျော်၍ error တက်ခြင်းအား စနစ်တကျ ပြုပြင်ပေးခြင်း",
-        "PDF သိမ်းဆည်းရန် ခလုတ်အား လုံးဝဖြုတ်ပယ်ပေးခြင်း"
+        "မြန်မာ့ရက်စွဲ ပြက္ခဒိန် အပြည့်အစုံ တွက်ချက်ထည့်သွင်းခြင်း",
+        "ဖုန်းနှင့် ကွန်ပျူတာများတွင် App အဖြစ် အင်စတောလုပ်နိုင်သော PWA ထည့်သွင်းခြင်း"
       ]
     }
   ]
