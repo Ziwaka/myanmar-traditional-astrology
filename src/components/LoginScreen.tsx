@@ -16,6 +16,7 @@ import { performLogin, UserAccount } from '../utils/auth';
 import { LOCAL_APP_VERSION } from '../utils/versionCheck';
 import { ForcedPWAInstallBanner } from './ForcedPWAInstallBanner';
 import { ReleaseChangelogPopUpModal } from './ReleaseChangelogPopUpModal';
+import { AstrologyLogo } from './AstrologyLogo';
 
 interface LoginScreenProps {
   onLoginSuccess: (user: UserAccount) => void;
@@ -73,9 +74,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         
         {/* App Logo & Header */}
         <div className="text-center space-y-3">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 via-amber-600 to-amber-800 flex items-center justify-center mx-auto shadow-xl shadow-amber-500/20 text-stone-950 font-bold border border-amber-300/40">
-            <Crown className="w-9 h-9" />
-          </div>
+          <AstrologyLogo className="w-20 h-20 mx-auto" />
 
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100">

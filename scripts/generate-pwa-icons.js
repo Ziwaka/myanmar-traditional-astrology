@@ -1,4 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+import sharp from 'sharp';
+import fs from 'fs';
+import path from 'path';
+
+const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <radialGradient id="pwaBgGrad" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#292524" />
@@ -151,4 +155,51 @@
       <path d="M 204 273 L 204 291 M 195 282 L 213 282" stroke="#fde047" stroke-width="2.5" stroke-linecap="round" />
     </g>
   </g>
-</svg>
+</svg>`;
+
+async function run() {
+  const publicDir = path.resolve('public');
+  
+  // 1. Write public/icon.svg
+  fs.writeFileSync(path.join(publicDir, 'icon.svg'), svgContent, 'utf-8');
+  console.log('Written icon.svg');
+
+  const svgBuffer = Buffer.from(svgContent);
+
+  // 2. Generate 512x512 PNG
+  await sharp(svgBuffer)
+    .resize(512, 512)
+    .png()
+    .toFile(path.join(publicDir, 'pwa-512x512.png'));
+  console.log('Generated pwa-512x512.png');
+
+  // 3. Generate 192x192 PNG
+  await sharp(svgBuffer)
+    .resize(192, 192)
+    .png()
+    .toFile(path.join(publicDir, 'pwa-192x192.png'));
+  console.log('Generated pwa-192x192.png');
+
+  // 4. Generate Maskable 512x512 PNG (with safe-zone padding)
+  await sharp(svgBuffer)
+    .resize(440, 440)
+    .extend({
+      top: 36,
+      bottom: 36,
+      left: 36,
+      right: 36,
+      background: '#1c1917'
+    })
+    .png()
+    .toFile(path.join(publicDir, 'pwa-maskable-512x512.png'));
+  console.log('Generated pwa-maskable-512x512.png');
+
+  // 5. Generate apple-touch-icon.png (180x180)
+  await sharp(svgBuffer)
+    .resize(180, 180)
+    .png()
+    .toFile(path.join(publicDir, 'apple-touch-icon.png'));
+  console.log('Generated apple-touch-icon.png');
+}
+
+run().catch(console.error);

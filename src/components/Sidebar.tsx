@@ -29,6 +29,7 @@ import { UserAccount, getEffectivePermissions } from '../utils/auth';
 import { exportAllDataAsJSON } from '../utils/storage';
 import { PWAInstallButton } from './PWAInstallButton';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { AstrologyLogo } from './AstrologyLogo';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -154,9 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Brand Header with Close Button */}
           <div className="p-4 border-b border-stone-800 flex items-center justify-between bg-stone-950">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 via-amber-600 to-amber-800 flex items-center justify-center shadow-lg shadow-amber-500/20 text-stone-950 font-bold border border-amber-300/40">
-                <Sparkles className="w-5 h-5 animate-pulse" />
-              </div>
+              <AstrologyLogo className="w-10 h-10" />
               <div>
                 <h1 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100">
                   မြန်မာ့ရိုးရာဗေဒင်ပညာ

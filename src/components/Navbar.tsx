@@ -19,6 +19,7 @@ import {
 import { UserAccount, UserRole } from '../utils/auth';
 import { PWAInstallButton } from './PWAInstallButton';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { AstrologyLogo } from './AstrologyLogo';
 
 export type ActiveTab = 
   | 'consultations' 
@@ -127,6 +128,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Menu className="w-5 h-5 text-amber-400" />
               <span className="text-xs font-bold hidden md:inline">Menu</span>
             </button>
+
+            <AstrologyLogo className="w-8 h-8 hidden sm:inline-flex shrink-0" />
 
             <div className="min-w-0">
               <h1 className="text-sm sm:text-base lg:text-lg font-bold text-amber-200 truncate leading-tight">

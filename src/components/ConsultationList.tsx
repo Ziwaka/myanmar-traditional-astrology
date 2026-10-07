@@ -18,11 +18,14 @@ import {
   CreditCard,
   ChevronDown,
   ChevronUp,
-  AlertTriangle
+  AlertTriangle,
+  History,
+  Crown
 } from 'lucide-react';
 import { ConsultationRecord, ConsultationStatus } from '../types';
 import { formatMMK, formatDateDDMMYYYY, getRecordPaymentDate } from '../utils/astrology';
 import { detectDuplicateConflicts } from '../utils/notifications';
+import { CustomerHistoryQuickViewModal } from './CustomerHistoryQuickViewModal';
 
 interface ConsultationListProps {
   records: ConsultationRecord[];
@@ -78,6 +81,7 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
   const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const [expandedTimes, setExpandedTimes] = useState<Record<string, boolean>>({});
+  const [quickHistoryTarget, setQuickHistoryTarget] = useState<ConsultationRecord | null>(null);
 
   const toggleDate = (dateKey: string) => {
     setExpandedDates(prev => ({ ...prev, [dateKey]: !prev[dateKey] }));
@@ -442,18 +446,47 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                     </span>
                   )}
 
-                  {/* Visit Count Badge */}
+                  {/* Visit Count Badge - Clickable to open Quick History */}
                   {visitCount > 3 ? (
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[11px] font-bold">
-                      <Sparkles className="w-2.5 h-2.5 text-purple-400" />
-                      <span>VIP ({visitCount} ကြိမ်)</span>
-                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setQuickHistoryTarget(rec);
+                      }}
+                      title="ယခင် မေးမြန်းခဲ့သော ဟောချက်များနှင့် မှတ်တမ်းများ အမြန်ကြည့်ရန်"
+                      className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-[11px] font-bold cursor-pointer transition"
+                    >
+                      <Crown className="w-2.5 h-2.5 text-purple-400" />
+                      <span>VIP ({visitCount} ကြိမ်) • မှတ်တမ်း</span>
+                    </button>
                   ) : visitCount > 1 ? (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-500/15 text-blue-300 border border-blue-500/30 text-[11px] font-medium">
-                      <UserCheck className="w-3.5 h-3.5 text-blue-400" />
-                      <span>{visitCount} ကြိမ်မေး</span>
-                    </span>
-                  ) : null}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setQuickHistoryTarget(rec);
+                      }}
+                      title="ယခင် မေးမြန်းခဲ့သော ဟောချက်များနှင့် မှတ်တမ်းများ အမြန်ကြည့်ရန်"
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 text-[11px] font-medium cursor-pointer transition"
+                    >
+                      <History className="w-3.5 h-3.5 text-blue-400" />
+                      <span>{visitCount} ကြိမ်မေး • မှတ်တမ်း</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setQuickHistoryTarget(rec);
+                      }}
+                      title="ဤဧည့်သည်၏ မေးမှတ်တမ်းနှင့် ဟောချက်များ အမြန်ကြည့်ရန်"
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-stone-900 hover:bg-stone-800 text-stone-400 hover:text-amber-300 border border-stone-800 text-[11px] transition cursor-pointer"
+                    >
+                      <History className="w-3 h-3 text-amber-400/70" />
+                      <span>မေးမှတ်တမ်း</span>
+                    </button>
+                  )}
 
                   {/* Duplicate Conflict Badge */}
                   {duplicateRecordIds.has(rec.id) && (
@@ -568,6 +601,16 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
 
                 {/* Actions Group */}
                 <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                  {/* Quick History Button */}
+                  <button
+                    onClick={() => setQuickHistoryTarget(rec)}
+                    title="ဧည့်သည်၏ ယခင်မေးမှတ်တမ်း & ဟောချက်များ အမြန်ကြည့်ရန် (Customer History Quick View)"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 font-bold text-xs border border-amber-500/30 transition cursor-pointer"
+                  >
+                    <History className="w-3.5 h-3.5 text-amber-400" />
+                    <span>မှတ်တမ်း</span>
+                  </button>
+
                   {/* Print / PDF Button */}
                   <button
                     onClick={() => onPrintRecord(rec)}
@@ -906,6 +949,23 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
           </div>
         );
       })()}
+
+      {/* Quick View Customer Consultation History Modal */}
+      <CustomerHistoryQuickViewModal
+        isOpen={!!quickHistoryTarget}
+        onClose={() => setQuickHistoryTarget(null)}
+        targetRecord={quickHistoryTarget}
+        allRecords={records}
+        onOpenConsultation={(cId) => {
+          setQuickHistoryTarget(null);
+          const found = records.find(r => r.id === cId);
+          if (found) onSelectRecord(found);
+        }}
+        onBookNewForCustomer={() => {
+          setQuickHistoryTarget(null);
+          onOpenNewConsultation();
+        }}
+      />
     </div>
   );
 };

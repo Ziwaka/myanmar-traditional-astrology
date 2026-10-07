@@ -16,6 +16,7 @@ import { toJpeg } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { ConsultationRecord } from '../types';
 import { formatMMK, NAWAWIN_OPTIONS, BURMESE_DAYS, MAHABOTE_HOUSES, formatDateDDMMYYYY } from '../utils/astrology';
+import { AstrologyLogo } from './AstrologyLogo';
 
 interface PrintReceiptModalProps {
   record: ConsultationRecord | null;
@@ -206,8 +207,8 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                 နမော တဿ ဘဂဝတော အရဟတော သမ္မာသမ္ဗုဒ္ဓဿ
               </p>
               
-              <div className="flex items-center justify-center gap-2">
-                <Crown className="w-5 h-5 text-amber-600" />
+              <div className="flex items-center justify-center gap-2.5">
+                <AstrologyLogo className="w-8 h-8 shrink-0" />
                 <h1 className="text-xl sm:text-2xl font-extrabold text-stone-900 tracking-tight">
                   မြန်မာ့ရိုးရာဗေဒင်ပညာ ဟောစာတမ်းနှင့် ဝန်ဆောင်မှုပြေစာ
                 </h1>
