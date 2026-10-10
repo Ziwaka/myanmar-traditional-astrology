@@ -70,7 +70,7 @@ export function getCheckpointLabel(checkpoint: ReminderCheckpoint): string {
     case '0_min':
       return 'ဟောမည့်အချိန် ရောက်ရှိပါပြီ!';
     case 'duplicate_alert':
-      return '⚠️ ရက်ချိန်း ထပ်နေမှု သတိပေးချက် (Duplicate Alert)';
+      return '⚠️ ရက်ချိန်းထပ် သတိပေးချက်';
     default:
       return 'ရက်ချိန်း သတိပေးချက်';
   }
@@ -186,7 +186,7 @@ export function checkUpcomingAppointments(
           if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
             try {
               new Notification(`📅 ဗေဒင်ရက်ချိန်း သတိပေးချက်: ${cp.label}`, {
-                body: `ဟောရမည့်သူ: ${record.customerName || 'အမည်မဖော်ပြထားသူ'} (${timeText})\nဖုန်း: ${record.phone || '-'}`,
+                body: `ဟောရမည့်သူ: ${record.customerName || 'အမည်မဖော်ပြထားသူ'} (${timeText})`,
                 icon: '/icons/icon-192.png',
                 tag: sentKey,
               });
@@ -208,7 +208,6 @@ export function checkUpcomingAppointments(
             assignedUserName: record.assignedUserName || currentUser.name,
             createdAt: new Date().toISOString(),
             isRead: false,
-            phone: record.phone,
             serviceCategory: record.serviceCategory,
           };
 
@@ -258,13 +257,26 @@ function formatReadableTime(dtStr?: string): string {
   }
 }
 
-// Clean phone digits for matching
-function normalizePhone(ph?: string): string {
-  if (!ph) return '';
-  return ph.replace(/[^0-9]/g, '');
+// Clean client name for duplicate checking (Client Name နဲ့ပဲ တိုက်စစ်ရန်)
+export function normalizeClientName(name?: string): string {
+  if (!name) return '';
+  const trimmed = name.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (
+    trimmed.length < 2 ||
+    trimmed === 'မမေးသူ' ||
+    trimmed === 'မမေးသူ (အမည်မသိ)' ||
+    trimmed === 'မမေသူ' ||
+    trimmed === 'မမေသူ (သို့) မထည့်ပါ' ||
+    trimmed === 'အမည်မသိ' ||
+    trimmed === 'အမည်မဖော်ပြထားသူ' ||
+    trimmed === 'unknown'
+  ) {
+    return '';
+  }
+  return trimmed;
 }
 
-// Detect all duplicate conflicts across records
+// Detect duplicate conflicts across records by Client Name ONLY
 export function detectDuplicateConflicts(
   records: ConsultationRecord[],
   currentUser?: UserAccount
@@ -272,96 +284,33 @@ export function detectDuplicateConflicts(
   const conflicts: DuplicateConflict[] = [];
   const activeRecords = records.filter(r => r.status !== 'cancelled');
 
-  const processedClashPairs = new Set<string>();
-
-  // 1. Time Slot Clash Detection (Double Booking for same astrologer / reader)
-  for (let i = 0; i < activeRecords.length; i++) {
-    const r1 = activeRecords[i];
-    if (!r1.readingDateTime) continue;
-
-    const t1 = new Date(r1.readingDateTime).getTime();
-    if (isNaN(t1)) continue;
-
-    const d1Str = r1.readingDateTime.slice(0, 10);
-
-    for (let j = i + 1; j < activeRecords.length; j++) {
-      const r2 = activeRecords[j];
-      if (!r2.readingDateTime) continue;
-
-      const t2 = new Date(r2.readingDateTime).getTime();
-      if (isNaN(t2)) continue;
-
-      const d2Str = r2.readingDateTime.slice(0, 10);
-      if (d1Str !== d2Str) continue;
-
-      // Check if within 25 minutes of each other
-      const diffMinutes = Math.abs(t1 - t2) / 60000;
-      if (diffMinutes <= 25) {
-        // Check if assigned to the same reader or either is unassigned / all
-        const sameReader = 
-          !r1.assignedUserId || 
-          !r2.assignedUserId || 
-          r1.assignedUserId === 'all' || 
-          r2.assignedUserId === 'all' || 
-          r1.assignedUserId === r2.assignedUserId;
-
-        if (sameReader) {
-          const pairKey = [r1.id, r2.id].sort().join('_time_');
-          if (!processedClashPairs.has(pairKey)) {
-            processedClashPairs.add(pairKey);
-
-            const readerName = r1.assignedUserName || r2.assignedUserName || 'ဗေဒင်ဆရာ/တာဝန်ခံ';
-            const time1Formatted = formatReadableTime(r1.readingDateTime);
-            const time2Formatted = formatReadableTime(r2.readingDateTime);
-
-            conflicts.push({
-              id: `conflict-time-${pairKey}`,
-              type: 'time_slot_clash',
-              title: `🚨 ရက်ချိန်း အချိန်ထပ်နေသည် (Time Slot Conflict)`,
-              description: `[${readerName}] အတွက် [${r1.customerName || 'ဧည့်သည်'} (${r1.id})] နှင့် [${r2.customerName || 'ဧည့်သည်'} (${r2.id})] တို့၏ ရက်ချိန်းအချိန် (${diffMinutes === 0 ? 'တစ်ပြိုင်နက်တည်း' : `${Math.round(diffMinutes)} မိနစ်ခြား`}) ထပ်နေပါသည် (${time1Formatted} / ${time2Formatted})။`,
-              primaryRecord: r1,
-              conflictingRecords: [r2],
-              severity: 'high',
-            });
-          }
-        }
-      }
-    }
+  // Group active records by normalized Client Name
+  const nameMap = new Map<string, ConsultationRecord[]>();
+  for (const record of activeRecords) {
+    const norm = normalizeClientName(record.customerName);
+    if (!norm) continue;
+    const existing = nameMap.get(norm) || [];
+    existing.push(record);
+    nameMap.set(norm, existing);
   }
 
-  // 2. Duplicate Phone / Customer Booking on Same Day Detection
-  const processedPhonePairs = new Set<string>();
-  for (let i = 0; i < activeRecords.length; i++) {
-    const r1 = activeRecords[i];
-    const ph1 = normalizePhone(r1.phone);
-    if (!ph1 || ph1.length < 6) continue;
+  nameMap.forEach((groupRecords, normName) => {
+    if (groupRecords.length > 1) {
+      const primary = groupRecords[0];
+      const others = groupRecords.slice(1);
+      const otherIds = others.map(o => o.id).join(', ');
 
-    const day1 = (r1.readingDateTime ? r1.readingDateTime.slice(0, 10) : r1.bookingDate) || '';
-
-    for (let j = i + 1; j < activeRecords.length; j++) {
-      const r2 = activeRecords[j];
-      const ph2 = normalizePhone(r2.phone);
-      if (ph1 !== ph2) continue;
-
-      const day2 = (r2.readingDateTime ? r2.readingDateTime.slice(0, 10) : r2.bookingDate) || '';
-      if (day1 && day2 && day1 === day2) {
-        const pairKey = [r1.id, r2.id].sort().join('_phone_');
-        if (!processedPhonePairs.has(pairKey)) {
-          processedPhonePairs.add(pairKey);
-
-          conflicts.push({
-            id: `conflict-phone-${pairKey}`,
-            type: 'duplicate_phone_same_day',
-            title: `⚠️ ဖုန်းနံပါတ်တူ ရက်ချိန်း ၂ ခု ရှိနေသည် (Duplicate Phone Booking)`,
-            description: `ဖုန်းနံပါတ် (${r1.phone}) ဖြင့် ${day1} နေ့တွင် [${r1.customerName} (${r1.id})] နှင့် [${r2.customerName} (${r2.id})] ရက်ချိန်း ၂ ကြိမ် တင်ထားသည်ကို တွေ့ရှိရပါသည်။`,
-            primaryRecord: r1,
-            conflictingRecords: [r2],
-            severity: 'medium',
-          });
-        }
-      }
+      conflicts.push({
+        id: `conflict-name-${normName}`,
+        type: 'duplicate_customer',
+        title: 'ရက်ချိန်းထပ်နေပါသည်',
+        description: `${primary.customerName} အမည်ဖြင့် ရက်ချိန်း (${primary.id}) နှင့် (${otherIds}) ထပ်နေပါသည်`,
+        primaryRecord: primary,
+        conflictingRecords: others,
+        severity: 'medium',
+      });
     }
-  }
+  });
 
   // If user filter is passed, filter conflicts
   if (currentUser && currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
@@ -435,7 +384,6 @@ export function checkDuplicateAppointments(
         assignedUserName: conflict.primaryRecord.assignedUserName || currentUser.name,
         createdAt: new Date().toISOString(),
         isRead: false,
-        phone: conflict.primaryRecord.phone,
         serviceCategory: conflict.primaryRecord.serviceCategory,
       };
 

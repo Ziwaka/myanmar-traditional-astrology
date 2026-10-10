@@ -11,7 +11,6 @@ import {
   Trash2, 
   Sparkles, 
   ShoppingBag, 
-  Phone, 
   UserCheck, 
   Plus,
   Globe,
@@ -77,18 +76,23 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | ConsultationStatus | 'today' | 'duplicate'>('all');
   const [yatraFilter, setYatraFilter] = useState<'all' | 'with_yatra' | 'no_yatra'>('all');
   const [modeFilter, setModeFilter] = useState<'all' | 'in_person' | 'remote'>('all');
-  const [isPendingExpanded, setIsPendingExpanded] = useState(false);
-  const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const [expandedTimes, setExpandedTimes] = useState<Record<string, boolean>>({});
   const [quickHistoryTarget, setQuickHistoryTarget] = useState<ConsultationRecord | null>(null);
 
   const toggleDate = (dateKey: string) => {
-    setExpandedDates(prev => ({ ...prev, [dateKey]: !prev[dateKey] }));
+    setExpandedDates(prev => ({
+      ...prev,
+      [dateKey]: prev[dateKey] !== false ? false : true
+    }));
   };
 
   const toggleTime = (timeCompKey: string) => {
-    setExpandedTimes(prev => ({ ...prev, [timeCompKey]: prev[timeCompKey] === false }));
+    setExpandedTimes(prev => ({
+      ...prev,
+      [timeCompKey]: prev[timeCompKey] !== false ? false : true
+    }));
   };
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -114,7 +118,6 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
       const matchesSearch =
         rec.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         rec.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        rec.phone.includes(searchTerm) ||
         (rec.socialAccountName && rec.socialAccountName.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (rec.notes && rec.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (rec.predictions && rec.predictions.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -182,18 +185,15 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
     };
   }, [records]);
 
-  // Fast lookup map for customer visit counts (by phone, customerId, or name)
+  // Fast lookup map for customer visit counts (by customerId or name)
   const customerVisitCounts = useMemo(() => {
     const counts = new Map<string, number>();
 
     records.forEach((r) => {
-      const cleanPhone = r.phone ? r.phone.replace(/[^0-9]/g, '') : '';
       const cleanCustId = r.customerId ? r.customerId.trim().toLowerCase() : '';
       const cleanName = r.customerName ? r.customerName.trim().toLowerCase() : '';
 
-      if (cleanPhone && cleanPhone.length >= 6) {
-        counts.set(`phone:${cleanPhone}`, (counts.get(`phone:${cleanPhone}`) || 0) + 1);
-      } else if (cleanCustId) {
+      if (cleanCustId) {
         counts.set(`cust:${cleanCustId}`, (counts.get(`cust:${cleanCustId}`) || 0) + 1);
       } else if (cleanName) {
         counts.set(`name:${cleanName}`, (counts.get(`name:${cleanName}`) || 0) + 1);
@@ -204,13 +204,9 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
   }, [records]);
 
   const getCustomerVisitCount = (r: ConsultationRecord): number => {
-    const cleanPhone = r.phone ? r.phone.replace(/[^0-9]/g, '') : '';
     const cleanCustId = r.customerId ? r.customerId.trim().toLowerCase() : '';
     const cleanName = r.customerName ? r.customerName.trim().toLowerCase() : '';
 
-    if (cleanPhone && cleanPhone.length >= 6) {
-      return customerVisitCounts.get(`phone:${cleanPhone}`) || 1;
-    }
     if (cleanCustId) {
       return customerVisitCounts.get(`cust:${cleanCustId}`) || 1;
     }
@@ -310,7 +306,7 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type="text"
-              placeholder="အမည်၊ ဖုန်း၊ ID ဖြင့် ရှာရန်..."
+              placeholder="အမည်၊ ID ဖြင့် ရှာရန်..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-xl bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-500"
@@ -330,7 +326,15 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
         <div className="grid grid-cols-3 gap-2 w-full text-xs">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+            onChange={(e) => {
+              const val = e.target.value as any;
+              setStatusFilter(val);
+              if (val === 'completed') {
+                setActiveTab('completed');
+              } else if (val === 'scheduled' || val === 'today') {
+                setActiveTab('pending');
+              }
+            }}
             className="w-full bg-stone-900 text-stone-200 border border-stone-700 rounded-xl px-2 py-2 focus:outline-none focus:border-amber-500 cursor-pointer text-xs font-semibold"
             title="အခြေအနေအလိုက် စစ်ထုတ်ရန်"
           >
@@ -490,9 +494,9 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
 
                   {/* Duplicate Conflict Badge */}
                   {duplicateRecordIds.has(rec.id) && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/50 text-[11px] font-extrabold animate-pulse">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/50 text-[11px] font-bold">
                       <AlertTriangle className="w-3 h-3 text-rose-400" />
-                      <span>ထပ်နေသည် (Duplicate)</span>
+                      <span>ရက်ချိန်းထပ်နေသည်</span>
                     </span>
                   )}
 
@@ -506,23 +510,12 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
 
               {/* Middle Info Section */}
               <div className="bg-stone-900/70 rounded-xl p-3 border border-stone-800/80 space-y-2 text-xs">
-                {/* Phone & Social Account */}
-                {((rec.phone && rec.phone.trim() !== '-' && rec.phone.trim() !== '09-') || rec.socialAccountName) ? (
-                  <div className="flex flex-wrap items-center justify-between gap-1 text-stone-300">
-                    {rec.phone && rec.phone.trim() !== '-' && rec.phone.trim() !== '09-' ? (
-                      <div className="flex items-center gap-1 font-mono">
-                        <Phone className="w-3.5 h-3.5 text-stone-500 shrink-0" />
-                        <span>{rec.phone}</span>
-                      </div>
-                    ) : (
-                      <div />
-                    )}
-
-                    {rec.socialAccountName && (
-                      <div className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/80 text-[11px]">
-                        {rec.socialPlatform || 'Social'}: {rec.socialAccountName}
-                      </div>
-                    )}
+                {/* Social Account */}
+                {rec.socialAccountName ? (
+                  <div className="flex flex-wrap items-center justify-end gap-1 text-stone-300">
+                    <div className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/80 text-[11px]">
+                      {rec.socialPlatform || 'Social'}: {rec.socialAccountName}
+                    </div>
                   </div>
                 ) : null}
 
@@ -586,7 +579,7 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                   </div>
                   {isFullyPaid ? (
                     <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-semibold">
-                      ရှင်းပြီး ({(rec.paymentMethod || 'kpay').toUpperCase()})
+                      ရှင်းပြီး
                     </span>
                   ) : isPartial ? (
                     <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-semibold">
@@ -763,36 +756,96 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
           );
         }
 
+        const pendingGroups = groupSortAndSubgroupRecords(pendingRecords, false);
+        const completedGroups = groupSortAndSubgroupRecords(completedRecords, true);
+
         return (
-          <div className="space-y-6 sm:space-y-8">
-            {/* 1. ဟောရန်ကျန် (Pending Records Section) */}
-            <div className="space-y-3">
+          <div className="space-y-4 sm:space-y-5">
+            {/* 1. Side-by-Side 2 Tabs: Scheduled vs Done */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 p-1.5 bg-stone-900/90 rounded-2xl border border-stone-800 shadow-md">
               <button
                 type="button"
-                onClick={() => setIsPendingExpanded(!isPendingExpanded)}
-                className="w-full flex items-center justify-between p-3.5 bg-amber-950/20 hover:bg-amber-950/30 border border-amber-500/30 rounded-2xl transition cursor-pointer text-left shadow-sm"
+                onClick={() => setActiveTab('pending')}
+                className={`flex items-center justify-center gap-1.5 sm:gap-2.5 py-3 px-2 sm:px-4 rounded-xl font-extrabold text-xs sm:text-sm transition-all duration-150 cursor-pointer select-none border ${
+                  activeTab === 'pending'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 border-amber-400 shadow-lg ring-2 ring-amber-400/30 scale-[1.01]'
+                    : 'bg-stone-850/70 hover:bg-stone-800 text-stone-300 hover:text-stone-100 border-stone-800'
+                }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                  <h2 className="font-bold text-sm sm:text-base text-amber-200">
-                    ဟောရန်ကျန်ရှိသူများ (Pending / Scheduled)
-                  </h2>
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono font-bold text-xs border border-amber-500/30">
-                    {pendingRecords.length}
-                  </span>
-                </div>
-                <div className="text-stone-400 hover:text-stone-200">
-                  {isPendingExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                </div>
+                <span className={`w-2.5 h-2.5 rounded-full ${activeTab === 'pending' ? 'bg-stone-950 animate-pulse' : 'bg-amber-500'}`} />
+                <span className="truncate">Scheduled</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full font-mono font-black text-xs ${
+                    activeTab === 'pending'
+                      ? 'bg-stone-950 text-amber-300 border border-stone-900 shadow-sm'
+                      : 'bg-stone-900 text-amber-400 border border-stone-700/80'
+                  }`}
+                >
+                  {pendingRecords.length}
+                </span>
               </button>
 
-              {isPendingExpanded && (
-                pendingRecords.length === 0 ? (
-                  <p className="text-xs text-stone-500 italic pl-3.5">ဟောရန်ကျန်ရှိသူ မရှိပါ။</p>
+              <button
+                type="button"
+                onClick={() => setActiveTab('completed')}
+                className={`flex items-center justify-center gap-1.5 sm:gap-2.5 py-3 px-2 sm:px-4 rounded-xl font-extrabold text-xs sm:text-sm transition-all duration-150 cursor-pointer select-none border ${
+                  activeTab === 'completed'
+                    ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white border-emerald-400 shadow-lg ring-2 ring-emerald-400/30 scale-[1.01]'
+                    : 'bg-stone-850/70 hover:bg-stone-800 text-stone-300 hover:text-stone-100 border-stone-800'
+                }`}
+              >
+                <CheckCircle2 className={`w-4 h-4 ${activeTab === 'completed' ? 'text-white' : 'text-emerald-400'}`} />
+                <span className="truncate">Done</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full font-mono font-black text-xs ${
+                    activeTab === 'completed'
+                      ? 'bg-stone-950 text-emerald-300 border border-stone-900 shadow-sm'
+                      : 'bg-stone-900 text-emerald-400 border border-stone-700/80'
+                  }`}
+                >
+                  {completedRecords.length}
+                </span>
+              </button>
+            </div>
+
+            {/* Tab 1: Scheduled (Default, in Expand Mode) */}
+            {activeTab === 'pending' && (
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                    <span className="text-xs font-bold text-amber-300">
+                      Scheduled စာရင်း ({pendingRecords.length} ဦး)
+                    </span>
+                  </div>
+                  {pendingGroups.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allExp = pendingGroups.every(g => expandedDates[g.dateKey] !== false);
+                        const next: Record<string, boolean> = { ...expandedDates };
+                        pendingGroups.forEach(g => { next[g.dateKey] = !allExp; });
+                        setExpandedDates(next);
+                      }}
+                      className="text-[11px] px-2.5 py-1 rounded-lg bg-stone-900 hover:bg-stone-850 text-stone-300 border border-stone-700/80 cursor-pointer font-medium transition"
+                    >
+                      {pendingGroups.every(g => expandedDates[g.dateKey] !== false)
+                        ? 'ရက်စွဲအားလုံး သိမ်းမည်'
+                        : 'ရက်စွဲအားလုံး ဖြန့်မည်'}
+                    </button>
+                  )}
+                </div>
+
+                {pendingRecords.length === 0 ? (
+                  <div className="bg-stone-850 rounded-2xl border border-stone-800 p-8 text-center text-stone-400 space-y-2">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+                    <p className="text-sm font-semibold text-stone-300">Scheduled မရှိပါ (အားလုံး ပြီးစီးပါပြီ)</p>
+                    <p className="text-xs text-stone-500">Done စာရင်းကို ကြည့်ရှုလိုပါက အပေါ်ရှိ "Done" Tab ကို နှိပ်ပါ</p>
+                  </div>
                 ) : (
                   <div className="space-y-4">
-                    {groupSortAndSubgroupRecords(pendingRecords, false).map(group => {
-                      const isDateExpanded = expandedDates[group.dateKey] ?? false;
+                    {pendingGroups.map(group => {
+                      const isDateExpanded = expandedDates[group.dateKey] !== false; // Default Expanded!
                       return (
                         <div key={group.dateKey} className="space-y-3 bg-stone-900/30 p-3 sm:p-4 rounded-2xl border border-stone-800/60">
                           {/* Date Sub-header Button */}
@@ -852,38 +905,46 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                       );
                     })}
                   </div>
-                )
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
-            {/* 2. ဟောပြီး (Completed Records Section) */}
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => setIsCompletedExpanded(!isCompletedExpanded)}
-                className="w-full flex items-center justify-between p-3.5 bg-emerald-950/20 hover:bg-emerald-950/30 border border-emerald-500/30 rounded-2xl transition cursor-pointer text-left shadow-sm"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                  <h2 className="font-bold text-sm sm:text-base text-emerald-200">
-                    ဟောကြားပြီးစီးသူများ (Completed / Done)
-                  </h2>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold text-xs border border-emerald-500/30">
-                    {completedRecords.length}
-                  </span>
+            {/* Tab 2: Done (Opened on demand) */}
+            {activeTab === 'completed' && (
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-xs font-bold text-emerald-300">
+                      Done စာရင်း ({completedRecords.length} ဦး)
+                    </span>
+                  </div>
+                  {completedGroups.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allExp = completedGroups.every(g => expandedDates[g.dateKey] !== false);
+                        const next: Record<string, boolean> = { ...expandedDates };
+                        completedGroups.forEach(g => { next[g.dateKey] = !allExp; });
+                        setExpandedDates(next);
+                      }}
+                      className="text-[11px] px-2.5 py-1 rounded-lg bg-stone-900 hover:bg-stone-850 text-stone-300 border border-stone-700/80 cursor-pointer font-medium transition"
+                    >
+                      {completedGroups.every(g => expandedDates[g.dateKey] !== false)
+                        ? 'ရက်စွဲအားလုံး သိမ်းမည်'
+                        : 'ရက်စွဲအားလုံး ဖြန့်မည်'}
+                    </button>
+                  )}
                 </div>
-                <div className="text-stone-400 hover:text-stone-200">
-                  {isCompletedExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                </div>
-              </button>
 
-              {isCompletedExpanded && (
-                completedRecords.length === 0 ? (
-                  <p className="text-xs text-stone-500 italic pl-3.5">ဟောပြီးစီးသူ မရှိပါ။</p>
+                {completedRecords.length === 0 ? (
+                  <div className="bg-stone-850 rounded-2xl border border-stone-800 p-8 text-center text-stone-400 space-y-2">
+                    <p className="text-sm font-semibold text-stone-300">ဟောပြီးစီးသူ မရှိသေးပါ</p>
+                  </div>
                 ) : (
                   <div className="space-y-4">
-                    {groupSortAndSubgroupRecords(completedRecords, true).map(group => {
-                      const isDateExpanded = expandedDates[group.dateKey] ?? false;
+                    {completedGroups.map(group => {
+                      const isDateExpanded = expandedDates[group.dateKey] !== false; // Default Expanded!
                       return (
                         <div key={group.dateKey} className="space-y-3 bg-stone-900/30 p-3 sm:p-4 rounded-2xl border border-stone-800/60">
                           {/* Date Sub-header Button */}
@@ -943,9 +1004,9 @@ export const ConsultationList: React.FC<ConsultationListProps> = ({
                       );
                     })}
                   </div>
-                )
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         );
       })()}

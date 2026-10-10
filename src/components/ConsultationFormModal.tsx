@@ -25,7 +25,6 @@ import {
   Globe,
   Layers,
   AlertTriangle,
-  Phone,
   Copy,
   ShieldAlert,
   RotateCcw,
@@ -45,6 +44,7 @@ import {
   formatMMK, 
   formatDateDDMMYYYY
 } from '../utils/astrology';
+import { normalizeClientName } from '../utils/notifications';
 import { 
   loadSavedCustomServices, 
   rememberCustomService, 
@@ -117,14 +117,13 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
 
   // Customer info - Name is SKIPABLE (optional!)
   const [customerName, setCustomerName] = useState(initialData?.customerName || '');
-  const [phone, setPhone] = useState(initialData?.phone || '');
   const [consultationMode, setConsultationMode] = useState<'in_person' | 'remote'>(
     initialData?.consultationMode || 'in_person'
   );
   
   // Social Account fields
-  const [socialPlatform, setSocialPlatform] = useState<'viber' | 'facebook' | 'tiktok' | 'telegram' | 'phone' | 'other'>(
-    initialData?.socialPlatform || 'viber'
+  const [socialPlatform, setSocialPlatform] = useState<'viber' | 'facebook' | 'tiktok' | 'telegram' | 'other'>(
+    (initialData?.socialPlatform as any) === 'phone' ? 'viber' : (initialData?.socialPlatform || 'viber')
   );
   const [socialAccountName, setSocialAccountName] = useState(initialData?.socialAccountName || '');
 
@@ -189,8 +188,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
   // Payment
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'partial' | 'unpaid'>(initialData?.paymentStatus || 'paid');
   const [paidAmount, setPaidAmount] = useState<number>(initialData?.paidAmount || 20000);
-  const [paidDate, setPaidDate] = useState<string>(initialData?.paidDate || initialData?.bookingDate || todayStr);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'kpay' | 'wave' | 'cbbank' | 'ayapay'>(initialData?.paymentMethod || 'kpay');
+  const paymentMethod = initialData?.paymentMethod;
 
   // Notes
   const [notes, setNotes] = useState(initialData?.notes || '');
@@ -218,24 +216,17 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
     return allRecords.some(r => r.id.toLowerCase() === id.trim().toLowerCase() && (!initialData || r.id !== initialData.id));
   }, [id, allRecords, initialData]);
 
-  // Duplicate Phone or Customer Name Detection
+  // Duplicate Customer Name Detection (Client Name နဲ့ပဲ တိုက်စစ်ရန်)
   const duplicateCustomerMatches = useMemo(() => {
-    const cleanPh = phone ? phone.replace(/[^0-9]/g, '') : '';
-    const cleanNm = customerName ? customerName.trim().toLowerCase() : '';
-    if (!cleanPh && (!cleanNm || cleanNm === 'မမေးသူ (အမည်မသိ)' || cleanNm === 'မမေသူ (သို့) မထည့်ပါ')) {
-      return [];
-    }
+    const cleanNm = normalizeClientName(customerName);
+    if (!cleanNm) return [];
 
     return allRecords.filter(r => {
       if (initialData && r.id === initialData.id) return false;
-      const rPh = r.phone ? r.phone.replace(/[^0-9]/g, '') : '';
-      const rNm = r.customerName ? r.customerName.trim().toLowerCase() : '';
-      
-      const phoneMatch = cleanPh.length >= 6 && rPh === cleanPh;
-      const nameMatch = cleanNm.length >= 3 && rNm === cleanNm && rNm !== 'မမေးသူ (အမည်မသိ)';
-      return phoneMatch || nameMatch;
+      if (r.status === 'cancelled') return false;
+      return normalizeClientName(r.customerName) === cleanNm;
     });
-  }, [phone, customerName, allRecords, initialData]);
+  }, [customerName, allRecords, initialData]);
 
   // Duplicate / Overlapping Time Slot Conflict (Double Booking Detection)
   const timeSlotConflict = useMemo(() => {
@@ -280,7 +271,6 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
 
   const handleSelectExistingCustomer = (profile: CustomerHistoryProfile) => {
     setCustomerName(profile.customerName || '');
-    setPhone(profile.phone || '');
     if (profile.gender) setGender(profile.gender);
 
     setSelectedHistoryProfile(profile);
@@ -366,7 +356,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
     return {
       id: id || nextId,
       customerName: customerName.trim() || 'မမေးသူ (အမည်မသိ)',
-      phone: phone.trim() || '-',
+      phone: initialData?.phone || '',
       consultationMode,
       socialPlatform: consultationMode === 'remote' ? socialPlatform : undefined,
       socialAccountName: consultationMode === 'remote' ? socialAccountName.trim() : undefined,
@@ -394,7 +384,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
 
       totalAmount: finalTotal,
       paidAmount: finalPaid,
-      paidDate: paymentStatus === 'unpaid' ? undefined : (paidDate || bookingDate || todayStr),
+      paidDate: paymentStatus === 'unpaid' ? undefined : (bookingDate || todayStr),
       paymentStatus,
       paymentMethod,
       
@@ -499,7 +489,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
                   <Search className="w-4 h-4 text-amber-400" />
-                  <span>🔍 Customer အဟောင်း ရှာဖွေရန် (ID၊ ဖုန်း သို့မဟုတ် အမည်):</span>
+                  <span>🔍 Customer အဟောင်း ရှာဖွေရန် (အမည် သို့မဟုတ် ID):</span>
                 </label>
                 {selectedHistoryProfile && (
                   <button
@@ -517,7 +507,7 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="ဖုန်းနံပါတ် သို့မဟုတ် အမည် သို့မဟုတ် ID ဖြင့် ရှာရန်..."
+                  placeholder="အမည် သို့မဟုတ် ID ဖြင့် ရှာရန်..."
                   value={customerSearchQuery}
                   onChange={(e) => setCustomerSearchQuery(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 placeholder-stone-500 focus:border-amber-400 text-xs"
@@ -538,8 +528,6 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                           </div>
                           <div className="text-[11px] text-stone-400 font-mono mt-0.5 flex items-center gap-2">
                             <span className="text-amber-400/90 font-semibold">ID: {cust.allRecords[0]?.customerId || cust.allRecords[0]?.id}</span>
-                            <span>•</span>
-                            <span>ဖုန်း: {cust.phone || 'ဖုန်းမပါ'}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -636,13 +624,13 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
 
             {/* Duplicate ID Warning Banner */}
             {duplicateIdConflict && (
-              <div className="p-2.5 bg-rose-950/80 border border-rose-500/60 rounded-xl text-xs text-rose-200 flex items-center gap-2 animate-pulse">
+              <div className="p-2.5 bg-rose-950/80 border border-rose-500/60 rounded-xl text-xs text-rose-200 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                <span>🚨 ဤ ID နံပါတ် ({id}) သည် အခြားမှတ်တမ်းတွင် ရှိပြီးသားဖြစ်ပါသည် (Duplicate ID)</span>
+                <span>🚨 ID ({id}) ရှိပြီးသားဖြစ်ပါသည်</span>
               </div>
             )}
 
-            {/* 1. Name & Phone */}
+            {/* 1. Customer Name */}
             <div className="space-y-3">
               <div className="space-y-1">
                 <label className="block text-sm font-semibold text-stone-200">
@@ -658,28 +646,12 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-sm font-semibold text-stone-200">
-                  ဖုန်းနံပါတ် (Phone)
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="09..."
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    style={{ fontSize: '16px' }}
-                    className="w-full px-3.5 py-3 rounded-xl bg-stone-900 border border-stone-700 text-stone-100 focus:border-amber-500 shadow-inner font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Live Duplicate Customer / Phone Warning */}
+              {/* Live Duplicate Customer Warning */}
               {duplicateCustomerMatches.length > 0 && !isEditing && (
                 <div className="p-3 bg-amber-950/40 border border-amber-500/50 rounded-2xl space-y-2 text-xs">
                   <div className="flex items-center gap-2 text-amber-300 font-bold">
                     <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>⚠️ ဤဖုန်း/အမည်ဖြင့် ယခင်မှတ်တမ်း ({duplicateCustomerMatches.length}) ခု ရှိနှင့်ပြီးဖြစ်ပါသည် (Duplicate Match)</span>
+                    <span>⚠️ ဤအမည်ဖြင့် ရက်ချိန်းရှိနှင့်ပြီးဖြစ်ပါသည်</span>
                   </div>
                   <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
                     {duplicateCustomerMatches.slice(0, 3).map((dm) => (
@@ -693,7 +665,6 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                           type="button"
                           onClick={() => {
                             setCustomerName(dm.customerName || '');
-                            setPhone(dm.phone || '');
                             if (dm.gender) setGender(dm.gender);
                           }}
                           className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold"
@@ -781,13 +752,12 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                     <option value="facebook">📘 Facebook</option>
                     <option value="telegram">✈️ Telegram</option>
                     <option value="tiktok">🎵 TikTok</option>
-                    <option value="phone">📞 Phone Call</option>
                     <option value="other">🌐 အခြား</option>
                   </select>
 
                   <input
                     type="text"
-                    placeholder="Social Account Name / ID / Phone ရိုက်ထည့်ပါ (ဥပမာ- Phyo Phyo / @user123)..."
+                    placeholder="Social Account Name / ID ရိုက်ထည့်ပါ (ဥပမာ- Phyo Phyo / @user123)..."
                     value={socialAccountName}
                     onChange={(e) => setSocialAccountName(e.target.value)}
                     style={{ fontSize: '16px' }}
@@ -933,8 +903,8 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                 </div>
               </div>
 
-              {/* Tick Boxes for 30,000 and 50,000 */}
-              <div className="grid grid-cols-2 gap-2 pt-0.5">
+              {/* Options for 30,000, 50,000 and Custom */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-0.5">
                 <label
                   onClick={() => setServiceFee(30000)}
                   className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition cursor-pointer select-none ${
@@ -972,6 +942,50 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                     ၅၀,၀၀၀ ကျပ်
                   </span>
                 </label>
+
+                {/* Custom Box */}
+                <div
+                  onClick={() => {
+                    if (serviceFee === 30000 || serviceFee === 50000) {
+                      setServiceFee(20000);
+                    }
+                  }}
+                  className={`flex flex-col justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${
+                    serviceFee !== 30000 && serviceFee !== 50000
+                      ? 'bg-amber-950/40 border-amber-500 text-amber-300 font-bold ring-1 ring-amber-500/40 shadow-sm'
+                      : 'bg-stone-950/60 border-stone-700 text-stone-300 hover:border-stone-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={serviceFee !== 30000 && serviceFee !== 50000}
+                      onChange={() => {
+                        if (serviceFee === 30000 || serviceFee === 50000) {
+                          setServiceFee(20000);
+                        }
+                      }}
+                      className="w-4 h-4 rounded text-amber-500 focus:ring-0 cursor-pointer accent-amber-500"
+                    />
+                    <span className="text-xs sm:text-sm font-semibold">
+                      စိတ်ကြိုက် (Custom)
+                    </span>
+                  </div>
+                  {serviceFee !== 30000 && serviceFee !== 50000 && (
+                    <div className="mt-2 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="number"
+                        placeholder="ငွေပမာဏ..."
+                        value={serviceFee || ''}
+                        onChange={(e) => setServiceFee(Number(e.target.value) || 0)}
+                        style={{ fontSize: '15px' }}
+                        className="w-full px-2 py-1 text-right rounded-lg bg-stone-900 border border-amber-500/50 text-amber-300 font-mono font-bold text-xs focus:outline-none focus:border-amber-400"
+                        autoFocus
+                      />
+                      <span className="text-[11px] text-stone-400">ကျပ်</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1317,58 +1331,6 @@ export const ConsultationFormModal: React.FC<ConsultationFormModalProps> = ({
                   style={{ fontSize: '16px' }}
                   className="w-full px-3.5 py-3 rounded-xl bg-stone-900 border border-stone-700 text-amber-300 font-mono font-bold focus:border-amber-500 shadow-inner"
                 />
-              </div>
-
-              {/* Payment Date (ငွေရှင်းသည့်ရက်) */}
-              {paymentStatus !== 'unpaid' && (
-                <div className="space-y-1.5 p-3 rounded-xl bg-stone-900/90 border border-stone-800">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-amber-300 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>ငွေရှင်းသည့်နေ့ရက် (Payment Date)</span>
-                    </label>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setPaidDate(todayStr)}
-                        className="px-2 py-0.5 rounded text-[11px] bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-700 cursor-pointer"
-                      >
-                        ယနေ့
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaidDate(bookingDate)}
-                        className="px-2 py-0.5 rounded text-[11px] bg-stone-800 hover:bg-stone-700 text-amber-300 border border-stone-700 cursor-pointer"
-                      >
-                        ဘိုကင်ရက်
-                      </button>
-                    </div>
-                  </div>
-                  <DatePickerInput
-                    label=""
-                    value={paidDate}
-                    onChange={(d) => setPaidDate(d)}
-                  />
-                  <p className="text-[10px] text-stone-400">
-                    * ဤရက်စွဲသည် Daily Balance နှင့် လစဉ်ငွေဝင်စာရင်းတွင် ငွေဝင်အဖြစ် တိုက်ရိုက်သက်ရောက်ပါမည်။
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-1">
-                <label className="block text-sm font-semibold text-stone-300">ငွေပေးချေသည့် နည်းလမ်း</label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as any)}
-                  style={{ fontSize: '16px' }}
-                  className="w-full px-3.5 py-3 rounded-xl bg-stone-900 border border-stone-700 text-stone-200 focus:border-amber-500 cursor-pointer shadow-inner"
-                >
-                  <option value="kpay">KPay (KBZPay)</option>
-                  <option value="wave">WavePay</option>
-                  <option value="cash">လက်ငင်းငွေသား (Cash)</option>
-                  <option value="ayapay">AYAPay</option>
-                  <option value="cbbank">CB Pay</option>
-                </select>
               </div>
 
               <div className="space-y-1">

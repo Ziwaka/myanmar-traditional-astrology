@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { 
   Crown, 
   User, 
-  Phone, 
   Calendar, 
   Sparkles, 
   Clock, 
@@ -22,7 +21,7 @@ import { formatMMK, formatDateDDMMYYYY } from '../utils/astrology';
 
 interface LoyalCustomersViewProps {
   consultations: ConsultationRecord[];
-  onBookForCustomer: (customerName: string, phone: string) => void;
+  onBookForCustomer: (customerName: string) => void;
   onSelectRecord: (record: ConsultationRecord) => void;
 }
 
@@ -34,15 +33,14 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerSummary | null>(null);
 
-  // Group consultations by Customer Phone (or Normalized Name)
+  // Group consultations by Customer ID (or Normalized Name)
   const customerSummaries = useMemo<CustomerSummary[]>(() => {
     const map = new Map<string, ConsultationRecord[]>();
 
     consultations.forEach((rec) => {
-      // Key by phone if available, else clean name
-      const key = rec.phone && rec.phone.replace(/[^0-9]/g, '').length > 5
-        ? rec.phone.trim()
-        : rec.customerName.trim().toLowerCase();
+      // Key by Customer ID if available, else clean name
+      const key = (rec.customerId && rec.customerId.trim().toLowerCase())
+        || rec.customerName.trim().toLowerCase();
 
       if (!map.has(key)) {
         map.set(key, []);
@@ -72,7 +70,6 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
 
       summaries.push({
         name: latest.customerName,
-        phone: latest.phone,
         visitCount,
         totalSpent,
         navawinTotalCount,
@@ -92,13 +89,12 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
     return summaries;
   }, [consultations]);
 
-  // Filtered summaries by search (Name, Phone, Customer ID, Consultation ID)
+  // Filtered summaries by search (Name, Customer ID, Consultation ID)
   const filteredCustomers = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
     if (!q) return customerSummaries;
     return customerSummaries.filter((c) =>
       c.name.toLowerCase().includes(q) ||
-      c.phone.includes(q) ||
       c.records.some(r => r.id.toLowerCase().includes(q) || (r.customerId && r.customerId.toLowerCase().includes(q)))
     );
   }, [customerSummaries, searchTerm]);
@@ -163,7 +159,7 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
           <input
             type="text"
-            placeholder="အမည်၊ ဖုန်းနံပါတ်၊ Customer ID ဖြင့် ရှာရန်..."
+            placeholder="အမည်၊ Customer ID ဖြင့် ရှာရန်..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-lg bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-500"
@@ -180,7 +176,7 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
           const latest = c.records[0];
           return (
             <div
-              key={c.phone || c.name}
+              key={c.name}
               className={`bg-stone-850 rounded-2xl border p-5 shadow-lg transition hover:border-amber-500/50 space-y-4 ${
                 c.isRoyal
                   ? 'border-amber-500/40 bg-gradient-to-b from-stone-850 to-amber-950/10'
@@ -199,10 +195,6 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
                         <Crown className="w-4 h-4" />
                       </span>
                     )}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-stone-400 mt-0.5">
-                    <Phone className="w-3 h-3 text-stone-500" />
-                    <span>{c.phone}</span>
                   </div>
                 </div>
 
@@ -256,7 +248,7 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => onBookForCustomer(c.name, c.phone)}
+                  onClick={() => onBookForCustomer(c.name)}
                   title="ရက်ချိန်းအသစ် ဘိုကင်တင်ရန်"
                   className="p-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition cursor-pointer"
                 >
@@ -286,9 +278,7 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
                       {selectedCustomer.loyaltyTier}
                     </span>
                   </div>
-                  <p className="text-xs text-stone-400 flex items-center gap-3 mt-0.5">
-                    <span>ဖုန်း: {selectedCustomer.phone}</span>
-                    <span>•</span>
+                  <p className="text-xs text-stone-400 mt-0.5">
                     <span>မေးမြန်းမှု စုစုပေါင်း: {selectedCustomer.visitCount} ကြိမ်</span>
                   </p>
                 </div>
@@ -335,10 +325,7 @@ export const LoyalCustomersView: React.FC<LoyalCustomersViewProps> = ({
                   type="button"
                   onClick={() => {
                     setSelectedCustomer(null);
-                    onBookForCustomer(
-                      selectedCustomer.name,
-                      selectedCustomer.phone
-                    );
+                    onBookForCustomer(selectedCustomer.name);
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs shadow transition cursor-pointer"
                 >

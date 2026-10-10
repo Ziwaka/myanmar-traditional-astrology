@@ -18,12 +18,14 @@ interface ReleaseChangelogPopUpModalProps {
   isOpen: boolean;
   onClose: () => void;
   version?: string;
+  onViewFullHistory?: () => void;
 }
 
 export const ReleaseChangelogPopUpModal: React.FC<ReleaseChangelogPopUpModalProps> = ({
   isOpen,
   onClose,
   version = LOCAL_APP_VERSION,
+  onViewFullHistory,
 }) => {
   if (!isOpen) return null;
 
@@ -117,9 +119,24 @@ export const ReleaseChangelogPopUpModal: React.FC<ReleaseChangelogPopUpModalProp
 
         {/* Modal Action Footer */}
         <div className="p-4 bg-stone-950 border-t border-stone-800 flex items-center justify-between gap-3 shrink-0">
-          <span className="text-[11px] text-stone-400 font-medium">
-            ဗားရှင်း: <strong className="font-mono text-amber-300">v{currentRelease.version}</strong>
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] text-stone-400 font-medium">
+              ဗားရှင်း: <strong className="font-mono text-amber-300">v{currentRelease.version}</strong>
+            </span>
+            {onViewFullHistory && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onViewFullHistory();
+                }}
+                className="text-[11px] text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+              >
+                <History className="w-3.5 h-3.5" />
+                <span>History အားလုံးကြည့်မည်</span>
+              </button>
+            )}
+          </div>
 
           <button
             onClick={onClose}

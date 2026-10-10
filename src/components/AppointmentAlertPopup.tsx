@@ -4,7 +4,6 @@ import {
   Calendar, 
   Clock, 
   User, 
-  Phone, 
   Sparkles, 
   ExternalLink, 
   X,
@@ -61,7 +60,7 @@ export const AppointmentAlertPopup: React.FC<AppointmentAlertPopupProps> = ({
             </div>
             <div>
               <span className={`text-xs font-bold uppercase tracking-wider block ${isUrgent ? 'text-rose-400' : 'text-amber-400'}`}>
-                {isDuplicate ? '⚠️ Duplicate သတိပေးချက်' : '📅 ရက်ချိန်း သတိပေးချက်'}
+                {isDuplicate ? '⚠️ ရက်ချိန်းထပ် သတိပေးချက်' : '📅 ရက်ချိန်း သတိပေးချက်'}
               </span>
               <span className="text-sm font-extrabold text-stone-100">
                 {checkpointLabel}
@@ -87,12 +86,6 @@ export const AppointmentAlertPopup: React.FC<AppointmentAlertPopupProps> = ({
               <User className="w-6 h-6 text-amber-400 shrink-0" />
               <span>{record.customerName || 'အမည်မဖော်ပြထားသူ'}</span>
             </h2>
-            {record.phone && (
-              <p className="text-xs text-stone-300 mt-1 flex items-center justify-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-stone-400" />
-                <span className="font-mono">{record.phone}</span>
-              </p>
-            )}
           </div>
 
           {/* Time & Service Grid */}

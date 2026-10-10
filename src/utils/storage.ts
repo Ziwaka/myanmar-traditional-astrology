@@ -316,7 +316,7 @@ export function generateNextConsultationId(existingRecords: ConsultationRecord[]
 // Customer Profile Search & History Dossier Lookup
 export interface CustomerHistoryProfile {
   customerName: string;
-  phone: string;
+  phone?: string;
   gender?: 'male' | 'female' | 'other';
   birthDayOfWeek?: string;
   birthDate?: string;
@@ -334,17 +334,14 @@ export function searchCustomerHistoryProfiles(query: string, records: Consultati
   if (!query || !query.trim()) return [];
   const q = query.trim().toLowerCase();
 
-  // Group records by unique customer phone, customerId or name
+  // Group records by unique customerId or name
   const map = new Map<string, ConsultationRecord[]>();
 
   for (const rec of records) {
-    const cleanPhone = rec.phone ? rec.phone.replace(/[^0-9]/g, '') : '';
     const cleanCustId = rec.customerId ? rec.customerId.trim().toLowerCase() : '';
     
     let key = '';
-    if (cleanPhone && cleanPhone.length >= 6) {
-      key = `phone:${cleanPhone}`;
-    } else if (cleanCustId) {
+    if (cleanCustId) {
       key = `cust:${cleanCustId}`;
     } else {
       key = `name:${rec.customerName.trim().toLowerCase()}`;
@@ -364,19 +361,18 @@ export function searchCustomerHistoryProfiles(query: string, records: Consultati
     const latest = customerRecords[0];
 
     const matchesName = latest.customerName.toLowerCase().includes(q);
-    const matchesPhone = latest.phone.includes(q);
     const matchesId = customerRecords.some(r => 
       r.id.toLowerCase().includes(q) || 
       (r.customerId && r.customerId.toLowerCase().includes(q))
     );
 
-    if (matchesName || matchesPhone || matchesId) {
+    if (matchesName || matchesId) {
       const totalSpent = customerRecords.reduce((sum, r) => sum + (r.paidAmount || r.totalAmount || 0), 0);
       const oldest = customerRecords[customerRecords.length - 1];
 
       results.push({
         customerName: latest.customerName,
-        phone: latest.phone,
+        phone: latest.phone || '',
         gender: latest.gender,
         birthDayOfWeek: latest.birthDayOfWeek,
         birthDate: latest.birthDate,

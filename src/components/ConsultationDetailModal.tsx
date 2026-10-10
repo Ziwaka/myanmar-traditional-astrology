@@ -8,7 +8,6 @@ import {
   Sparkles, 
   ShoppingBag, 
   User, 
-  Phone, 
   FileText, 
   Calendar,
   CreditCard,
@@ -42,30 +41,24 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
   const serviceName = record.serviceCategory || 'ဗေဒင်ဝန်ဆောင်မှု';
   const dayInfo = BURMESE_DAYS.find(d => d.key === record.birthDayOfWeek);
 
-  // Look up previous appointments by phone number AND/OR customer ID
+  // Look up previous appointments by Customer ID and/or Customer Name
   const previousAppointments = useMemo(() => {
     if (!allRecords || allRecords.length === 0 || !record) return [];
-    const cleanPhone = (record.phone || '').replace(/[^0-9]/g, '');
     const cleanCustomerId = (record.customerId || '').trim().toLowerCase();
     const cleanRecordId = (record.id || '').trim().toLowerCase();
+    const cleanName = (record.customerName || '').trim().toLowerCase();
 
     return allRecords
       .filter((r) => {
         if (r.id === record.id) return false;
 
-        // 1. Match by Phone Number (if at least 5 digits)
-        const rCleanPhone = (r.phone || '').replace(/[^0-9]/g, '');
-        if (cleanPhone && cleanPhone.length >= 5 && rCleanPhone === cleanPhone) {
-          return true;
-        }
-
-        // 2. Match by Customer ID
+        // 1. Match by Customer ID
         const rCleanCustId = (r.customerId || '').trim().toLowerCase();
         if (cleanCustomerId && rCleanCustId && cleanCustomerId === rCleanCustId) {
           return true;
         }
 
-        // 3. Match Customer ID with Consultation ID
+        // 2. Match Customer ID with Consultation ID
         if (cleanCustomerId && r.id.toLowerCase() === cleanCustomerId) {
           return true;
         }
@@ -73,13 +66,9 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
           return true;
         }
 
-        // 4. Fallback: Match by exact Customer Name + BirthDay (when phone & customerId are absent)
-        if (!cleanPhone && !cleanCustomerId && record.customerName && r.customerName) {
-          if (record.customerName.trim().toLowerCase() === r.customerName.trim().toLowerCase()) {
-            if (record.birthDayOfWeek === r.birthDayOfWeek) {
-              return true;
-            }
-          }
+        // 3. Fallback: Match by exact Customer Name
+        if (cleanName && r.customerName && cleanName === r.customerName.trim().toLowerCase()) {
+          return true;
         }
 
         return false;
@@ -167,8 +156,6 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
                     🏢 In Person (လူကိုယ်တိုင်)
                   </span>
                 )}
-                <Phone className="w-3.5 h-3.5 text-stone-500" />
-                <span>{record.phone || 'ဖုန်းမပါ'}</span>
                 {record.socialAccountName && (
                   <span className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800 text-xs font-mono">
                     {record.socialPlatform || 'Social'}: {record.socialAccountName}
@@ -253,9 +240,6 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
               <span className="font-semibold text-emerald-400 flex items-center gap-2">
                 <CreditCard className="w-4 h-4" /> ငွေပေးချေမှုနှင့် ကျသင့်ငွေ ရှင်းတမ်း
               </span>
-              <span className="px-2 py-0.5 rounded text-xs bg-stone-800 text-stone-300 border border-stone-700">
-                {record.paymentMethod.toUpperCase()}
-              </span>
             </div>
 
             <div className="space-y-1.5 text-stone-300 text-xs">
@@ -295,12 +279,12 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
             </div>
           </div>
 
-          {/* Customer Previous Appointments History (Based on Phone / Customer ID) */}
+          {/* Customer Previous Appointments History (Based on Customer ID / Name) */}
           <div className="bg-stone-850 p-4 rounded-xl border border-stone-800 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-stone-800 pb-2">
               <span className="font-semibold text-amber-400 flex items-center gap-2">
                 <History className="w-4 h-4 text-amber-400" />
-                <span>ဖုန်းနံပါတ် / Customer ID အလိုက် ယခင် မေးမြန်းမှုရာဇဝင် (Previous Consultations)</span>
+                <span>Customer ID / အမည် အလိုက် ယခင် မေးမြန်းမှုရာဇဝင် (Previous Consultations)</span>
               </span>
               {previousAppointments.length > 0 && (
                 <div className="flex items-center gap-3 text-xs text-stone-400">
@@ -315,7 +299,7 @@ export const ConsultationDetailModal: React.FC<ConsultationDetailModalProps> = (
               <div className="p-3 rounded-lg bg-stone-900/60 border border-stone-800 text-stone-400 text-xs flex items-center gap-2">
                 <User className="w-4 h-4 text-stone-500 shrink-0" />
                 <span>
-                  {record.phone ? `ဖုန်းနံပါတ် (${record.phone})` : (record.customerId ? `Customer ID (${record.customerId})` : `မေးသူအမည်`)} ဖြင့် ယခင် လာရောက်မေးမြန်းထားသော မှတ်တမ်း မရှိသေးပါ (ပထမဆုံးအကြိမ် ဧည့်သည်)။
+                  {record.customerId ? `Customer ID (${record.customerId})` : `မေးသူအမည် (${record.customerName || 'အမည်မသိ'})`} ဖြင့် ယခင် လာရောက်မေးမြန်းထားသော မှတ်တမ်း မရှိသေးပါ (ပထမဆုံးအကြိမ် ဧည့်သည်)။
                 </span>
               </div>
             ) : (

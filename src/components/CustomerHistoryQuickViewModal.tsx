@@ -3,7 +3,6 @@ import {
   History, 
   X, 
   User, 
-  Phone, 
   Sparkles, 
   Calendar, 
   Clock, 
@@ -31,7 +30,7 @@ interface CustomerHistoryQuickViewModalProps {
   targetRecord?: ConsultationRecord | null;
   allRecords: ConsultationRecord[];
   onOpenConsultation: (consultationId: string) => void;
-  onBookNewForCustomer?: (customerName: string, phone: string) => void;
+  onBookNewForCustomer?: (customerName: string) => void;
 }
 
 export const CustomerHistoryQuickViewModal: React.FC<CustomerHistoryQuickViewModalProps> = ({
@@ -48,21 +47,15 @@ export const CustomerHistoryQuickViewModal: React.FC<CustomerHistoryQuickViewMod
 
   if (!isOpen || !targetRecord) return null;
 
-  const targetPhone = targetRecord.phone ? targetRecord.phone.replace(/[^0-9]/g, '') : '';
   const targetCustId = targetRecord.customerId ? targetRecord.customerId.trim().toLowerCase() : '';
   const targetName = targetRecord.customerName ? targetRecord.customerName.trim().toLowerCase() : '';
 
   // Find all consultation records belonging to this specific customer
   const customerHistoryRecords = useMemo(() => {
     return allRecords.filter((r) => {
-      const rPhone = r.phone ? r.phone.replace(/[^0-9]/g, '') : '';
       const rCustId = r.customerId ? r.customerId.trim().toLowerCase() : '';
       const rName = r.customerName ? r.customerName.trim().toLowerCase() : '';
 
-      // Match by phone if valid
-      if (targetPhone && targetPhone.length >= 6 && rPhone === targetPhone) {
-        return true;
-      }
       // Match by customerId if exists
       if (targetCustId && rCustId === targetCustId) {
         return true;
@@ -77,7 +70,7 @@ export const CustomerHistoryQuickViewModal: React.FC<CustomerHistoryQuickViewMod
       const dateB = new Date(b.readingDateTime || b.bookingDate || b.createdAt || '').getTime();
       return dateB - dateA; // Most recent first
     });
-  }, [allRecords, targetRecord, targetPhone, targetCustId, targetName]);
+  }, [allRecords, targetRecord, targetCustId, targetName]);
 
   // Aggregate customer summary stats
   const stats = useMemo(() => {
@@ -179,12 +172,6 @@ export const CustomerHistoryQuickViewModal: React.FC<CustomerHistoryQuickViewMod
                 )}
               </div>
               <div className="flex items-center gap-3 text-xs text-stone-400 mt-0.5">
-                {targetRecord.phone && targetRecord.phone !== '-' && (
-                  <span className="flex items-center gap-1 font-mono text-amber-300/90">
-                    <Phone className="w-3.5 h-3.5 text-stone-400" />
-                    {targetRecord.phone}
-                  </span>
-                )}
                 {targetRecord.birthDayOfWeek && (
                   <span>နေ့နံ: <strong className="text-stone-300">{targetRecord.birthDayOfWeek}</strong></span>
                 )}
@@ -198,7 +185,7 @@ export const CustomerHistoryQuickViewModal: React.FC<CustomerHistoryQuickViewMod
                 type="button"
                 onClick={() => {
                   onClose();
-                  onBookNewForCustomer(targetRecord.customerName, targetRecord.phone);
+                  onBookNewForCustomer(targetRecord.customerName);
                 }}
                 className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 text-xs font-bold shadow transition cursor-pointer"
               >

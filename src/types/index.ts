@@ -53,9 +53,9 @@ export interface ConsultationRecord {
   id: string;                  // ဗေဒင်မေးသူ / ဘိုကင် ID (e.g. BD-001) - Auto generated with edit option
   customerId?: string;         // သီးသန့် Customer ID (Optional, e.g. CUST-001)
   customerName: string;        // အမည် (Skipable / Optional)
-  phone: string;               // ဖုန်းနံပါတ်
+  phone?: string;              // ဖုန်းနံပါတ် (Deprecated / Optional)
   consultationMode?: 'in_person' | 'remote'; // လူကိုယ်တိုင် (In Person) သို့မဟုတ် အွန်လိုင်း (Remote)
-  socialPlatform?: 'viber' | 'facebook' | 'tiktok' | 'telegram' | 'phone' | 'other'; // Social Account Dropdown
+  socialPlatform?: 'viber' | 'facebook' | 'tiktok' | 'telegram' | 'other'; // Social Account Dropdown
   socialAccountName?: string;  // Social Account Name / ID
   gender?: 'male' | 'female' | 'other';
   birthDayOfWeek?: DayOfWeekBurmese; // နေ့နံ (Optional)
@@ -89,7 +89,7 @@ export interface ConsultationRecord {
   paidAmount: number;          // ရှင်းပြီးငွေ
   paidDate?: string;           // ငွေရှင်းသည့်နေ့ရက် (YYYY-MM-DD)
   paymentStatus: PaymentStatus;// ငွေပေးချေမှု အခြေအနေ
-  paymentMethod: 'cash' | 'kpay' | 'wave' | 'cbbank' | 'ayapay'; // ငွေပေးချေသည့် နည်းလမ်း
+  paymentMethod?: 'cash' | 'kpay' | 'wave' | 'cbbank' | 'ayapay'; // ငွေပေးချေသည့် နည်းလမ်း
   
   status: ConsultationStatus;  // အခြေအနေ
   taskDone: boolean;           // Task Done အမှန်ခြစ်
@@ -113,7 +113,7 @@ export type ReminderCheckpoint = '30_min' | '15_min' | '5_min' | '0_min' | 'dupl
 
 export interface DuplicateConflict {
   id: string;
-  type: 'time_slot_clash' | 'duplicate_phone_same_day' | 'duplicate_id' | 'duplicate_customer';
+  type: 'time_slot_clash' | 'duplicate_id' | 'duplicate_customer';
   title: string;
   description: string;
   primaryRecord: ConsultationRecord;
@@ -194,7 +194,7 @@ export interface ExtraIncomeRecord {
 
 export interface CustomerSummary {
   name: string;
-  phone: string;
+  phone?: string;
   visitCount: number;
   totalSpent: number;
   navawinTotalCount: number;

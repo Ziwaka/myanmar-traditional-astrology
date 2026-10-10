@@ -63,7 +63,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
   const [formPassword, setFormPassword] = useState('');
   const [formName, setFormName] = useState('');
   const [formTitle, setFormTitle] = useState('');
-  const [formPhone, setFormPhone] = useState('');
   const [formRole, setFormRole] = useState<UserRole>('staff');
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -79,7 +78,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
     setFormPassword('');
     setFormName('');
     setFormTitle('ကောင်တာ စာရေး');
-    setFormPhone('');
     setFormRole('staff');
     setIsAddUserModalOpen(true);
   };
@@ -90,7 +88,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
     setFormPassword(user.password || '');
     setFormName(user.name);
     setFormTitle(user.title);
-    setFormPhone(user.phone || '');
     setFormRole(user.role);
     setIsAddUserModalOpen(true);
   };
@@ -115,7 +112,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
             password: formPassword.trim(),
             name: formName.trim(),
             title: formTitle.trim(),
-            phone: formPhone.trim(),
             role: formRole,
           };
           updatedUserObj = mod;
@@ -151,7 +147,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
         password: formPassword.trim(),
         name: formName.trim(),
         title: formTitle.trim() || 'စာရေး',
-        phone: formPhone.trim() || '09-',
         sanctuaryName: 'မင်္ဂလာရတနာ ဗေဒင်နန်းတော်',
         role: formRole,
         avatarEmoji: roleEmojiMap[formRole] || '👤',
@@ -348,12 +343,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                       <span className="text-stone-400">Password:</span>
                       <span className="font-mono text-stone-300">••••••••</span>
                     </div>
-                    {user.phone && (
-                      <div className="flex justify-between">
-                        <span className="text-stone-400">ဖုန်း:</span>
-                        <span>{user.phone}</span>
-                      </div>
-                    )}
                     <div className="flex justify-between items-center pt-1">
                       <span className="text-stone-400">အခြေအနေ:</span>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
@@ -606,17 +595,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                   placeholder="ဥပမာ - ကောင်တာ ၁ တာဝန်ခံ"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 focus:border-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-stone-300 font-medium mb-1">ဖုန်းနံပါတ်</label>
-                <input
-                  type="text"
-                  placeholder="09-xxxxxxxxx"
-                  value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-stone-950 border border-stone-700 text-stone-100 focus:border-amber-500"
                 />
               </div>

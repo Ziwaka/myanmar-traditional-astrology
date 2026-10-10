@@ -38,12 +38,11 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
 }) => {
   // Track expanded historical versions
   const [expandedVersions, setExpandedVersions] = useState<Record<string, boolean>>({
-    '1.3.1': true,
-    '1.3.0': true,
-    '1.2.1': false,
-    '1.2.0': false,
-    '1.1.0': false,
-    '1.0.0': false,
+    '2.5': true,
+    '2.4': true,
+    '2.3': true,
+    '2.2': true,
+    '2.0': true,
   });
 
   if (!isOpen) return null;
@@ -73,7 +72,7 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
                   Version History & Changelog
                 </h2>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold">
-                  v{cloudInfo?.version || releases[0]?.version || '1.3.1'}
+                  v{cloudInfo?.version || releases[0]?.version || '2.5'}
                 </span>
               </div>
               <p className="text-xs text-stone-400">

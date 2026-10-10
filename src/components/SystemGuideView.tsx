@@ -174,7 +174,7 @@ export const SystemGuideView: React.FC = () => {
 
               <div className="p-4 bg-amber-500/5 rounded-2xl border border-amber-500/20 text-xs text-stone-300 leading-relaxed space-y-1.5">
                 <span className="font-bold text-amber-300 block">💡 အမြန်သိကောင်းစရာ:</span>
-                စနစ်အတွင်းသို့ ဝင်ရောက်ရာတွင် သက်ဆိုင်ရာ ဝန်ထမ်းအကောင့်အသီးသီး၏ ဖုန်းနံပါတ် သို့မဟုတ် အီးမေးလ်ဖြင့် လွယ်ကူစွာ ဝင်ရောက်နိုင်ပြီး ဒေတာများ ဆုံးရှုံးမှုမရှိစေရန် Cloud Backup အား စက္ကန့်တိုင်း နောက်ကွယ်မှ ပြုလုပ်ပေးနေပါသည်။
+                စနစ်အတွင်းသို့ ဝင်ရောက်ရာတွင် သက်ဆိုင်ရာ ဝန်ထမ်းအကောင့်အသီးသီး၏ Username ဖြင့် လွယ်ကူစွာ ဝင်ရောက်နိုင်ပြီး ဒေတာများ ဆုံးရှုံးမှုမရှိစေရန် Cloud Backup အား စက္ကန့်တိုင်း နောက်ကွယ်မှ ပြုလုပ်ပေးနေပါသည်။
               </div>
             </div>
           )}
@@ -197,7 +197,7 @@ export const SystemGuideView: React.FC = () => {
                   <div className="space-y-1 text-xs">
                     <span className="font-bold text-stone-200">အခြေခံအချက်အလက် ဖြည့်သွင်းခြင်း:</span>
                     <p className="text-stone-400">
-                      အမည်၊ ဖုန်းနံပါတ်၊ လူကိုယ်တိုင် လာမေးသလား (In Person) သို့မဟုတ် အဝေးမှမေးသလား (Remote - Messenger / Viber) ဟု ခွဲခြားမှတ်တမ်းတင်နိုင်ပါသည်။
+                      အမည်၊ လူကိုယ်တိုင် လာမေးသလား (In Person) သို့မဟုတ် အဝေးမှမေးသလား (Remote - Messenger / Viber) ဟု ခွဲခြားမှတ်တမ်းတင်နိုင်ပါသည်။
                     </p>
                   </div>
                 </div>
@@ -333,7 +333,7 @@ export const SystemGuideView: React.FC = () => {
                   <CheckCircle className="w-4 h-4 text-amber-400 shrink-0" />
                   <div>
                     <span className="font-bold text-stone-200">ဟောခန်းမှတ်တမ်းရာဇဝင် (Dossier):</span>
-                    <span className="text-stone-400 ml-1">ဖောက်သည်ကြီး၏ အမည် သို့မဟုတ် ဖုန်းကို နှိပ်လိုက်သည်နှင့် ၎င်းမေးခဲ့ဖူးသော မွေးနေ့ဇာတာ၊ ဟောကိန်းဟောင်းများနှင့် ယခင်ယူခဲ့ဖူးသော အဆောင်ပစ္စည်း ရာဇဝင်အားလုံးကို တစ်စုတစ်စည်းတည်း မြင်တွေ့ရမည်။</span>
+                    <span className="text-stone-400 ml-1">ဖောက်သည်ကြီး၏ အမည်ကို နှိပ်လိုက်သည်နှင့် ၎င်းမေးခဲ့ဖူးသော မွေးနေ့ဇာတာ၊ ဟောကိန်းဟောင်းများနှင့် ယခင်ယူခဲ့ဖူးသော အဆောင်ပစ္စည်း ရာဇဝင်အားလုံးကို တစ်စုတစ်စည်းတည်း မြင်တွေ့ရမည်။</span>
                   </div>
                 </div>
 
@@ -341,7 +341,7 @@ export const SystemGuideView: React.FC = () => {
                   <CheckCircle className="w-4 h-4 text-amber-400 shrink-0" />
                   <div>
                     <span className="font-bold text-stone-200">လျင်မြန်စွာ ရက်ချိန်းအသစ်ယူပေးခြင်း:</span>
-                    <span className="text-stone-400 ml-1">ဖောက်သည်ကြီးများစာရင်းထဲမှ `[ရက်ချိန်းစောင့်]` ခလုတ်ကို နှိပ်ရုံဖြင့် ၎င်း၏ အမည်၊ ဖုန်း၊ ဂျန်ဒါနှင့် မွေးဇာတာတို့အား အလိုအလျောက် ဖြည့်ပြီးသား အဆင်သင့် စာရင်းသွင်းပေးမည်။</span>
+                    <span className="text-stone-400 ml-1">ဖောက်သည်ကြီးများစာရင်းထဲမှ `[ရက်ချိန်းစောင့်]` ခလုတ်ကို နှိပ်ရုံဖြင့် ၎င်း၏ အမည်၊ ဂျန်ဒါနှင့် မွေးဇာတာတို့အား အလိုအလျောက် ဖြည့်ပြီးသား အဆင်သင့် စာရင်းသွင်းပေးမည်။</span>
                   </div>
                 </div>
               </div>

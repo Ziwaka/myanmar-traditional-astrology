@@ -15,11 +15,55 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '2.0';
+export const LOCAL_APP_VERSION = '2.5';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
+  {
+    version: '2.5',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၁၀',
+    title: 'ဖုန်းနံပါတ်နှင့် ဆက်စပ်အချက်အလက်များ အပြီးသတ် ဖယ်ရှားရှင်းလင်းခြင်း (Total Phone Stripping & Privacy Clean)',
+    badge: 'Privacy & Clean',
+    changelog: [
+      'ဖုန်းနံပါတ် (Phone Number) နှင့် ဆက်စပ်နေသော အချက်အလက်များ၊ အိုင်ကွန်များနှင့် စာသားများကို Booking Form၊ ရက်ချိန်းကတ်များ၊ Detail Modal၊ အသိပေးချက်များနှင့် ပြေစာများအပါအဝင် စနစ်တစ်ခုလုံးမှ လုံးဝဖယ်ရှားရှင်းလင်းခြင်း',
+      'ဖောက်သည်ဟောင်း ရှာဖွေရာတွင် ဖုန်းနံပါတ်မပါဘဲ မေးသူအမည် နှင့် Customer ID တို့ဖြင့်သာ သန့်ရှင်းမြန်ဆန်စွာ ရှာဖွေနိုင်အောင် ပြင်ဆင်ခြင်း',
+      'ယခင်မေးမြန်းမှုရာဇဝင် (History Dossier) တိုက်စစ်ခြင်းနှင့် VIP ဖောက်သည်စာရင်းများတွင် ဖုန်းနံပါတ်မလိုဘဲ အမည်နှင့် ID ဖြင့်သာ စနစ်တကျ အုပ်စုဖွဲ့ပြသခြင်း'
+    ]
+  },
+  {
+    version: '2.4',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၁၀',
+    title: 'ငွေပေးချေသည့်နည်းလမ်းနှင့် ငွေရှင်းရက်စွဲ ဖြုတ်ပယ်ခြင်း (Instant Auto-Paid & Streamlined Payment)',
+    badge: 'Instant Payment',
+    changelog: [
+      'ငွေပေးချေသည့် နည်းလမ်း (Payment Method - KPay, Wave, Cash) ရွေးချယ်မှုအား စနစ်၏ နေရာတိုင်းမှ အပြီးသတ်ဖြုတ်ပယ်ခြင်း',
+      'Booking တင်သည်နှင့် တပြိုင်နက် ငွေရှင်းပြီးသား (Auto-Paid) အဖြစ် သတ်မှတ်ပြီး ငွေပေးချေသည့်ရက်စွဲ (Payment Date) အား ဖြုတ်ပယ်ခြင်း',
+      'ပြေစာ၊ ဘောက်ချာနှင့် ဝင်ငွေမှတ်တမ်းများတွင် မလိုအပ်သော Payment Method စာသားများ ရှင်းလင်းပေးခြင်း'
+    ]
+  },
+  {
+    version: '2.3',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၁၀',
+    title: 'Client Name ဖြင့်သာ ရက်ချိန်းထပ်တိုက်စစ်ခြင်းနှင့် စာသားများ ရှင်းလင်းခြင်း (Client Name Duplicate Detection)',
+    badge: 'Duplicate Detection',
+    changelog: [
+      'ရက်ချိန်းထပ်နေမှု (Duplicate Booking) စစ်ဆေးခြင်းကို မေးသူအမည် (Client Name) ဖြင့်သာ တိကျစွာ သီးသန့်စစ်ဆေးစေခြင်း',
+      'မလိုအပ်သော စာသားများနှင့် သတိပေးချက်စာတိုများကို ဖြုတ်ပယ်ပြီး ခပ်ရှင်းရှင်း သန့်သန့် ဖြစ်စေရန် မွမ်းမံခြင်း',
+      'အချိန်ထပ်နေခြင်း (Double Booking) နှင့် အမည်တူ ရက်ချိန်းများအတွက် သီးသန့် Popup နှင့် အသံသတိပေးချက် ချိတ်ဆက်ခြင်း'
+    ]
+  },
+  {
+    version: '2.2',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၁၀',
+    title: 'Side by Side 2-Tab (Scheduled & Done) နှင့် Custom ဗေဒင်ဟောခ (Custom Consultation Fee)',
+    badge: 'Side by Side Tabs',
+    changelog: [
+      'ဟောရန်ကျန်ရှိသူများ နှင့် ဟောကြားပြီးစီးသူများကို Side by Side (2-Tab) ခွဲခြားပေးခြင်း (Scheduled နှင့် Done အဖြစ် ခေါင်းစဉ်တပ်ဆင်ခြင်း)',
+      'Default အားဖြင့် Scheduled (ဟောရန်ကျန်သူများ) Tab အား အမြဲတမ်း Expand Mode ဖြင့် ဖွင့်လှစ်ပြသထားပြီး Done Tab အား လိုမှဖွင့်ကြည့်နိုင်ရန် စီစဉ်ခြင်း',
+      'ဗေဒင်ဟောခတွင် ပုံသေ ၃၀,၀၀၀ နှင့် ၅၀,၀၀၀ အပြင် စိတ်ကြိုက်ထည့်သွင်းနိုင်သော Custom ဟောခ (ကျပ်) ကွက် အသစ် ထည့်သွင်းပေးခြင်း'
+    ]
+  },
   {
     version: '2.0',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၆',

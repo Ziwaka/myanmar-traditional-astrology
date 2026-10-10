@@ -122,7 +122,7 @@ export default function App() {
   const [isCheckingCloud, setIsCheckingCloud] = useState<boolean>(false);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState<boolean>(false);
   const [isReleaseChangelogModalOpen, setIsReleaseChangelogModalOpen] = useState<boolean>(
-    typeof window !== 'undefined' ? localStorage.getItem('myanmar_astrology_seen_changelog_200') !== 'true' : true
+    typeof window !== 'undefined' ? localStorage.getItem('myanmar_astrology_seen_changelog_250') !== 'true' : true
   );
   const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState<boolean>(false);
   const [isDatabaseQuotaModalOpen, setIsDatabaseQuotaModalOpen] = useState<boolean>(false);
@@ -658,8 +658,7 @@ export default function App() {
 
   // Pre-fill booking for Royal Customer
   const handleBookForCustomer = (
-    customerName: string,
-    phone: string
+    customerName: string
   ) => {
     const nextId = generateNextConsultationId(consultations);
     const now = new Date();
@@ -669,7 +668,7 @@ export default function App() {
     const prefilled: ConsultationRecord = {
       id: nextId,
       customerName,
-      phone,
+      phone: '',
       bookingDate: todayStr,
       readingDateTime: nowDateTimeStr,
       serviceCategory: 'general_reading',
@@ -964,13 +963,14 @@ export default function App() {
         onClose={() => {
           setIsReleaseChangelogModalOpen(false);
           try {
-            localStorage.setItem('myanmar_astrology_seen_changelog_200', 'true');
+            localStorage.setItem('myanmar_astrology_seen_changelog_250', 'true');
             setLastSeenChangelogVersion(LOCAL_APP_VERSION);
           } catch (e) {
             console.error(e);
           }
         }}
         version={LOCAL_APP_VERSION}
+        onViewFullHistory={() => setIsVersionModalOpen(true)}
       />
 
       {/* Modal 4.1: Version History & Cloud Verification Pop Up */}

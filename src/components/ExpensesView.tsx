@@ -27,8 +27,7 @@ import {
   CreditCard,
   Building2,
   Check,
-  User,
-  Phone
+  User
 } from 'lucide-react';
 import { DatePickerInput } from './DatePickerInput';
 import { ExpenseRecord, ExpenseCategoryConfig, ConsultationRecord, ExtraIncomeRecord } from '../types';
@@ -325,9 +324,9 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
         title: `${c.customerName || 'အမည်မဖော်ပြထားသူ'} (${c.serviceCategory || 'ဗေဒင်'})`,
         category: 'ဗေဒင်ဟောစာတမ်း / ယတြာ / အဆောင်',
         amount: c.paidAmount !== undefined ? c.paidAmount : (c.totalAmount || 0),
-        paymentMethod: c.paymentMethod || 'kpay',
+        paymentMethod: undefined,
         timeOrId: c.id,
-        note: c.phone,
+        note: undefined,
       });
     });
 
@@ -419,9 +418,9 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
           title: `${c.customerName || 'မမေးသူ'} (${c.serviceCategory || 'ဗေဒင်'})`,
           category: 'ဗေဒင်ဟောစာတမ်း / ယတြာ',
           amount: paid,
-          paymentMethod: c.paymentMethod || 'kpay',
+          paymentMethod: undefined,
           timeOrId: c.id,
-          note: c.phone ? `ဖုန်း: ${c.phone}` : undefined,
+          note: undefined,
           paidDate: payDate,
         });
       }

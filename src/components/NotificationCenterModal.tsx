@@ -5,7 +5,6 @@ import {
   Calendar, 
   Clock, 
   User, 
-  Phone, 
   Sparkles, 
   ExternalLink, 
   CheckCircle2, 
@@ -350,13 +349,6 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                               </span>
                             )}
 
-                            {record.phone && (
-                              <span className="flex items-center gap-1 text-stone-300 font-mono">
-                                <Phone className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                                {record.phone}
-                              </span>
-                            )}
-
                             <span className="flex items-center gap-1 text-stone-400">
                               <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                               {service?.label || 'ဗေဒင်ဟောစာတမ်း'}
@@ -410,14 +402,14 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                 <div className="py-12 text-center text-stone-400 bg-stone-950/40 rounded-2xl border border-stone-800">
                   <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-400 mb-2" />
                   <p className="font-bold text-sm text-emerald-300">ရက်ချိန်း ထပ်နေမှုများ မရှိပါ</p>
-                  <p className="text-xs text-stone-400 mt-1">အချိန်ထပ်နေခြင်း (Double Booking) နှင့် ဖုန်းနံပါတ်တူ ထပ်နေမှုများ မရှိဘဲ ပုံမှန်အတိုင်း သပ်ရပ်နေပါသည်</p>
+                  <p className="text-xs text-stone-400 mt-1">အချိန်ထပ်နေခြင်း (Double Booking) နှင့် အမည်တူ ထပ်နေမှုများ မရှိဘဲ ပုံမှန်အတိုင်း သပ်ရပ်နေပါသည်</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs text-amber-200 flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <span>
-                      အောက်ဖော်ပြပါ ရက်ချိန်းများသည် အချိန်ထပ်နေခြင်း (သို့) ဖုန်းနံပါတ်တူ တစ်ရက်တည်း ၂ ကြိမ် ဘိုကင်တင်ထားခြင်း ဖြစ်ပါသည်။ ဖွင့်၍ စစ်ဆေးပြင်ဆင်နိုင်ပါသည်။
+                      အောက်ဖော်ပြပါ ရက်ချိန်းများသည် အချိန်ထပ်နေခြင်း (သို့) အမည်တူ ရက်ချိန်းထပ်နေခြင်း ဖြစ်ပါသည်။ ဖွင့်၍ စစ်ဆေးပြင်ဆင်နိုင်ပါသည်။
                     </span>
                   </div>
 
@@ -435,8 +427,8 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                             <h4 className="text-sm font-bold text-rose-300">
                               {conflict.title}
                             </h4>
-                            <span className="text-[11px] text-stone-400 font-mono">
-                              {conflict.type === 'time_slot_clash' ? '⏱️ အချိန်တိုက်ဆိုင်မှု (Double Booking)' : '📱 ဖုန်းနံပါတ်တူ ထပ်နေမှု'}
+                            <span className="text-[11px] text-stone-400 font-medium">
+                              👤 အမည်တူ ထပ်နေမှု
                             </span>
                           </div>
                         </div>
@@ -596,7 +588,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 
         {/* Footer */}
         <div className="p-3 bg-stone-950 border-t border-stone-800 text-center text-xs text-stone-500">
-          ✨ ရက်ချိန်းအချိန် သတိပေးချက်များနှင့် Duplicate ထပ်နေမှုများအား စနစ်မှ အလိုအလျောက် သတိပေးပေးပါသည်
+          ✨ ရက်ချိန်းအချိန် သတိပေးချက်များနှင့် ရက်ချိန်းထပ်နေမှုများကို စနစ်မှ အလိုအလျောက် သတိပေးပါသည်
         </div>
 
       </div>

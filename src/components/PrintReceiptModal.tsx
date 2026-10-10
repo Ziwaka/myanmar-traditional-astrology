@@ -242,12 +242,11 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                   </div>
                 </div>
 
-                {record.phone && record.phone.trim() !== '' && record.phone.trim() !== '-' && record.phone.trim() !== '0' && record.phone.trim() !== '09-' ? (
+                {record.socialAccountName ? (
                   <div className="flex items-center justify-between gap-2 border-b border-amber-200/40 pb-1.5">
-                    <span className="text-stone-500 text-[11px] font-medium whitespace-nowrap">ဖုန်းနံပါတ် / Social:</span>
+                    <span className="text-stone-500 text-[11px] font-medium whitespace-nowrap">Social Account:</span>
                     <strong className="font-mono text-stone-900">
-                      {record.phone}
-                      {record.socialAccountName ? ` (${record.socialPlatform || 'Social'}: ${record.socialAccountName})` : ''}
+                      {record.socialPlatform || 'Social'}: {record.socialAccountName}
                     </strong>
                   </div>
                 ) : null}
@@ -328,7 +327,7 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                   {record.paidAmount && record.paidAmount > 0 ? (
                     <tr className="text-xs font-semibold text-emerald-800 bg-emerald-50/40">
                       <td colSpan={3} className="py-1.5 px-3 text-right">
-                        ပေးချေပြီးငွေ ({record.paymentMethod ? record.paymentMethod.toUpperCase() : 'CASH'}):
+                        ပေးချေပြီးငွေ:
                       </td>
                       <td className="py-1.5 px-3 text-right font-mono">{formatKyatsOnly(record.paidAmount)}</td>
                     </tr>
