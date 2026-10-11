@@ -15,11 +15,54 @@ export interface CloudVersionInfo {
   history?: VersionRelease[];
 }
 
-export const LOCAL_APP_VERSION = '2.5';
+export const LOCAL_APP_VERSION = '2.9';
 const LOCAL_VERSION_KEY = 'myanmar_astrology_local_version';
 const LAST_SEEN_CHANGELOG_KEY = 'myanmar_astrology_last_seen_changelog';
 
 export const ALL_VERSION_HISTORY: VersionRelease[] = [
+  {
+    version: '2.9',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၁၀',
+    title: 'မူလလက်ရာ အမဲနှင့် ရွှေရောင်/အန်ဘာ Theme သို့ ပြန်လည်ပြောင်းလဲခြင်း (Restore Original Dark & Gold Theme)',
+    badge: 'Design Revert',
+    changelog: [
+      'အသုံးပြုသူအလိုရှိသည့်အတိုင်း မူလလက်ရာ ပုံစံကောင်းမွန်ပြီး လှပထည်ဝါသည့် အမဲနှင့် ရွှေရောင်/အန်ဘာ (Dark & Gold) Theme သို့ အပြည့်အဝ ပြန်လည်ပြောင်းလဲပေးခြင်း',
+      'ရိုးရာဗေဒင်နန်းတော်ပုံစံ ပိုမိုပေါ်လွင်စေရန် မူလ UI အလှတရားများကို မပျက်မယွင်းဘဲ မူလအတိုင်း ပြန်လည်ထိန်းသိမ်းပေးခြင်း'
+    ]
+  },
+  {
+    version: '2.8',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၁၀',
+    title: 'သန့်ရှင်းလင်းသော အဖြူရောင်၊ အပြာနှင့် ဆင်စွယ်ရောင်/နံသာရောင် Theme သို့ ပြောင်းလဲခြင်း (Clean White, Blue & Ivory Sandalwood UI)',
+    badge: 'Design Upgrade',
+    changelog: [
+      'နောက်ခံကို သန့်ရှင်းလင်းလက်သော အဖြူရောင်နှင့် ဆင်စွယ်ရောင် (Ivory) ဖြင့် ပြောင်းလဲပေးခြင်း',
+      'အဓိက ခလုတ်များနှင့် နေရာများတွင် မျက်စိအေးစေပြီး ကြည့်ရရှင်းသော အပြာရောင် (Blue) နှင့် နံသာရောင် ဖျော့ဖျော့ (Soft Sandalwood) အဆင်အယင်များကို အသုံးပြုခြင်း',
+      'စာသားများကို ပိုမိုထင်ရှားဖတ်ရလွယ်ကူစေရန် Contrast အား စနစ်တကျ ချိန်ညှိပေးခြင်း'
+    ]
+  },
+  {
+    version: '2.7',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၁၀',
+    title: 'Sage & Sand အေးချမ်းသော Theme အသစ်သို့ ပြောင်းလဲခြင်း (Calming Sage & Sand UI)',
+    badge: 'Design Update',
+    changelog: [
+      'မျက်စိကို အထူးအေးမြစေပြီး ကြည့်ရရှင်းသော Sage (အစိမ်းနုရောင်) နှင့် Sand (သဲရောင်) အခြေခံ Theme သို့ ပြောင်းလဲခြင်း',
+      'အသုံးပြုသူများ အချိန်ကြာမြင့်စွာ အသုံးပြုသော်လည်း မျက်စိမပင်ပန်းစေရန် အဆင်ပြေချောမွေ့သည့် UI အရောင်စနစ်သစ်ကို အသုံးပြုခြင်း',
+      'Interface တစ်ခုလုံးအား သဘာဝနှင့် နီးစပ်သော စိတ်ကြည်လင်လန်းဆန်းစေသည့် အရောင်အသွေးများဖြင့် မွမ်းမံခြင်း'
+    ]
+  },
+  {
+    version: '2.6',
+    releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၁၀',
+    title: 'မျက်စိအေးပြီး ကြည့်ရရှင်းစေသော Soft Eye-Care Theme (Soft-Light UI)',
+    badge: 'UI Refresh',
+    changelog: [
+      'မျက်စိကို အနှောင့်အယှက်မဖြစ်စေရန် အရောင်များကို ပိုမိုပျော့ပြောင်းသော Soft-Stone နှင့် Warm-Amber Palette များသို့ ပြောင်းလဲခြင်း',
+      'စာသားများ ပိုမိုဖတ်ရလွယ်ကူစေရန် Contrast အား ပိုမိုညင်သာစွာ ချိန်ညှိပေးခြင်း',
+      'အသုံးပြုသူ ကြာရှည်စွာကြည့်ရှုနိုင်ရန် Interface တစ်ခုလုံးကို ကြည့်ရရှင်းပြီး စိတ်ကြည်လင်စေသော Zen-Like UI ပုံစံသို့ မွမ်းမံခြင်း'
+    ]
+  },
   {
     version: '2.5',
     releaseDate: '၂၀၂၆ ခုနှစ်၊ အောက်တိုဘာ ၁၀',
@@ -197,11 +240,12 @@ export function compareVersions(cloudVer: string, localVer: string): number {
 
 export async function fetchCloudVersion(): Promise<CloudVersionInfo | null> {
   try {
-    const res = await fetch(`/version.json?_t=${Date.now()}`, {
-      cache: 'no-cache',
+    const res = await fetch(`/version.json?_t=${Date.now()}&_r=${Math.random()}`, {
+      cache: 'reload',
       headers: {
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
+        'Expires': '0',
       }
     });
     if (!res.ok) {

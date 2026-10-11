@@ -394,19 +394,28 @@ export default function App() {
       setIsUpdatePromptModalOpen(false);
       setIsVersionModalOpen(false);
 
-      // Trigger Service Worker update
+      // Trigger Service Worker unregistration and cache busting for APK WebView
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
           for (const reg of regs) {
-            reg.update();
+            reg.unregister();
           }
-        });
+        }).catch(err => console.warn('SW unregister error', err));
       }
 
-      // Smoothly reload page with cache-busting query parameter
+      if (typeof caches !== 'undefined') {
+        caches.keys().then(names => {
+          for (const name of names) {
+            caches.delete(name);
+          }
+        }).catch(err => console.warn('Cache delete error', err));
+      }
+
+      // Hard reload page with absolute origin and cache-busting parameters for APK WebView
       setTimeout(() => {
-        window.location.href = window.location.pathname + '?_v=' + Date.now();
-      }, 250);
+        const targetUrl = window.location.origin + window.location.pathname + '?_ota_v=' + cloudInfo.version + '&_t=' + Date.now();
+        window.location.replace(targetUrl);
+      }, 300);
     }
   };
 
